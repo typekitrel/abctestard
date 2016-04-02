@@ -8,7 +8,7 @@ import re			# u.a. Reguläre Ausdrücke in CalculateDuration
 import datetime
 import locale
 
-locale.setlocale(locale.LC_ALL, 'de_DE.UTF-8')
+# locale.setlocale(locale.LC_ALL, 'de_DE.UTF-8')	# crasht (Debug-Auszug von Otto Kerner)
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 # 
