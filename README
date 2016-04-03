@@ -1,5 +1,5 @@
-﻿# Plex-Plugin-ARDMediathek2016 - Version 0.9	
-# Stand 02.04.2016
+﻿# Plex-Plugin-ARDMediathek2016 - Version 1.0	
+# Stand 03.04.2016
 
 ## Plex plugin für die ARD Mediathek
 
@@ -40,7 +40,8 @@ Vorschläge und Fehlerhinweise an rols1@gmx.de
 
 #### Hinweise zu Sender Live:
 Das Plugin verwendet eine mitgelieferte Playlist im Unterverzeichnis Contents/Resources. Diese muss ev. erneuert werden, falls die Sender den Zugriff ändern. Aktuell enthält sie neben den Regional-Sendern der ARD auch ZDF, ZDF-neo, ZDFkultur und ZDFinfo.
-ARTE ist - wie bereits beim 2015er Plugin - nicht lauffähig.
+ARTE ist - wie bereits beim 2015er Plugin - nicht lauffähig. 
+RTMP-Streaming wird vom Plugin nicht unterstützt.
 Die Playlist entspricht der Datei http://dl.gmlblog.de/deutschesender.xml aus dem Blog https://gmlblog.de/2013/08/xbmc-tv-livestreams/. Diese Datei ist für Updates ohne inhaltliche Veränderungen verwendbar. Dazu wird sie in livesender.xml umbenannt und in das Pluginverzeichnis Plex-Plugin-ARDMediathek2016.bundle/Contents/Resources kopiert.
 In der aktuellen Datei habe ich die nicht im Plugin lauffähigen Sender entfernt - das erspart Fehlklicks, ist aber nicht zwingend notwendig. 
 

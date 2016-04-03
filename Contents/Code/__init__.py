@@ -12,7 +12,7 @@ import locale
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 # 
-# Version 0.9	Stand 02.04.2016
+# Version 1,0	Stand 03.04.2016
 #
 # (c) 2016 by Roland Scholz, rols1@gmx.de 
 #     Testing Enviroment: 
@@ -415,8 +415,8 @@ def SingleSendung(path, title, thumb, duration, offset=0):	# -> CreateVideoClipO
 		title = 'Bandbreite und Auflösung automatisch'
 		oc.add(CreateVideoClipObject(url=link_m3u8, title=title, 
 					summary='funktioniert nicht mit allen Playern', meta=path, thumb=thumb, duration=''))
-		cont = Parseplaylist(oc, link_m3u8, thumb)	# Einträge für die einzelnen Auflösungen dort
-		Log(cont)  
+		cont = Parseplaylist(oc, link_m3u8, thumb)	# Einträge für die einzelnen Auflösungen dort zusätzlich zum
+		Log(cont)  									# Eintrag '..automatisch'
 
 	# im alten Mediathekformat gab es zu einer Sendung unterschiedliche Qualitätsstufen und häufig zusätzlich
 	# eine *.m3u8-Datei.
@@ -458,7 +458,8 @@ def SingleSendung(path, title, thumb, duration, offset=0):	# -> CreateVideoClipO
 		summary="", meta=path, thumb=thumb, duration=duration))		
 	return oc
 ####################################################################################################
-@route('/video/ardmediathek2016/CreateVideoClipObject')	# <- SingleSendung
+# Plex-Warnung: Media part has no streams - attempting to synthesize | keine Auswirkung
+@route('/video/ardmediathek2016/CreateVideoClipObject')	# <- SingleSendung Qualitätsstufen
 def CreateVideoClipObject(url, title, summary, meta, thumb, duration,include_container=False):
   #title = title.encode("utf-8")		# ev. für alle ausgelesenen Details erforderlich
   Log('CreateVideoClipObject')
@@ -503,8 +504,8 @@ def SenderLiveListe(title, offset=0):	#
 	liste = doc.xpath('//channels/channel/items/item')
 	Log(liste)
 
-	# Besonderheit: die Senderliste wir lokal geladen (s.o.). Über den link wird die URL zur  
-	#	*.m3u8 geholt. Nach Anwahl eine Live-Senders erfolgt in SenderLiveResolution die Listung
+	# Besonderheit: die Senderliste wird lokal geladen (s.o.). Über den link wird die URL zur  
+	#	*.m3u8 geholt. Nach Anwahl eines Live-Senders erfolgt in SenderLiveResolution die Listung
 	#	der Auflösungsstufen.
 	#
 	i = 0		# Debug-Zähler
@@ -525,7 +526,13 @@ def SenderLiveListe(title, offset=0):	#
 		img = ""		# Senderlogos lassen wir wg. fehlender Skalierungsmöglichkeit weg
 		Resolution = ""; Codecs = ""; duration = ""
 		i = i +1	
-        # Link zu master.m3u8 erst auf Folgeseite? - Auswertung in SenderLiveResolution       
+		if link.find('rtmp') == 0:				# rtmp-Streaming im Plugin nicht unterstützt
+			title= title + ': rtmp-Streaming hier nicht erlaubt. Bitte Playlist-Eintrag entfernen!'
+			oc.add(DirectoryObject(key=Callback(Main),  title= title,
+				tagline='rtmp-Streaming im Plugin zur Zeit nicht unterstützt', thumb='')) 
+			continue
+
+        # Link zu master.m3u8 erst auf Folgeseite? - SenderLiveResolution reicht an  Parseplaylist durch  
 		oc.add(DirectoryObject(key=Callback(SenderLiveResolution, path=link, title=title, thumb=img),
 			title=title, thumb=img, tagline=''))
 
@@ -547,33 +554,41 @@ def SenderLiveResolution(path, title, thumb, include_container=False):
   return cont
 
 ####################################################################################################
-@route('/video/ardmediathek2016/CreateVideoStreamObject')	#<- LiveListe
+@route('/video/ardmediathek2016/CreateVideoStreamObject')	# <- LiveListe, SingleSendung (nur m3u8-Dateien)
 def CreateVideoStreamObject(url, title, summary, meta, thumb, include_container=False):
   # Zum Problem HTTP Live Streaming (HLS): Redirecting des Video-Callbacks in einen HTTPLiveStreamURL
-  # siehe https://forums.plex.tv/index.php/topic/40532-bug-http-live-streaming-doesnt-work-when-redirected/
+  # s.https://forums.plex.tv/index.php/topic/40532-bug-http-live-streaming-doesnt-work-when-redirected/
+  # s.a. https://forums.plex.tv/discussion/88056/httplivestreamurl
+  # HTTPLiveStreamURL takes the url for an m3u8 playlist as the key argument
   # Ablauf: videoclip_obj -> MediaObject -> PlayVideo
+  # ab 03.04.2016: ohne Redirect - die vorh. Infos reichen bei der Mediathek, auch bei den Live-Sendern
+  #		Redirect wurde von manchen Playern kommentarlos verweigert bzw. führte zum Crash (Logfiles Otto Kerner)  
+  
   # Einstellung im Plex-Web-Client: Direkte Wiedergabe, Direct Stream (Experimenteller Player auf Wunsch)
   #		andernfalls Fehler: HTTP Error 503: Service Unavailable
   #		Aber: keine Auswirkung auf andere Player im Netz
  
-  mo = MediaObject(parts=[PartObject(key=HTTPLiveStreamURL(Callback(PlayVideo, url=url)))]) 
+  mo = MediaObject(parts=[PartObject(key=HTTPLiveStreamURL(url=url))]) 
   rating_key = title
   videoclip_obj = VideoClipObject(
   key = Callback(CreateVideoStreamObject, url=url, title=title, summary=summary,
-	meta=meta, thumb=thumb, include_container=True), rating_key=title,title=title,summary=summary,thumb=thumb)
+  		meta=meta, thumb=thumb, include_container=True), rating_key=title,title=title,summary=summary,thumb=thumb)
   videoclip_obj.add(mo)
 
+  Log(url); Log(title); Log(summary); Log(meta); Log(thumb); 
+  Log(rating_key);  
   if include_container:
 	return ObjectContainer(objects=[videoclip_obj])
   else:
 	return videoclip_obj
-
+  
   return oc
 
 # PlayVideo: .m3u8 wurde in Route als fehlend bemängelt, wird aber als Attribut der Funktion nicht 
-#	akzeptiert - Ursache nicht gefunden
-@route('/video/ardmediathek2016/PlayVideo.m3u8')  
-def PlayVideo(url):  
+#	akzeptiert - Ursache nicht gefunden. 
+#	Routine ab 03.04.2016 entbehrlich - s.o.
+@route('/video/ardmediathek2016/PlayVideo')  
+def PlayVideo(url):  		
 	HTTP.Request(url).content
 	return Redirect(url)
 
