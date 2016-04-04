@@ -541,7 +541,7 @@ def SenderLiveListe(title, offset=0):	#
 			img =  img[0]
 
 		Log(title); Log(link); Log(img); Log(i)
-		img = ""		# Senderlogos lassen wir wg. fehlender Skalierungsmöglichkeit weg
+		#img = ""		# Senderlogos lassen wir wg. fehlender Skalierungsmöglichkeit weg
 		Resolution = ""; Codecs = ""; duration = ""
 		i = i +1	
 		if link.find('rtmp') == 0:				# rtmp-Streaming im Plugin nicht unterstützt

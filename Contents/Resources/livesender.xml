@@ -46,7 +46,7 @@
 	<item>
 		<title>NDR Fernsehen Hamburg</title>
 		<link>http://ndr_fs-lh.akamaihd.net/i/ndrfs_hh@119223/master.m3u8</link>
-		<thumbnail>https://upload.wikimedia.org/wikipedia/de/thumb/4/46/NDR_fernsehen_Logo_2008.svg/100px-NDR_fernsehen_Logo_2008.svg.png</thumbnail>
+		<thumbnail>https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/NDR_Dachmarke.svg/120px-NDR_Dachmarke.svg.png</thumbnail>
 		<genre>TV</genre>
 		<info>ndr_hh</info>
 		<date>08.05.2014</date>
@@ -86,7 +86,7 @@
 	<item>
 		<title>rbb Berlin</title>
 		<link>http://rbb_live-lh.akamaihd.net/i/rbb_berlin@108248/master.m3u8</link>
-		<thumbnail>https://upload.wikimedia.org/wikipedia/de/thumb/e/ee/RBB_Dachmarke.svg/100px-RBB_Dachmarke.svg.png</thumbnail>
+		<thumbnail>https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/RBB_Berlin_Logo.svg/120px-RBB_Berlin_Logo.svg.png</thumbnail>
 		<genre>TV</genre>
 		<info>rbb_ber</info>
 		<date>21.12.2013</date>
@@ -156,7 +156,7 @@
 	<item>
 		<title>Südwestrundfunk</title>
 		<link>http://swrrp-lh.akamaihd.net/i/swrrp_live@196739/master.m3u8</link>
-		<thumbnail>http://upload.wikimedia.org/wikipedia/de/thumb/3/33/SWR-Altes-Logo.svg/100px-SWR-Altes-Logo.svg.png</thumbnail>
+		<thumbnail>https://upload.wikimedia.org/wikipedia/commons/thumb/1/13/Logo_SWR.png/120px-Logo_SWR.png</thumbnail>
 		<genre>TV</genre>
 		<info>swr</info>
 		<date>08.09.2014</date>
