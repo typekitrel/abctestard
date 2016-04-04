@@ -222,7 +222,7 @@ def transl_wtag(tag):	# Wochentage engl./deutsch wg. Problemen mit locale-Settin
 	wt_deutsch = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"]
 	
 	wt_ret = tag
-	for i in range (len(wt_engl) -1):
+	for i in range (len(wt_engl)):
 		el = wt_engl[i]
 		if el == tag:
 			wt_ret = wt_deutsch[i]
