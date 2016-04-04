@@ -9,6 +9,8 @@ import datetime
 import locale
 
 # locale.setlocale(locale.LC_ALL, 'de_DE.UTF-8')	# crasht (Debug-Auszug von Otto Kerner)
+# 	locale-Setting erfolgt im Enviroment des Plex-Servers: Bsp. Environment=LANG=en_US.UTF-8 in
+# 	plexmediaserver.service (OpenSuse 42.1)
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 # 
@@ -205,7 +207,8 @@ def VerpasstWoche(name):	# Wochenliste zeigen
 			iWeekday = 'Heute'	
 		if nr == 1:
 			iWeekday = 'Gestern'	
-		 
+		iWeekday = transl_wtag(iWeekday)
+		Log(iPath); Log(iDate); Log(iWeekday);
 		#title = ("%10s ..... %10s"% (iWeekday, iDate))	 # Formatierung in Plex ohne Wirkung
 		title = iWeekday + ' | ' + iDate	 # Bsp.: Heute........15.05.2015
 		cbKey = 'SinglePage'	# cbKey = Callback für Container in PageControl
@@ -214,6 +217,18 @@ def VerpasstWoche(name):	# Wochenliste zeigen
 					
 	return oc
 
+def transl_wtag(tag):	# Wochentage engl./deutsch wg. Problemen mit locale-Setting 
+	wt_engl = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+	wt_deutsch = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"]
+	
+	wt_ret = tag
+	for i in range (len(wt_engl) -1):
+		el = wt_engl[i]
+		if el == tag:
+			wt_ret = wt_deutsch[i]
+			break
+	return wt_ret
+	
 ####################################################################################################
 @route('/video/ardmediathek2016/PageControl')	# kontrolliert auf Folgeseiten. Mehrfache Verwendung.
 # Wir laden beim 1. Zugriff alle Seitenverweise in eine Liste. Bei den Folgezugriffen können die Seiten
@@ -413,8 +428,12 @@ def SingleSendung(path, title, thumb, duration, offset=0):	# -> CreateVideoClipO
 	# (WDTV-Live OK, VLC-Player auf Nexus7 'schwerwiegenden Fehler'), MXPlayer läuft dagegen
 	if link_m3u8 != '':	  		  								# 
 		title = 'Bandbreite und Auflösung automatisch'
-		oc.add(CreateVideoClipObject(url=link_m3u8, title=title, 
-					summary='funktioniert nicht mit allen Playern', meta=path, thumb=thumb, duration=''))
+		#oc.add(CreateVideoClipObject(url=link_m3u8, title=title, 
+		#			summary='funktioniert nicht mit allen Playern', meta=path, thumb=thumb, duration=''))
+		Codecs = ''
+		oc.add(CreateVideoStreamObject(url=link_m3u8, title=title, 
+			summary='funktioniert nicht mit allen Playern', meta=Codecs, thumb=thumb))
+
 		cont = Parseplaylist(oc, link_m3u8, thumb)	# Einträge für die einzelnen Auflösungen dort zusätzlich zum
 		Log(cont)  									# Eintrag '..automatisch'
 
@@ -426,7 +445,6 @@ def SingleSendung(path, title, thumb, duration, offset=0):	# -> CreateVideoClipO
 	 
 	#description = ...  # bisher nicht verwendet, kein passender key im Videoobjekt
 
-	#if link_m3u8 != '':	# bei vorhandener *.m3u8-Datei könnten wir auf die Quali.-Stufen vezichten
 	href_quality_S 	= ''; href_quality_M 	= ''; href_quality_L 	= ''; href_quality_XL 	= ''
 	for i in range(len(link_path)):
 		s = link_path[i]	# Format: 0|http://mvideos.daserste.de/videoportal/Film/c_610000/611560/format706220.mp4
@@ -544,14 +562,17 @@ def SenderLiveListe(title, offset=0):	#
 #	Die URL der gewählten Auflösung führt zu weiterer m3u8-Datei (*.m3u8), die Links zu den 
 #	Videosegmenten (.ts-Files enthält). Diese  verarbeitet der Plexserver im Videoobject. 
 def SenderLiveResolution(path, title, thumb, include_container=False):
-  oc = ObjectContainer(view_group="InfoList", title1=title + ' Live', art=ICON)
-  page = HTML.ElementFromURL(path)
-  url_m3u8 = path
-  Log(title)
+	oc = ObjectContainer(view_group="InfoList", title1=title + ' Live', art=ICON)
+	page = HTML.ElementFromURL(path)
+	url_m3u8 = path
+	Log(title); Log(url_m3u8);
 
-  cont = Parseplaylist(oc, url_m3u8, thumb)	# Auswertung *.m3u8-Datei
+	Codecs = ''										# 1. Eintrag (wie SingleSendung bei m3u8-Dateien)
+	oc.add(CreateVideoStreamObject(url=url_m3u8, title=title + ' | Bandbreite und Auflösung automatisch', 
+		summary='funktioniert nicht mit allen Playern', meta=Codecs, thumb=thumb))
+	cont = Parseplaylist(oc, url_m3u8, thumb)	# Auswertung *.m3u8-Datei
 
-  return cont
+	return cont
 
 ####################################################################################################
 @route('/video/ardmediathek2016/CreateVideoStreamObject')	# <- LiveListe, SingleSendung (nur m3u8-Dateien)
@@ -595,6 +616,7 @@ def PlayVideo(url):
 ####################################################################################################
 #									Hilfsroutinen
 def Parseplaylist(container, url_m3u8, thumb):		# master.m3u8 auswerten, Url muss komplett sein
+#													# container muss nicht leer ein (siehe SingleSendung)
 #  1. Besonderheit: in manchen *.m3u8-Dateien sind die Pfade nicht vollständig,
 #	sondern nur als Ergänzung zum Pfadrumpf (ohne Namen + Extension) angegeben, Bsp. (Arte):
 #	delive/delive_925.m3u8, url_m3u8 = http://delive.artestras.cshls.lldns.net/artestras/contrib/delive.m3u8
