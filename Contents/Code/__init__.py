@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 #import lxml.html  	# hier für Konvertierungen - Funktionen von Plex nicht akzeptiert
-#import re
-#import requests		# u.a. Einlesen HTML-Seite, Methode außerhalb Plex-Framework 
+#import requests	# u.a. Einlesen HTML-Seite, Methode außerhalb Plex-Framework 
 import string
 import os 			# u.a. Behandlung von Pfadnamen
 import re			# u.a. Reguläre Ausdrücke in CalculateDuration
@@ -14,16 +13,17 @@ import locale
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 # 
-# Version 1,0	Stand 03.04.2016
+# Version 1,2	Stand 27.04.2016
 #
 # (c) 2016 by Roland Scholz, rols1@gmx.de 
 #     Testing Enviroment: 
-#		PC: Intel CoreTM2 Duo, 3 GB RAM, 2 GHz
-#		Linux openSUSE 42.1 und Plex-Server 0.9.14.6
+#		PC: Fujitsu Esprimo E900 8 GB RAM, 3,4 GHz
+#		Linux openSUSE 42.1 und Plex-Server 0.9.16.4
 #		Tablet Nexus 7, Android 5.1.1,
+#		Web-Player: Google-Chrome (alles OK), Firefox (alles OK, Flash-Plugin erforderlich)
 #		Videoplayer-Apps: VLC-Player, MXPlayer
-#		Streaming-Apps: BubbleUPnP, AllConnect (keine m3u8-Videos)
-# 		Media Player at TV: WD TV Live HD, WDAAP0000NBK (2012)
+#		Streaming-Apps: BubbleUPnP (alle Funktionen OK), AllConnect (keine m3u8-Videos)
+# 		Media Player at TV: WD TV Live HD, WDAAP0000NBK, 2012 (nicht alle Auflösungsstufen unterstützt)
 #
 # 
 # Licensed under the GPL, Version 3.0 (the "License");
@@ -383,7 +383,6 @@ def SinglePage(title, path, next_cbKey, offset=0):	# path komplett
 	Log(len(oc))	# Anzahl Einträge					
 	return oc
 
-# todo 	send_date, sendtime, Reihenfolge Einträge (Nexus)
 					 		
 ####################################################################################################
 @route('/video/ardmediathek2016/SingleSendung')	# einzelne Sendung, path in neuer Mediathekführt zur 
@@ -477,10 +476,14 @@ def SingleSendung(path, title, thumb, duration, offset=0):	# -> CreateVideoClipO
 	return oc
 ####################################################################################################
 # Plex-Warnung: Media part has no streams - attempting to synthesize | keine Auswirkung
+# **kwargs erforderlich bei Fehler: CreateVideoClipObject() got an unexpected keyword argument 'checkFiles'
+#	beobachtet bei Firefox (Suse Leap) + Chrome (Windows7)
+#	s.a. https://github.com/sander1/channelpear.bundle/tree/8605fc778a2d46243bb0378b0ab40a205c408da4
 @route('/video/ardmediathek2016/CreateVideoClipObject')	# <- SingleSendung Qualitätsstufen
-def CreateVideoClipObject(url, title, summary, meta, thumb, duration,include_container=False):
+def CreateVideoClipObject(url, title, summary, meta, thumb, duration,include_container=False, **kwargs):
   #title = title.encode("utf-8")		# ev. für alle ausgelesenen Details erforderlich
   Log('CreateVideoClipObject')
+  Log(url)
  
   videoclip_obj = VideoClipObject(
   key = Callback(CreateVideoClipObject, url=url, title=title, summary=summary,
@@ -494,7 +497,9 @@ def CreateVideoClipObject(url, title, summary, meta, thumb, duration,include_con
 			parts = [
 				PartObject(key=url)
 			],
-			container = Container.MP4,  # keine Video-Details ergänzen
+			container = Container.MP4,  	# weitere Video-Details für Chrome nicht erf., aber Firefox 
+			video_codec = VideoCodec.H264,	# benötigt VideoCodec + AudioCodec zur Audiowiedergabe
+			audio_codec = AudioCodec.AAC,	# 
 		)
 	])
 
@@ -508,19 +513,17 @@ def CreateVideoClipObject(url, title, summary, meta, thumb, duration,include_con
 def SenderLiveListe(title, offset=0):	# 
 	# SenderLiveListe -> SenderLiveResolution (reicht nur durch) -> Parseplaylist (Ausw. m3u8)
 	#	-> CreateVideoStreamObject 
-
-	# Bsp.:
-	#link = 'http://zdf0910-lh.akamaihd.net/z/de09_v1@392871/manifest.f4m'		# org
-	#link = 'http://zdf0910-lh.akamaihd.net/i/de09_v1@392871/master.m3u8'		# streamingliste
-	#img = 'http://www.ardmediathek.de/image/00/31/17/30/88/2121327408/16x9/960'	
+	Log.Debug('SenderLiveListe')
 
 	oc = ObjectContainer(view_group="InfoList", title1='Live-Sender', title2=title, art = ICON)
 	playlist = Resource.Load(PLAYLIST)	# lokale XML-Datei (Pluginverz./Resources)
-	#Log(playlist)
+	#Log(playlist)	#
 
-	doc = XML.ElementFromString(playlist)
+	#doc = XML.ElementFromString(playlist)		# schlägt bei Zeichen & in Url's fehl
+	doc = HTML.ElementFromString(playlist)		# unterschlägt </link>
+	
 	liste = doc.xpath('//channels/channel/items/item')
-	Log(liste)
+	#Log(liste)
 
 	# Besonderheit: die Senderliste wird lokal geladen (s.o.). Über den link wird die URL zur  
 	#	*.m3u8 geholt. Nach Anwahl eines Live-Senders erfolgt in SenderLiveResolution die Listung
@@ -528,27 +531,28 @@ def SenderLiveListe(title, offset=0):	#
 	#
 	i = 0		# Debug-Zähler
 	for element in liste:
-		#Log(XML.StringFromElement(element))	
-		title = element.xpath("./title/text()")	
-		link =  element.xpath("./link/text()")		# ergibt Listenelement, anders als der Rest
-		img =  element.xpath("./thumbnail/text()")
-
-		if title:
-			title = title[0]
-		if link:
-			link =  link[0]
-		if img:
-			img =  img[0]
+		Log(HTML.StringFromElement(element))		# Ergebnis wie XMML.StringFromElement
+		#title = element.xpath("./title/text()")	# xpath arbeitet fehlerhaft bei Sonderzeichen (z.B. in URL)
+		#link =  element.xpath("./link/text()")		
+		element_str = HTML.StringFromElement(element)
+		link = stringextract('<link>', '<thumbnail>', element_str) 	# HTML.StringFromElement unterschlägt </link>
+		link = link.strip()							# \r + Leerz. am Ende entfernen
+		#link = link.replace('amp;', len(link))		# replace verweigert solche Strings, daher -> 	repl_char
+		link = repl_char('amp;',link)				# amp; entfernen! Herkunft: HTML.ElementFromString bei &-Zeichen
+		Log(link)
+									
+		title = stringextract('<title>', '</title>', element_str)
+		title = transl_umlaute(title)	# DirectoryObject verträgt keine Umlaute
+		
+		
+		img = stringextract('<thumbnail>', '</thumbnail>', element_str) 
+		Log(link); Log(title); Log(img);
 
 		Log(title); Log(link); Log(img); Log(i)
 		#img = ""		# Senderlogos lassen wir wg. fehlender Skalierungsmöglichkeit weg
 		Resolution = ""; Codecs = ""; duration = ""
 		i = i +1	
-		if link.find('rtmp') == 0:				# rtmp-Streaming im Plugin nicht unterstützt
-			title= title + ': rtmp-Streaming hier nicht erlaubt. Bitte Playlist-Eintrag entfernen!'
-			oc.add(DirectoryObject(key=Callback(Main),  title= title,
-				tagline='rtmp-Streaming im Plugin zur Zeit nicht unterstützt', thumb='')) 
-			continue
+		#if link.find('rtmp') == 0:				# rtmp-Streaming s. CreateVideoStreamObject
 
         # Link zu master.m3u8 erst auf Folgeseite? - SenderLiveResolution reicht an  Parseplaylist durch  
 		oc.add(DirectoryObject(key=Callback(SenderLiveResolution, path=link, title=title, thumb=img),
@@ -562,48 +566,118 @@ def SenderLiveListe(title, offset=0):	#
 #	Die URL der gewählten Auflösung führt zu weiterer m3u8-Datei (*.m3u8), die Links zu den 
 #	Videosegmenten (.ts-Files enthält). Diese  verarbeitet der Plexserver im Videoobject. 
 def SenderLiveResolution(path, title, thumb, include_container=False):
-	oc = ObjectContainer(view_group="InfoList", title1=title + ' Live', art=ICON)
-	page = HTML.ElementFromURL(path)
+	#oc = ObjectContainer(view_group="InfoList", title1=title + ' Live', art=ICON)
+	#page = HTML.ElementFromURL(path)
 	url_m3u8 = path
 	Log(title); Log(url_m3u8);
 
-	Codecs = ''										# 1. Eintrag (wie SingleSendung bei m3u8-Dateien)
+	oc = ObjectContainer(view_group="InfoList", title1=title + ' Live', art=ICON)
+	Codecs = ''										
+	if title.find('Arte') >= 0:
+		Log('Arte-Stream gefunden')			
+		oc = Arteplaylist(oc, url_m3u8, title, thumb)	# Auswertung Arte-Parameter rtmp- + hls-streaming
+		Log(len(oc))
+		return oc
+		
+	if url_m3u8.find('rtmp') == 0:		# hier noch flash-Infos auswerten
+		oc.add(CreateVideoStreamObject(url=url_m3u8, title=title, 
+			summary='', meta=Codecs, thumb=thumb))
+		return oc
+		
+	# alle übrigen (i.d.R. http-Links)
 	oc.add(CreateVideoStreamObject(url=url_m3u8, title=title + ' | Bandbreite und Auflösung automatisch', 
 		summary='funktioniert nicht mit allen Playern', meta=Codecs, thumb=thumb))
-	cont = Parseplaylist(oc, url_m3u8, thumb)	# Auswertung *.m3u8-Datei
-
-	return cont
+	# Auslösungsstufen (bei relativen Pfaden nutzlos):
+	oc = Parseplaylist(oc, url_m3u8, thumb)	# Auswertung *.m3u8-Datei, Auffüllung Container mit Auflösungen
+	return oc								# (-> CreateVideoStreamObject pro Auflösungstufe)
 
 ####################################################################################################
+# Die unter  https://api.arte.tv/api/player/v1/livestream/de?autostart=1 ausgelieferte Textdatei
+# 	enthält je 2 rtmp-Url und 2 hls-Url
+@route('/video/ardmediathek2016/Arteplaylist')	# Auswertung Arte-Parameter rtmp- + hls-streaming
+def Arteplaylist(oc, url, title, thumb):
+	Log('Arteplaylist')
+	playlist = HTTP.Request(url).content  # als Text, nicht als HTML-Element
+	#rtmp1_list = playlist.split("RTMP_EQ_1")
+	rtmp1_list = stringextract('\"RTMP_EQ_1\":', '\"RTMP_EQ_2\":', playlist) # orig.: "HLS_EQ_1":
+	rtmp2_list = stringextract('\"RTMP_EQ_2\":', '\"HLS_EQ_1\":', playlist)
+	hls1_list = stringextract('\"HLS_EQ_1\":', '\"HLS_EQ_2\":', playlist)
+	hls2_list = stringextract('\"HLS_EQ_2\":', '\"tracking\":', playlist) 
+	Log(rtmp1_list)
+	
+	r1 = stringextract('\"streamer\": \"', '\",',  rtmp1_list)  # rtmp-Url verteilt auf 2 Zeilen
+	r2 = stringextract('\"url\": \"', '\",',  rtmp1_list)
+	rtmp1_url = r1 + r2 
+	rtmp1_url = repl_char('\\', rtmp1_url)	# Quotierung für Slashes entfernen
+	
+	r1 = stringextract('\"streamer\": \"', '\",',  rtmp2_list)  # 2. rtmp-Url
+	r2 = stringextract('\"url\": \"', '\",',  rtmp2_list)
+	rtmp2_url = r1 + r2 
+	rtmp2_url = repl_char('\\', rtmp2_url)	# Quotierung für Slashes entfernen
+	
+	r1 = stringextract('\"url\": \"', '\",',  hls1_list)  # hls-Url nur in 1 Zeile (m3u8-Url)
+	r2 = stringextract('\"url\": \"', '\",',  hls2_list)  # hls-Url nur in 1 Zeile (m3u8-Url)
+	hls1_url = repl_char('\\', r1)	# Quotierung für Slashes entfernen
+	hls2_url = repl_char('\\', r2)		
+	
+	oc.add(CreateVideoStreamObject(url=rtmp1_url, title=title + ' (de) | rtmp', 
+		summary='RTMP-Streaming deutsch', meta='', thumb=thumb))
+	oc.add(CreateVideoStreamObject(url=rtmp2_url, title=title + ' (fr) | rtmp', 
+		summary='RTMP-Streaming französisch', meta='', thumb=thumb))
+	oc.add(CreateVideoStreamObject(url=hls1_url, title=title + ' (de) | http', 
+		summary='HLS-Streaming deutsch', meta='', thumb=thumb))
+	oc.add(CreateVideoStreamObject(url=hls2_url, title=title + ' (fr) | http', 
+		summary='HLS-Streaming französisch', meta='', thumb=thumb))
+	
+	Log(rtmp1_url); Log(rtmp2_url); Log(hls1_url); Log(hls2_url); Log(len(oc))
+	return oc
+
+####################################################################################################
+# **kwargs - s. CreateVideoClipObject
 @route('/video/ardmediathek2016/CreateVideoStreamObject')	# <- LiveListe, SingleSendung (nur m3u8-Dateien)
-def CreateVideoStreamObject(url, title, summary, meta, thumb, include_container=False):
+def CreateVideoStreamObject(url, title, summary, meta, thumb, include_container=False, **kwargs):
   # Zum Problem HTTP Live Streaming (HLS): Redirecting des Video-Callbacks in einen HTTPLiveStreamURL
   # s.https://forums.plex.tv/index.php/topic/40532-bug-http-live-streaming-doesnt-work-when-redirected/
   # s.a. https://forums.plex.tv/discussion/88056/httplivestreamurl
   # HTTPLiveStreamURL takes the url for an m3u8 playlist as the key argument
   # Ablauf: videoclip_obj -> MediaObject -> PlayVideo
+  # HTTPLiveStreamURL: für m3u8-Links, Metadaten (container, codec,..) werden nicht gesetzt
   # ab 03.04.2016: ohne Redirect - die vorh. Infos reichen bei der Mediathek, auch bei den Live-Sendern
   #		Redirect wurde von manchen Playern kommentarlos verweigert bzw. führte zum Crash (Logfiles Otto Kerner)  
   
   # Einstellung im Plex-Web-Client: Direkte Wiedergabe, Direct Stream (Experimenteller Player auf Wunsch)
   #		andernfalls Fehler: HTTP Error 503: Service Unavailable
   #		Aber: keine Auswirkung auf andere Player im Netz
- 
-  mo = MediaObject(parts=[PartObject(key=HTTPLiveStreamURL(url=url))]) 
-  rating_key = title
-  videoclip_obj = VideoClipObject(
-  key = Callback(CreateVideoStreamObject, url=url, title=title, summary=summary,
-  		meta=meta, thumb=thumb, include_container=True), rating_key=title,title=title,summary=summary,thumb=thumb)
-  videoclip_obj.add(mo)
-
-  Log(url); Log(title); Log(summary); Log(meta); Log(thumb); 
-  Log(rating_key);  
-  if include_container:
-	return ObjectContainer(objects=[videoclip_obj])
-  else:
-	return videoclip_obj
   
-  return oc
+  
+	if url.find('rtmp:') >= 0:	# rtmp = Protokoll für flash, rtmpdump ermittelt Quellen
+		mo = MediaObject(parts=[PartObject(key=RTMPVideoURL(url=url,live=True))]) # DAF (mit live-Param., NRW.TV OK
+		rating_key = title
+		videoclip_obj = VideoClipObject(
+		key = Callback(CreateVideoStreamObject, url=url, title=title, summary=summary, 
+			meta=meta, thumb=thumb, include_container=True), 
+			rating_key=title,title=title,summary=summary,thumb=thumb,)   # live=True nicht aktzeptiert
+
+	else:
+		# Auslösungsstufen weglassen? (bei relativen Pfaden nutzlos) 
+		# Auflösungsstufen - s. SenderLiveResolution -> Parseplaylist
+		mo = MediaObject(parts=[PartObject(key=HTTPLiveStreamURL(url=url))]) #
+		rating_key = title
+		videoclip_obj = VideoClipObject(
+		key = Callback(CreateVideoStreamObject, url=url, title=title, summary=summary,
+			meta=meta, thumb=thumb, include_container=True), 
+			rating_key=title,title=title,summary=summary,thumb=thumb)
+			
+	videoclip_obj.add(mo)
+
+	Log(url); Log(title); Log(summary); Log(meta); Log(thumb); 
+	Log(rating_key);  
+	if include_container:
+		return ObjectContainer(objects=[videoclip_obj])
+	else:
+		return videoclip_obj
+
+	return oc
 
 # PlayVideo: .m3u8 wurde in Route als fehlend bemängelt, wird aber als Attribut der Funktion nicht 
 #	akzeptiert - Ursache nicht gefunden. 
@@ -631,7 +705,7 @@ def Parseplaylist(container, url_m3u8, thumb):		# master.m3u8 auswerten, Url mus
   Log(url_m3u8)
   playlist = HTTP.Request(url_m3u8).content  # als Text, nicht als HTML-Element
   lines = playlist.splitlines()
-  # Log(lines)
+  #Log(lines)
   lines.pop(0)		# 1. Zeile entfernen (#EXTM3U)
   BandwithOld = ''	# für Zwilling -Test (manchmal 2 URL für 1 Bandbreite + Auflösung) 
   i = 0
@@ -642,23 +716,30 @@ def Parseplaylist(container, url_m3u8, thumb):		# master.m3u8 auswerten, Url mus
 	if line.startswith('#EXT-X-STREAM-INF'):# tatsächlich m3u8-Datei?
 		url = lines[i + 1].strip()	# URL in nächster Zeile
 		Log(url)
-		if url.startswith('http://'):   # wir akzeptieren nur komplette Pfade (s.o.)
-			Bandwith = GetAttribute(line, 'BANDWIDTH')
-			Resolution = GetAttribute(line, 'RESOLUTION')
-			if Resolution:	# fehlt manchmal (bei kleinsten Bandbreiten)
-				Resolution = 'Auflösung ' + Resolution
-			else:
-				Resolution = 'Auflösung unbekannt'	# verm. nur Ton? CODECS="mp4a.40.2"
-			Codecs = GetAttribute(line, 'CODECS')
-			# als Titel wird die  < angezeigt (Sender ist als thumb erkennbar)
-			if int(Bandwith) >  64000: 	# < 64000 vermutl. nur Audio, als Video keine Wiedergabe 
-				title='Bandbreite ' + Bandwith
-				if Bandwith == BandwithOld:	# Zwilling -Test
-					title = 'Bandbreite ' + Bandwith + ' (2. Alternative)'
-				Log(url); Log(title); Log(thumb); 
-				container.add(CreateVideoStreamObject(url=url, title=title, 
-					summary=Resolution, meta=Codecs, thumb=thumb))
-				BandwithOld = Bandwith
+
+		Bandwith = GetAttribute(line, 'BANDWIDTH')
+		Resolution = GetAttribute(line, 'RESOLUTION')
+		if Resolution:	# fehlt manchmal (bei kleinsten Bandbreiten)
+			Resolution = 'Auflösung ' + Resolution
+		else:
+			Resolution = 'Auflösung unbekannt'	# verm. nur Ton? CODECS="mp4a.40.2"
+		Codecs = GetAttribute(line, 'CODECS')
+		# als Titel wird die  < angezeigt (Sender ist als thumb erkennbar)
+		if int(Bandwith) >  64000: 	# < 64000 vermutl. nur Audio, als Video keine Wiedergabe 
+			title='Bandbreite ' + Bandwith
+			if url.find('#') >= 0:	# Bsp. saarl. Rundf.: Kennzeichnung für abgeschalteten Link
+				Resolution = 'zur Zeit nicht verfügbar!'
+			if Bandwith == BandwithOld:	# Zwilling -Test
+				title = 'Bandbreite ' + Bandwith + ' (2. Alternative)'
+			if url.startswith('http://') == False:   	# relativer Pfad? 
+				pos = url_m3u8.rfind('/')				# m3u8-Dateinamen abschneiden
+				url = url_m3u8[0:pos+1] + url 			# Basispfad + relativer Pfad
+				
+			Log(url); Log(title); Log(thumb); 
+			container.add(CreateVideoStreamObject(url=url, title=title, 
+				summary=Resolution, meta=Codecs, thumb=thumb))
+			BandwithOld = Bandwith
+				
   	i = i + 1	# Index für URL
   #Log (len(container))	# Anzahl Elemente
   if len(container) == 0:	# Fehler, zurück zum Hauptmenü
@@ -794,15 +875,17 @@ def CalculateDuration(timecode):	# Übergabeform: 05:12, Zeit in Millisekunden w
   milliseconds += seconds * 1000		
   return milliseconds
 #----------------------------------------------------------------  
-def stringextract(mFirstChar, mSecondChar, mString):  # extrahiert Zeichenkette zwischen 1. + 2. Zeichen
+def stringextract(mFirstChar, mSecondChar, mString):  # extrahiert Zeichenkette zwischen 1. + 2. Zeichenkette
 	pos1 = mString.find(mFirstChar)
-	pos2 = mString.find(mSecondChar, pos1+1)
+	ind = len(mFirstChar)
+	pos2 = mString.find(mSecondChar, pos1 + ind+1)
 	rString = "leer"
 
-	if pos1 & pos2:
-		rString = mString[pos1+1:pos2]	# extrahieren 
+	if pos1 and pos2:
+		rString = mString[pos1+ind:pos2]	# extrahieren 
 		
-	#print pos1; print pos2; print rString
+	#Log(mString); Log(mFirstChar); Log(mSecondChar); 
+	#Log(pos1); Log(ind); Log(pos2);  Log(rString); 
 	return rString
 #----------------------------------------------------------------  
 def teilstring(zeile, startmarker, endmarker):  # in init ändern!
@@ -818,17 +901,33 @@ def teilstring(zeile, startmarker, endmarker):  # in init ändern!
   #Log(pos1) Log(pos2) Log(len(href)) Log(href)
   return teils
 #----------------------------------------------------------------  
-def repl_dop(liste):	# im Python-Script OK, Problem in Plex - s. PageControl
+def repl_dop(liste):	# Doppler entfernen, im Python-Script OK, Problem in Plex - s. PageControl
 	mylist=liste
 	myset=set(mylist)
 	mylist=list(myset)
 	mylist.sort()
 	return mylist
-  
-
-
-
-
+#----------------------------------------------------------------  
+def transl_umlaute(line):	# Umlaute übersetzen, wenn decode nicht funktioniert
+	line_ret = line
+	line_ret = line_ret.replace("Ä", "Ae", len(line_ret))
+	line_ret = line_ret.replace("ä", "ae", len(line_ret))
+	line_ret = line_ret.replace("Ü", "Ue", len(line_ret))
+	line_ret = line_ret.replace('ü', 'ue', len(line_ret))
+	line_ret = line_ret.replace("Ö", "Oe", len(line_ret))
+	line_ret = line_ret.replace("ß", "ss", len(line_ret))	
+	return line_ret
+#----------------------------------------------------------------  
+def repl_char(cut_char, line):	# problematische Zeichen in Text entfernen, wenn replace nicht funktioniert
+	line_ret = line	
+	pos = line_ret.find(cut_char)
+	while pos > 0:
+		line_l = line_ret[0:pos]
+		line_r = line_ret[pos+len(cut_char):]
+		line_ret = line_l + line_r
+		pos = line_ret.find(cut_char)
+		#Log(cut_char); Log(pos); Log(line_l); Log(line_r); Log(line_ret)		
+	return line_ret
 
 
 
