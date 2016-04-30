@@ -8,63 +8,12 @@
   <date>27.03.2016</date>
   <credits>Gammel</credits>
  </channels_info>
+ 
 <channel>
 <name>ARD</name>
 <thumbnail>https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/ARD_logo.svg/100px-ARD_logo.svg.png</thumbnail>
 <fanart></fanart>
 <items>
-	<item>
-		<title>NRW.TV</title>
-		<oldlink>http://streaming001.broadcast.tneg.de/nrwtv/nrwtv.stream</oldlink>
-		<link>http://streaming006.broadcast.tneg.de:1935/nrwtv-new/_definst_/smil:nrw.smil/playlist.m3u8</link>
-		<thumbnail>http://nrw.tv/wp-content/uploads/2015/07/nrwtv-logo-claim-header.png</thumbnail>
-		<genre>TV</genre>
-		<info>nrw_tv</info>
-		<date>01.10.2014</date>
-		<epg></epg>
-		<fanart></fanart>
-	</item>
-	<item>
-		<title>Joiz</title>
-		<link>http://ooyalahd2-f.akamaihd.net/i/joizgerm01_delivery@324125/index_2528_av-p.m3u8</link>
-		<thumbnail>http://upload.wikimedia.org/wikipedia/commons/thumb/1/13/JOIZ_black.svg/250px-JOIZ_black.svg.png</thumbnail>
-		<genre>TV</genre>
-		<info>joiz</info>
-		<date>08.10.2014</date>
-		<epg></epg>
-		<fanart>http://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Joiz_studio.jpg/1280px-Joiz_studio.jpg</fanart>
-	</item>
-	<item>
-		<title>DAF</title>
-		<link>rtmp://fms.daf.tmt.de/live/flv:dafstream100</link>
-		<thumbnail>http://upload.wikimedia.org/wikipedia/commons/thumb/1/16/Logo_DAF_2013.svg/200px-Logo_DAF_2013.svg.png</thumbnail>
-		<l1ink>rtmp://fms.daf.tmt.de/live/ playpath=dafstream100 swfurl=http://partner.anleger-fernsehen.de/20/ext_content/jwplayer.flash.swf pageUrl=http://partner.anleger-fernsehen.de/20/live.php live=true timeout=15</l1ink>
-		<genre>TV</genre>
-		<info>DAF</info>
-		<date>25.02.2015</date>
-		<epg></epg>
-		<fanart>http://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/Deutsche-boerse-parkett-ffm001.jpg/1280px-Deutsche-boerse-parkett-ffm001.jpg</fanart>
-	</item>
-	<item>
-		<title>N24</title>
-		<link>http://n24-live.hls.adaptive.level3.net/hls-live/n24-pssimn24live/_definst_/live.m3u8</link>
-		<thumbnail>http://upload.wikimedia.org/wikipedia/commons/thumb/2/20/N24_logo.svg/500px-N24_logo.svg.png</thumbnail>
-		<genre>TV</genre>
-		<info>n24</info>
-		<date>13.03.2015</date>
-		<epg></epg>
-		<fanart></fanart>
-	</item>
-	<item>
-		<title>n-tv</title>
-		<link>http://p.live.fra.n-tv.de/playlists/ntvlive.m3u8</link>
-		<thumbnail>https://upload.wikimedia.org/wikipedia/de/thumb/1/16/N-tv_Logo_2011.svg/320px-N-tv_Logo_2011.svg.png</thumbnail>
-		<genre>TV</genre>
-		<info>n24</info>
-		<date>13.03.2015</date>
-		<epg></epg>
-		<fanart></fanart>
-	</item>
 	<item>
 		<title>Das Erste</title>
 		<link>http://daserste_live-lh.akamaihd.net/i/daserste_de@91204/master.m3u8</link>
@@ -323,6 +272,66 @@
 		<date>31.07.2014</date>
 		<epg></epg>
 		<fanart>http://upload.wikimedia.org/wikipedia/commons/thumb/4/47/2011_Arte_Strasbourg.JPG/1280px-2011_Arte_Strasbourg.JPG</fanart>
+	</item>
+</items>
+</channel>
+
+<channel>
+<name>Sonstige</name>
+<thumbnail>http://upload.wikimedia.org/wikipedia/commons/0/05/Effelsberg_total2.jpg</thumbnail>
+<fanart>http://upload.wikimedia.org/wikipedia/commons/c/cd/Arecibo_Observatory_Aerial_View.jpg</fanart>
+<items>
+	<item>
+		<title>NRW.TV</title>
+		<oldlink>http://streaming001.broadcast.tneg.de/nrwtv/nrwtv.stream</oldlink>
+		<link>http://streaming006.broadcast.tneg.de:1935/nrwtv-new/_definst_/smil:nrw.smil/playlist.m3u8</link>
+		<thumbnail>http://nrw.tv/wp-content/uploads/2015/07/nrwtv-logo-claim-header.png</thumbnail>
+		<genre>TV</genre>
+		<info>nrw_tv</info>
+		<date>01.10.2014</date>
+		<epg></epg>
+		<fanart></fanart>
+	</item>
+	<item>
+		<title>Joiz</title>
+		<link>http://ooyalahd2-f.akamaihd.net/i/joizgerm01_delivery@324125/index_2528_av-p.m3u8</link>
+		<thumbnail>http://upload.wikimedia.org/wikipedia/commons/thumb/1/13/JOIZ_black.svg/250px-JOIZ_black.svg.png</thumbnail>
+		<genre>TV</genre>
+		<info>joiz</info>
+		<date>08.10.2014</date>
+		<epg></epg>
+		<fanart>http://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Joiz_studio.jpg/1280px-Joiz_studio.jpg</fanart>
+	</item>
+	<item>
+		<title>DAF</title>
+		<link>rtmp://fms.daf.tmt.de/live/flv:dafstream100</link>
+		<thumbnail>http://upload.wikimedia.org/wikipedia/commons/thumb/1/16/Logo_DAF_2013.svg/200px-Logo_DAF_2013.svg.png</thumbnail>
+		<l1ink>rtmp://fms.daf.tmt.de/live/ playpath=dafstream100 swfurl=http://partner.anleger-fernsehen.de/20/ext_content/jwplayer.flash.swf pageUrl=http://partner.anleger-fernsehen.de/20/live.php live=true timeout=15</l1ink>
+		<genre>TV</genre>
+		<info>DAF</info>
+		<date>25.02.2015</date>
+		<epg></epg>
+		<fanart>http://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/Deutsche-boerse-parkett-ffm001.jpg/1280px-Deutsche-boerse-parkett-ffm001.jpg</fanart>
+	</item>
+	<item>
+		<title>N24</title>
+		<link>http://n24-live.hls.adaptive.level3.net/hls-live/n24-pssimn24live/_definst_/live.m3u8</link>
+		<thumbnail>http://upload.wikimedia.org/wikipedia/commons/thumb/2/20/N24_logo.svg/500px-N24_logo.svg.png</thumbnail>
+		<genre>TV</genre>
+		<info>n24</info>
+		<date>13.03.2015</date>
+		<epg></epg>
+		<fanart></fanart>
+	</item>
+	<item>
+		<title>n-tv</title>
+		<link>http://p.live.fra.n-tv.de/playlists/ntvlive.m3u8</link>
+		<thumbnail>https://upload.wikimedia.org/wikipedia/de/thumb/1/16/N-tv_Logo_2011.svg/320px-N-tv_Logo_2011.svg.png</thumbnail>
+		<genre>TV</genre>
+		<info>n24</info>
+		<date>13.03.2015</date>
+		<epg></epg>
+		<fanart></fanart>
 	</item>
 </items>
 </channel>

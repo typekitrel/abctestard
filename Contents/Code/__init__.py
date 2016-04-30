@@ -13,7 +13,7 @@ import locale
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 # 
-# Version 1,2	Stand 27.04.2016
+# Version 1.3	Stand 30.04.2016
 #
 # (c) 2016 by Roland Scholz, rols1@gmx.de 
 #     Testing Enviroment: 
@@ -105,21 +105,20 @@ def Start():
 # handler bindet an das bundle
 @handler('/video/ardmediathek2016', NAME, art = ART, thumb = ICON)
 def Main():
-    oc = ObjectContainer(view_group="List", art=ObjectContainer.art)	
-    # folgendes DirectoryObject ist Deko für das nicht sichtbare InputDirectoryObject dahinter:
-    oc.add(DirectoryObject(key=Callback(Main),title='Suche: im Suchfeld eingeben', summary='', tagline='TV'))
-    oc.add(InputDirectoryObject(key=Callback(Search, s_type='video', title=u'%s' % L('Search Video')),
-     	title=u'%s' % L('Search'), prompt=u'%s' % L('Search Video'), thumb=SICON))
-    oc.add(DirectoryObject(key=Callback(VerpasstWoche, name="Sendung Verpasst"), title="Sendung Verpasst (1 Woche)",
-    	summary='', tagline='TV'))
-    oc.add(DirectoryObject(key=Callback(SendungenAZ, name='Sendungen 0-9 | A-Z'), title='Sendungen A-Z',
-    	summary='', tagline='TV'))   
-    path = BASE_URL + ARD_Live	
-    oc.add(DirectoryObject(key=Callback(SenderLiveListe, title='Live-Sender'), title='Live-Sender',
-    	summary='', tagline='TV'))   
-      
-#   Log('Funktion Main')
-    return oc
+	Log('Funktion Main')
+	oc = ObjectContainer(view_group="List", art=ObjectContainer.art)	
+	# folgendes DirectoryObject ist Deko für das nicht sichtbare InputDirectoryObject dahinter:
+	oc.add(DirectoryObject(key=Callback(Main),title='Suche: im Suchfeld eingeben', summary='', tagline='TV'))
+	oc.add(InputDirectoryObject(key=Callback(Search, s_type='video', title=u'%s' % L('Search Video')),
+		title=u'%s' % L('Search'), prompt=u'%s' % L('Search Video'), thumb=SICON))
+	oc.add(DirectoryObject(key=Callback(VerpasstWoche, name="Sendung Verpasst"), title="Sendung Verpasst (1 Woche)",
+		summary='', tagline='TV'))
+	oc.add(DirectoryObject(key=Callback(SendungenAZ, name='Sendungen 0-9 | A-Z'), title='Sendungen A-Z',
+		summary='', tagline='TV'))
+	oc.add(DirectoryObject(key=Callback(SenderLiveListePre, title='Live-Sender-Vorauswahl'), title='Live-Sender-Vorauswahl',
+		summary='', tagline='TV', thumb=ICON))
+
+	return oc
 
 #----------------------------------------------------------------  
 
@@ -509,21 +508,49 @@ def CreateVideoClipObject(url, title, summary, meta, thumb, duration,include_con
 	return videoclip_obj
 	
 #####################################################################################################
+@route('/video/ardmediathek2016/SenderLiveListePre')	# LiveListe Vorauswahl - verwendet lokale Playlist
+def SenderLiveListePre(title, offset=0):	# Vorauswahl: ARD, ZDF, Sonstige
+	Log.Debug('SenderLiveListePre')
+	playlist = Resource.Load(PLAYLIST)	# lokale XML-Datei (Pluginverz./Resources)
+	#Log(playlist)	#
+
+	oc = ObjectContainer(view_group="InfoList", title1='Live-Sender-Vorauswahl', title2=title, art = ICON)
+	doc = HTML.ElementFromString(playlist)		# unterschlägt </link>	
+	liste = doc.xpath('//channels/channel')
+	Log(liste)
+	
+	for element in liste:
+		element_str = HTML.StringFromElement(element)
+		name = stringextract('<name>', '</name>', element_str)
+		img = stringextract('<thumbnail>', '</thumbnail>', element_str) 
+		Log(element_str); Log(name); Log(img);
+		oc.add(DirectoryObject(key=Callback(SenderLiveListe, title=name, listname=name),
+			title='Live-Sender: ' + name, thumb=img, tagline=''))
+			
+	return oc
+#-----------------------------------------------------------------------------------------------------
 @route('/video/ardmediathek2016/SenderLiveListe')	# LiveListe - verwendet lokale Playlist
-def SenderLiveListe(title, offset=0):	# 
+def SenderLiveListe(title, listname, offset=0):	# 
 	# SenderLiveListe -> SenderLiveResolution (reicht nur durch) -> Parseplaylist (Ausw. m3u8)
 	#	-> CreateVideoStreamObject 
 	Log.Debug('SenderLiveListe')
 
 	oc = ObjectContainer(view_group="InfoList", title1='Live-Sender', title2=title, art = ICON)
-	playlist = Resource.Load(PLAYLIST)	# lokale XML-Datei (Pluginverz./Resources)
-	#Log(playlist)	#
-
-	#doc = XML.ElementFromString(playlist)		# schlägt bei Zeichen & in Url's fehl
-	doc = HTML.ElementFromString(playlist)		# unterschlägt </link>
+	playlist = Resource.Load(PLAYLIST)	# muss neu geladen werden, das 'listelement' ist hier sonst nutzlos und die
+	#Log(playlist)						# Übergabe als String kann zu groß  werden (max. URL-Länge beim MIE 2083)
 	
-	liste = doc.xpath('//channels/channel/items/item')
-	#Log(liste)
+	doc = HTML.ElementFromString(playlist)		# unterschlägt </link>	
+	liste = doc.xpath('//channels/channel')
+	Log(liste)
+	
+	for element in liste:
+		element_str = HTML.StringFromElement(element)
+		name = stringextract('<name>', '</name>', element_str)
+		if name == listname:			# Listenauswahl gefunden
+			break
+	
+	liste = element.xpath('./items/item')
+	Log(liste); Log(element_str)
 
 	# Besonderheit: die Senderliste wird lokal geladen (s.o.). Über den link wird die URL zur  
 	#	*.m3u8 geholt. Nach Anwahl eines Live-Senders erfolgt in SenderLiveResolution die Listung
@@ -649,24 +676,31 @@ def CreateVideoStreamObject(url, title, summary, meta, thumb, include_container=
   #		andernfalls Fehler: HTTP Error 503: Service Unavailable
   #		Aber: keine Auswirkung auf andere Player im Netz
   
-  
+  #	resolution = [720, 540, 480] # Parameter bei Livestream nicht akzeptiert +  auch nicht nötig
+	
 	if url.find('rtmp:') >= 0:	# rtmp = Protokoll für flash, rtmpdump ermittelt Quellen
-		mo = MediaObject(parts=[PartObject(key=RTMPVideoURL(url=url,live=True))]) # DAF (mit live-Param., NRW.TV OK
+		mo = MediaObject(parts=[PartObject(key=RTMPVideoURL(url=url,live=True))])
 		rating_key = title
 		videoclip_obj = VideoClipObject(
-		key = Callback(CreateVideoStreamObject, url=url, title=title, summary=summary, 
+			key = Callback(CreateVideoStreamObject, url=url, title=title, summary=summary, 
 			meta=meta, thumb=thumb, include_container=True), 
-			rating_key=title,title=title,summary=summary,thumb=thumb,)   # live=True nicht aktzeptiert
+			rating_key=title,
+			title=title,
+			summary=summary,
+			thumb=thumb,)   # live=True nicht aktzeptiert
 
 	else:
 		# Auslösungsstufen weglassen? (bei relativen Pfaden nutzlos) 
 		# Auflösungsstufen - s. SenderLiveResolution -> Parseplaylist
-		mo = MediaObject(parts=[PartObject(key=HTTPLiveStreamURL(url=url))]) #
+		mo = MediaObject(parts=[PartObject(key=HTTPLiveStreamURL(url=url))]) 
 		rating_key = title
 		videoclip_obj = VideoClipObject(
-		key = Callback(CreateVideoStreamObject, url=url, title=title, summary=summary,
+			key = Callback(CreateVideoStreamObject, url=url, title=title, summary=summary,
 			meta=meta, thumb=thumb, include_container=True), 
-			rating_key=title,title=title,summary=summary,thumb=thumb)
+			rating_key=title,
+			title=title,
+			summary=summary,
+			thumb=thumb,)
 			
 	videoclip_obj.add(mo)
 

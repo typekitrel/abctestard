@@ -1,5 +1,5 @@
-﻿# Plex-Plugin-ARDMediathek2016 - Version 1.2	
-# Stand 27.04.2016
+﻿# Plex-Plugin-ARDMediathek2016 - Version 1.3	
+# Stand 30.04.2016
 
 ## Plex Plugin für die ARD Mediathek
 
@@ -51,9 +51,7 @@ ARTE ist inzwischen lauffähig, getrennte Behandlung im Programmcode: 4 Streams,
 RTMP-Streaming wird vom Plugin unterstützt, klappt aber nicht mit beliebigen neuen Sendern.
 
 Beliebige Sender können manuell der Playlist hinzugefügt werden. Nicht alle werden funktionieren, da die Zugänge zu den Streaming-Quellen sich technisch stark unterscheiden können. Für manche ist eine Sonderbehandlung im Programmcode de Plugins erforderlich (Beispiel ARTE).
-Die Playlist entspricht der Datei http://dl.gmlblog.de/deutschesender.xml aus dem Blog https://gmlblog.de/2013/08/xbmc-tv-livestreams/. Diese Datei ist für Updates ohne inhaltliche Veränderungen verwendbar. Dazu wird sie in livesender.xml umbenannt und in das Pluginverzeichnis Plex-Plugin-ARDMediathek2016.bundle/Contents/Resources kopiert.
-In der aktuellen Datei habe ich die nicht im Plugin lauffähigen Sender entfernt (ist aber nicht zwingend notwendig.
-Für einige Sender wurde die Zugriffsadresse aktualisiert.
+Die Playlist basiert auf der Datei http://dl.gmlblog.de/deutschesender.xml aus dem Blog https://gmlblog.de/2013/08/xbmc-tv-livestreams/ (Credits: Gammel).
 
 
 
