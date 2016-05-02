@@ -204,6 +204,16 @@
 		<epg></epg>
 		<fanart></fanart>
 	</item>
+	<item>
+		<title>Deutsche Welle</title>
+		<link>http://dwstream3-lh.akamaihd.net/i/dwstream3_live@124409/master.m3u8</link>
+		<thumbnail>https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Deutsche_Welle_symbol_2012.svg/800px-Deutsche_Welle_symbol_2012.svg.png</thumbnail>
+		<genre>TV</genre>
+		<info>Deutsche_Welle</info>
+		<date>02.05.2016</date>
+		<epg></epg>
+		<fanart></fanart>
+	</item>
 </items>
 </channel>
 
@@ -328,7 +338,7 @@
 		<link>http://p.live.fra.n-tv.de/playlists/ntvlive.m3u8</link>
 		<thumbnail>https://upload.wikimedia.org/wikipedia/de/thumb/1/16/N-tv_Logo_2011.svg/320px-N-tv_Logo_2011.svg.png</thumbnail>
 		<genre>TV</genre>
-		<info>n24</info>
+		<info>n-tv</info>
 		<date>13.03.2015</date>
 		<epg></epg>
 		<fanart></fanart>

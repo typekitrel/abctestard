@@ -535,7 +535,7 @@ def SenderLiveListe(title, listname, offset=0):	#
 	#	-> CreateVideoStreamObject 
 	Log.Debug('SenderLiveListe')
 
-	oc = ObjectContainer(view_group="InfoList", title1='Live-Sender', title2=title, art = ICON)
+	oc = ObjectContainer(view_group="InfoList", title1='Live-Sender', title2='Live-Sender ' + title, art = ICON)
 	playlist = Resource.Load(PLAYLIST)	# muss neu geladen werden, das 'listelement' ist hier sonst nutzlos und die
 	#Log(playlist)						# Übergabe als String kann zu groß  werden (max. URL-Länge beim MIE 2083)
 	
