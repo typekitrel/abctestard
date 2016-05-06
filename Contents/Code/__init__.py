@@ -13,7 +13,7 @@ import locale
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 # 
-# Version 1.3	Stand 30.04.2016
+# Version 1.3.2	Stand 06.05.2016
 #
 # (c) 2016 by Roland Scholz, rols1@gmx.de 
 #     Testing Enviroment: 
@@ -39,6 +39,7 @@ import locale
 # limitations under the License.
 
 # Artwork (folder 'Resources'): (c) ARD
+# TV-Logos : upload.wikimedia.org
 
 ####################################################################################################
 
@@ -131,14 +132,39 @@ def SendungenAZ(name):		# Auflistung 0-9 (1 Eintrag), A-Z (einzeln)
 	azlist.append('0-9')
 	#next_cbKey = 'SinglePage'	# 
 	next_cbKey = 'PageControl'	# SinglePage zeigt die Sendereihen, PageControl dann die weiteren Seiten
+	
+	path = azPath = BASE_URL + ARD_AZ + 'A'		# A-Seite laden für Prüfung auf inaktive Buchstaben
+	page = HTML.ElementFromURL(path)
+	#s = XML.StringFromElement(page)
+	Log(page)
+	try:										# inaktive Buchstaben?
+		#liste = page.xpath("//li[@class='inactive']/h3/text()")
+		inactive_list  = page.xpath("//li[@class='inactive']")
+		Log(inactive_list)		
+	except:
+		inactive_list = ""
 
+	inactive_char = ""
+	if inactive_list:							# inaktive Buchstaben ermitteln (werden 2 x angegeben)
+		for element in inactive_list:
+			char = element.xpath("./a/text()")[0]
+			char = char.strip()
+			#inactive_char.append(char)
+			inactive_char =  inactive_char + char
+	Log(inactive_char)							# z.B. XYXY
+	
 	for element in azlist:
 		Log(element)
 		azPath = BASE_URL + ARD_AZ + element
 		button = element
 		title = "Sendungen mit " + button
-		oc.add(DirectoryObject(key=Callback(SinglePage, title=title, path=azPath, next_cbKey=next_cbKey), 
-				title=title, thumb=ICON))
+		if inactive_char.find(button) >= 0:		# inaktiver Buchstabe?
+			title = "Sendungen mit " + button + ': zur Zeit keine vorhanden'
+			oc.add(DirectoryObject(key=Callback(SendungenAZ, name =name), 
+					title=title, thumb=ICON))
+		else:
+			oc.add(DirectoryObject(key=Callback(SinglePage, title=title, path=azPath, next_cbKey=next_cbKey), 
+					title=title, thumb=ICON))
 	return oc
    
 ####################################################################################################
