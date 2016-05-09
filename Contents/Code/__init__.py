@@ -13,7 +13,7 @@ import locale
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 # 
-# Version 1.3.2	Stand 06.05.2016
+# Version 1.4	Stand 09.05.2016
 #
 # (c) 2016 by Roland Scholz, rols1@gmx.de 
 #     Testing Enviroment: 
@@ -58,6 +58,7 @@ ARD_VERPASST = '/tv/sendungVerpasst?tag='		# ergänzt mit 0, 1, 2 usw.
 ARD_AZ = '/tv/sendungen-a-z?buchstabe='			# ergänzt mit 0-9, A, B, usw.
 ARD_Suche = '/tv/suche?searchText='				# ergänzt mit Suchbegriff
 ARD_Live = '/tv/live'
+ARD_Einslike = '/einslike'
 
 ''' 
 # Hartkodierte Links für Arte (Parseplaylist)- die relativen Links der *.m3u8-Datei verursachen Rekursion
@@ -80,13 +81,17 @@ Nicht kompatibel: ARTE
 ####################################################################################################
 ''' 
 Programmpfade:
-1. VerpasstWoche -> SinglePage -> get_sendungen -> PageControl -> SingleSendung:
-		a) Parseplaylist - für angebotene m3u8-Datei, Auflistung der angebotenen Auflösungen
+1. VerpasstWoche -> Wochenliste -> PageControl -> SinglePage
+2. SendungenAZ -> AZ-Liste -> SinglePage (Steuerung via next_cbKey) -> PageControl
+3. SenderLiveListePre  -> SenderLiveListe -> SenderLiveResolution -> Parseplaylist 
+		-> CreateVideoStreamObject
+4. Search -> PageControl (Direktsprung mit Suchbegriff) -> SinglePage
+5. Einslike -> Rubrik-Liste ("mehr"-Seiten) -> PageControl -> SinglePage
+
+Einzelsendungen:  SinglePage -> get_sendungen -> Parseplaylist: 
+		a) für angebotene m3u8-Datei, Auflistung der angebotenen Auflösungen
 		b) Auflistung der angebotenen Quali.-Stufen |  a) und b) in gemeinsamer Liste
-		-> createVideoClipObject 
-2. SendungenAZ -> SinglePage (zeigt die Sendereihen, dann PageControl weiteren Seiten)
-3. SenderLiveListe -> SenderLiveResolution -> Parseplaylist -> CreateVideoStreamObject
-4. Search -> PageControl -> ... wie VerpasstWoche
+		-> createVideoClipObject
 '''
 ####################################################################################################
 
@@ -116,6 +121,8 @@ def Main():
 		summary='', tagline='TV'))
 	oc.add(DirectoryObject(key=Callback(SendungenAZ, name='Sendungen 0-9 | A-Z'), title='Sendungen A-Z',
 		summary='', tagline='TV'))
+	oc.add(DirectoryObject(key=Callback(Einslike, title='Einslike'), title='Einslike',
+		summary='', tagline='TV', thumb=ICON))
 	oc.add(DirectoryObject(key=Callback(SenderLiveListePre, title='Live-Sender-Vorauswahl'), title='Live-Sender-Vorauswahl',
 		summary='', tagline='TV', thumb=ICON))
 
@@ -159,8 +166,8 @@ def SendungenAZ(name):		# Auflistung 0-9 (1 Eintrag), A-Z (einzeln)
 		button = element
 		title = "Sendungen mit " + button
 		if inactive_char.find(button) >= 0:		# inaktiver Buchstabe?
-			title = "Sendungen mit " + button + ': zur Zeit keine vorhanden'
-			oc.add(DirectoryObject(key=Callback(SendungenAZ, name =name), 
+			title = "Sendungen mit " + button + ': keine gefunden'
+			oc.add(DirectoryObject(key=Callback(SendungenAZ, name = 'zuletzt: ' + button), 
 					title=title, thumb=ICON))
 		else:
 			oc.add(DirectoryObject(key=Callback(SinglePage, title=title, path=azPath, next_cbKey=next_cbKey), 
@@ -215,8 +222,6 @@ def Search(query=None, title=L('Search'), s_type='video', offset=0, **kwargs):
 #		5. CreateVideoClipObject: einzelnes Video-Objekt erzeugen mit Bild + Laufzeit + Beschreibung
 def VerpasstWoche(name):	# Wochenliste zeigen
 	oc = ObjectContainer(view_group="InfoList", title1=NAME, title2=name, art = ObjectContainer.art)
-	#page = HTML.ElementFromURL(BASE_URL + ARD_VERPASST) # in neuer Mediathek nicht mehr auslesbar
-	#Log(page)
 	wlist = range(0,6)
 	now = datetime.datetime.now()
 	# Test auf Folgeseiten hier nicht nötig, immer nur 1 pro Tag
@@ -255,6 +260,39 @@ def transl_wtag(tag):	# Wochentage engl./deutsch wg. Problemen mit locale-Settin
 	return wt_ret
 	
 ####################################################################################################
+# Erweiterung Einslike: http://www.ardmediathek.de/einslike
+# 	Liste Rubriken (6): Leben, Musik, Netz & Tech, Spaß & Fiktion, Info, Neueste Videos
+# 	<a class="more" href="/einslike/Spa%C3%9F-Fiktion/mehr?documentId=21301902"
+#	Folgeseiten: mcontent=page (anders ARD-Mediathek: mcontents=page, stimmt Rest überein?)
+#
+# Info zu einslike: http://www.ard.de/home/ard/Gestatten__Einslike_/492028/index.html
+@route('/video/ardmediathek2016/Einslike')	# Menü Einslike (Rubrik-Liste)
+# Ablauf: 	
+#			hier: Rubrik-Liste zusammenstellen mit Links zu den "mehr"-Seiten, 
+#			weiter wie Verpasst Woche (->PageControl -> SinglePage -> Parseplaylist -> CreateVideoClipObject
+def Einslike(title):	# Wochenliste zeigen
+	title2='Einslike - Videos fuer Musik und Lifestyle in der ARD Mediathek'
+	oc = ObjectContainer(view_group="InfoList", title1=NAME, title2=title2, art = ObjectContainer.art)
+	page = HTML.ElementFromURL(BASE_URL + ARD_Einslike)
+	list = page.xpath("//*[@class='more']")
+	Log(page); Log(list)
+	#next_cbKey = 'PageControl'	# SinglePage zeigt die Sendereihen, PageControl dann die weiteren Seiten
+	
+	for element in list:	# class='more']
+		s = HTML.StringFromElement(element)
+		Log(s)
+		path = element.xpath("./@href")[0]
+		path = BASE_URL + path
+		rubrik = element.xpath("./span/text()")[0]	
+		rubrik = title + '| ' + rubrik
+		Log(path); Log(rubrik)
+		oc.add(DirectoryObject(key=Callback(PageControl, path=path, title=rubrik, cbKey=""), title=rubrik, 
+			tagline=title2, summary='', thumb='', art=ICON))
+		#oc.add(DirectoryObject(key=Callback(SinglePage, path=path, title=rubrik, next_cbKey=next_cbKey), title=rubrik, 
+		#	tagline=title2, summary='', thumb='', art=ICON))
+		
+	return oc
+####################################################################################################
 @route('/video/ardmediathek2016/PageControl')	# kontrolliert auf Folgeseiten. Mehrfache Verwendung.
 # Wir laden beim 1. Zugriff alle Seitenverweise in eine Liste. Bei den Folgezugriffen können die Seiten
 # verweise entfallen - der Rückschritt zur Liste ist dem Anwender nach jedem Listenelement  möglich.
@@ -272,8 +310,9 @@ def PageControl(cbKey, title, path, offset=0):  #
 
 	pagenr_suche = re.findall("mresults=page", doc_txt)   
 	pagenr_andere = re.findall("mcontents=page", doc_txt)  
-	Log(pagenr_suche); Log(pagenr_andere)
-	if (pagenr_suche) or (pagenr_andere):
+	pagenr_einslike = re.findall("mcontent=page", doc_txt)  
+	Log(pagenr_suche); Log(pagenr_andere); Log(pagenr_einslike)
+	if (pagenr_suche) or (pagenr_andere) or (pagenr_einslike):
 		Log('PageControl: Mehrfach-Seite mit Folgeseiten')
 	else:												# keine Folgeseiten -> SinglePage
 		Log('PageControl: Einzelseite, keine Folgeseiten'); Log(cbKey); Log(path); Log(title)
@@ -297,7 +336,7 @@ def PageControl(cbKey, title, path, offset=0):  #
 
 
 	first_site = False								# falls 1. Aufruf ohne Seitennr. im Pfad ergänzen für Liste		
-	if (pagenr_suche) or (pagenr_andere):			# .findall("mresults=page", doc_txt)  		
+	if (pagenr_suche) or (pagenr_andere) or (pagenr_einslike) :		# .findall("mresults=page", doc_txt)  		
 		if path_page1.find('mcontents=page') == -1: 
 			first_site = True
 			path_page1 = path_page1 + 'mcontents=page.1'
@@ -307,16 +346,19 @@ def PageControl(cbKey, title, path, offset=0):  #
 		if path_page1.find('searchText=') >= 0:			#  kommt direkt von Suche
 			first_site = True
 			path_page1 = path + '&source=tv&mresults=page.1'
+		if path_page1.find('mcontent=page') >= 0:			#  einslike
+			first_site = True
+			path_page1 = path_page1 + 'mcontent=page.1'
 
 	if  first_site == True:										
-		path_page1 
+		path_page1 = path
 		title = 'Weiter zu Seite 1'
 		next_cbKey = 'SingleSendung'
 		Log(first_site)
 		Log(path_page1)
 		oc.add(DirectoryObject(key=Callback(SinglePage, title=title, path=path_page1, next_cbKey=next_cbKey), 
 				title=title, thumb=ICON))
-	else:	# Folgeseite - keine Liste mehr notwendig
+	else:	# Folgeseite einer Mehrfachseite - keine Liste mehr notwendig
 		Log(first_site)
 		oc = SinglePage(title=title, path=path, next_cbKey='SingleSendung') # wir springen wieder direkt
 	
@@ -358,7 +400,7 @@ def PageControl(cbKey, title, path, offset=0):  #
 def SinglePage(title, path, next_cbKey, offset=0):	# path komplett
 
 	oc = ObjectContainer(view_group="InfoList", title1=title, art=ICON)
-	Log('Funktion SinglePage'); # Log(path)
+	Log('Funktion SinglePage'); Log(path)
 					
 	page = HTML.ElementFromURL(path) 	
 	
@@ -796,8 +838,8 @@ def Parseplaylist(container, url_m3u8, thumb):		# master.m3u8 auswerten, Url mus
 				url = url_m3u8[0:pos+1] + url 			# Basispfad + relativer Pfad
 				
 			Log(url); Log(title); Log(thumb); 
-			container.add(CreateVideoStreamObject(url=url, title=title, 
-				summary=Resolution, meta=Codecs, thumb=thumb))
+			container.add(CreateVideoStreamObject(url=url, title=title, # Einbettung in DirectoryObject zeigt bei
+				summary= Resolution, meta=Codecs, thumb=thumb))			# AllConnect trotzdem nur letzten Eintrag
 			BandwithOld = Bandwith
 				
   	i = i + 1	# Index für URL
