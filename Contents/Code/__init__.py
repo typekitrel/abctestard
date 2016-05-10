@@ -43,9 +43,7 @@ import locale
 
 ####################################################################################################
 
-#NAME = 'ARD Mediathek 2016'	# s. Strings/en.json
-
-NAME = L('Title')
+NAME = L('Title')								# s. Strings/en.json
 
 PLAYLIST = 'livesender.xml'					# basiert auf der Channeldatei von gammel, Download:
 # http://dl.gmlblog.de/deutschesender.xml. Veröffentlicht: https://gmlblog.de/2013/08/xbmc-tv-livestreams/
