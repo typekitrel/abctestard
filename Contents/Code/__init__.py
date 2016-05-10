@@ -13,7 +13,7 @@ import locale
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 # 
-# Version 1.4	Stand 09.05.2016
+# Version 1.4.1	Stand 10.05.2016
 #
 # (c) 2016 by Roland Scholz, rols1@gmx.de 
 #     Testing Enviroment: 
@@ -61,25 +61,20 @@ ARD_Live = '/tv/live'
 ARD_Einslike = '/einslike'
 
 ''' 
-# Hartkodierte Links für Arte (Parseplaylist)- die relativen Links der *.m3u8-Datei verursachen Rekursion
-# z.Z. nicht verwendet, da auch diese relative Links enthalten
-Arte_delive = 'http://delive.artestras.cshls.lldns.net/artestras/contrib/delive.m3u8'  # entspr. master.m3u8
-Arte_150 = 'http://delive.artestras.cshls.lldns.net/artestras/contrib/delive/delive_150.m3u8'
-Arte_315 = 'http://delive.artestras.cshls.lldns.net/artestras/contrib/delive/delive_315.m3u8'
-Arte_540 = 'http://delive.artestras.cshls.lldns.net/artestras/contrib/delive/delive_540.m3u8'
-Arte_925 = 'http://delive.artestras.cshls.lldns.net/artestras/contrib/delive/delive_925.m3u8'
-
-Live-Sender der Mediathek: | ARD-Alpha | BR |Das Erste | HR | MDR | NDR | RBB | SR | SWR | 
-	WDR | tagesschau24 | 3Sat | KIKA | PHOENIX
-
-zusätzlich: Tagesschau | NDR Fernsehen Hamburg, Mecklenburg-Vorpommern, Niedersachsen, Schleswig-Holstein | 
-	RBB Berlin, Brandenburg | MDR Sachsen-Anhalt, Sachsen, Thüringen |
-	ZDF ZDFneo ZDFkultur ZDFinfo
-
-Nicht kompatibel: ARTE	
-''' 
 ####################################################################################################
-''' 
+Live-Sender der Mediathek: | ARD-Alpha | BR |Das Erste | HR | MDR | NDR | RBB | SR | SWR | 
+	WDR | tagesschau24 |  | KIKA | PHOENIX | Deutsche Welle
+	zusätzlich: Tagesschau | NDR Fernsehen Hamburg, Mecklenburg-Vorpommern, Niedersachsen, Schleswig-Holstein |
+	RBB Berlin, Brandenburg | MDR Sachsen-Anhalt, Sachsen, Thüringen
+
+Live-Sender des ZDF: ZDF | ZDFneo | ZDFkultur | ZDFinfo | 3Sat | ARTE
+
+Live-Sender Sonsstige: NRW.TV | Joiz | DAF | N24 | n-tv
+
+Sonderbehandlung im Code für ARTE wegen relativer Links in den m3u8-Dateien
+
+####################################################################################################
+
 Programmpfade:
 1. VerpasstWoche -> Wochenliste -> PageControl -> SinglePage
 2. SendungenAZ -> AZ-Liste -> SinglePage (Steuerung via next_cbKey) -> PageControl
@@ -92,8 +87,8 @@ Einzelsendungen:  SinglePage -> get_sendungen -> Parseplaylist:
 		a) für angebotene m3u8-Datei, Auflistung der angebotenen Auflösungen
 		b) Auflistung der angebotenen Quali.-Stufen |  a) und b) in gemeinsamer Liste
 		-> createVideoClipObject
-'''
 ####################################################################################################
+'''
 
 def Start():
     #Log.Debug()  	# definiert in Info.plist
@@ -335,20 +330,18 @@ def PageControl(cbKey, title, path, offset=0):  #
 	Log(list)
 
 
-	first_site = False								# falls 1. Aufruf ohne Seitennr. im Pfad ergänzen für Liste		
+	first_site = True								# falls 1. Aufruf ohne Seitennr.: im Pfad ergänzen für Liste		
 	if (pagenr_suche) or (pagenr_andere) or (pagenr_einslike) :		# .findall("mresults=page", doc_txt)  		
 		if path_page1.find('mcontents=page') == -1: 
-			first_site = True
 			path_page1 = path_page1 + 'mcontents=page.1'
 		if path_page1.find('mresults=page') == -1:
-			first_site = True
 			path_page1 = path_page1 + '&mresults=page.1'
 		if path_page1.find('searchText=') >= 0:			#  kommt direkt von Suche
-			first_site = True
 			path_page1 = path + '&source=tv&mresults=page.1'
 		if path_page1.find('mcontent=page') >= 0:			#  einslike
-			first_site = True
 			path_page1 = path_page1 + 'mcontent=page.1'
+	else:
+		first_site = False
 
 	if  first_site == True:										
 		path_page1 = path
