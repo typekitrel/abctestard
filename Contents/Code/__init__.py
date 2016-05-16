@@ -7,15 +7,28 @@ import re			# u.a. Reguläre Ausdrücke in CalculateDuration
 import datetime
 import locale
 
+import updater
+
 # locale.setlocale(locale.LC_ALL, 'de_DE.UTF-8')	# crasht (Debug-Auszug von Otto Kerner)
 # 	locale-Setting erfolgt im Enviroment des Plex-Servers: Bsp. Environment=LANG=en_US.UTF-8 in
 # 	plexmediaserver.service (OpenSuse 42.1)
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
-# 
-# Version 1.4.1	Stand 10.05.2016
-#
-# (c) 2016 by Roland Scholz, rols1@gmx.de 
+
+VERSION =  '1.5.0'	
+VDATE = '16.05.2016'
+
+# akt. geändert (für Doku git):
+#	Log(duration); in SingleSendung # CreateVideoClipObject
+#	Doku-Hinweis zu WD TV Live (Vor- und Rückspulen)
+#	Funktionspfade: Umstellung auf PREFIX 
+#	Verzicht auf en.json (nicht benötigt)
+#	Updater hinzugefügt, Teilnahme am UAS (Unsupported AppStore V2) verworfen (Anwender müssten zusätzl.
+#		das Plugin  WebTools 2.0 installieren)
+#		Logos für Updater aus gtk themes / Adwaita
+#	README auf Markdown-Format umgestellt + aktualisiert
+
+# (c) 2016 by Roland Scholz, rols1@gmx.de Version
 #     Testing Enviroment: 
 #		PC: Fujitsu Esprimo E900 8 GB RAM, 3,4 GHz
 #		Linux openSUSE 42.1 und Plex-Server 0.9.16.4
@@ -23,7 +36,8 @@ import locale
 #		Web-Player: Google-Chrome (alles OK), Firefox (alles OK, Flash-Plugin erforderlich)
 #		Videoplayer-Apps: VLC-Player, MXPlayer
 #		Streaming-Apps: BubbleUPnP (alle Funktionen OK), AllConnect (keine m3u8-Videos)
-# 		Media Player at TV: WD TV Live HD, WDAAP0000NBK, 2012 (nicht alle Auflösungsstufen unterstützt)
+# 		Media Player at TV: WD TV Live HD, WDAAP0000NBK, 2012 (nicht alle Auflösungsstufen unterstützt,
+#																Vor- und Rückspulen nicht nutzbar)
 #
 # 
 # Licensed under the GPL, Version 3.0 (the "License");
@@ -43,20 +57,39 @@ import locale
 
 ####################################################################################################
 
-NAME = L('Title')								# s. Strings/en.json
+# NAME = L('Title')								# s. Strings/en.json
+NAME = 'ARD Mediathek 2016'
+PREFIX = "/video/ardmediathek2016"
 
 PLAYLIST = 'livesender.xml'					# basiert auf der Channeldatei von gammel, Download:
 # http://dl.gmlblog.de/deutschesender.xml. Veröffentlicht: https://gmlblog.de/2013/08/xbmc-tv-livestreams/
 ART = 'art.png'
 ICON = 'icon.png'
-SICON = 'search.png'
-BASE_URL = 'http://www.ardmediathek.de'
+ICON_SEARCH = 'icon-search.png'					# gtk themes / Adwaita system-search-symbolic.symbolic.png
 
+ICON_AZ = 'icon-AZ.png'
+ICON_CAL = 'icon-calendar.png'					# gnome / Tango x-office-calendar.png
+ICON_EINSLIKE = 'icon-Einslike.png'
+ICON_SENDER = 'ICON-Sender.png' 
+
+ICON_UPDATER = "icon-updater.png"
+ICON_UPDATE_NEW = "icon-update-new.png"
+ICON_OK = "icon-ok.png"
+ICON_WARNING = "icon-warning.png"
+ICON_NEXT = "icon-next.png"
+ICON_CANCEL = "icon-error.png"
+
+
+BASE_URL = 'http://www.ardmediathek.de'
 ARD_VERPASST = '/tv/sendungVerpasst?tag='		# ergänzt mit 0, 1, 2 usw.
 ARD_AZ = '/tv/sendungen-a-z?buchstabe='			# ergänzt mit 0-9, A, B, usw.
 ARD_Suche = '/tv/suche?searchText='				# ergänzt mit Suchbegriff
 ARD_Live = '/tv/live'
 ARD_Einslike = '/einslike'
+
+REPO_NAME = 'Plex-Plugin-ARDMediathek2016'
+GITHUB_REPOSITORY = 'rols1/' + REPO_NAME
+
 
 ''' 
 ####################################################################################################
@@ -102,29 +135,72 @@ def Start():
     HTTP.CacheTime = 0			# Debug
  
 # handler bindet an das bundle
-@handler('/video/ardmediathek2016', NAME, art = ART, thumb = ICON)
+@route(PREFIX)
+@handler(PREFIX, NAME, art = ART, thumb = ICON)
 def Main():
-	Log('Funktion Main')
+	Log('Funktion Main'); Log(PREFIX); Log(VERSION); Log(VDATE)
 	oc = ObjectContainer(view_group="List", art=ObjectContainer.art)	
+	
 	# folgendes DirectoryObject ist Deko für das nicht sichtbare InputDirectoryObject dahinter:
 	oc.add(DirectoryObject(key=Callback(Main),title='Suche: im Suchfeld eingeben', summary='', tagline='TV'))
 	oc.add(InputDirectoryObject(key=Callback(Search, s_type='video', title=u'%s' % L('Search Video')),
-		title=u'%s' % L('Search'), prompt=u'%s' % L('Search Video'), thumb=SICON))
+		title=u'%s' % L('Search'), prompt=u'%s' % L('Search Video'), thumb=R(ICON_SEARCH)))
 	oc.add(DirectoryObject(key=Callback(VerpasstWoche, name="Sendung Verpasst"), title="Sendung Verpasst (1 Woche)",
-		summary='', tagline='TV'))
+		summary='', tagline='TV', thumb=R(ICON_CAL)))
 	oc.add(DirectoryObject(key=Callback(SendungenAZ, name='Sendungen 0-9 | A-Z'), title='Sendungen A-Z',
-		summary='', tagline='TV'))
+		summary='', tagline='TV', thumb=R(ICON_AZ)))
 	oc.add(DirectoryObject(key=Callback(Einslike, title='Einslike'), title='Einslike',
-		summary='', tagline='TV', thumb=ICON))
+		summary='', tagline='TV', thumb=R(ICON_EINSLIKE)))
 	oc.add(DirectoryObject(key=Callback(SenderLiveListePre, title='Live-Sender-Vorauswahl'), title='Live-Sender-Vorauswahl',
-		summary='', tagline='TV', thumb=ICON))
+		summary='', tagline='TV', thumb=R(ICON_SENDER)))
 
-	return oc
-
-#----------------------------------------------------------------  
-
+	oc.add(DirectoryObject(key=Callback(SearchUpdate, title='Plugin-Update'), title='Plugin-Update',
+		summary='Suche nach neuen Updates', tagline='akt. Version: ' + VERSION + ', ' + VDATE, thumb=R(ICON_UPDATER)))
+		
+	return oc	
+#---------------------------------------------------------------- 
+ 
 ####################################################################################################
-@route('/video/ardmediathek2016/SendungenAZ')
+@route(PREFIX + '/SearchUpdate')
+def SearchUpdate(title):		#
+	oc = ObjectContainer(view_group="List", art=ObjectContainer.art)	
+
+	ret = updater.update_available(VERSION)
+	int_lv = ret[0]			# Version Github
+	int_lc = ret[1]			# Version aktuell
+	latest_version = ret[2]	# Version Github, Format 1.4.1
+	summ = ret[3]			# Plugin-Name
+	tag = ret[4]			# History (last change) )
+
+	url = 'https://github.com/{0}/releases/download/{1}/{2}.bundle.zip'.format(GITHUB_REPOSITORY, latest_version, REPO_NAME)
+	Log(latest_version); Log(int_lv); Log(int_lc); Log(url); 
+	
+	if int_lv > int_lc:		# zum Testen drehen (akt. Plugin vorher sichern!)
+		oc.add(DirectoryObject(
+			key = Callback(updater.update, url=url , ver=latest_version), 
+			title = 'Update vorhanden - jetzt installieren',
+			summary = 'Plugin aktuell: ' + VERSION + ', neu auf Github: ' + latest_version,
+			tagline = summ,
+			thumb = R(ICON_UPDATE_NEW)))
+			
+		oc.add(DirectoryObject(
+			key = Callback(Main), 
+			title = 'Update abbrechen',
+			summary = 'weiter im aktuellen Plugin',
+			thumb = R(ICON_UPDATE_NEW)))
+	else:	
+		oc.add(DirectoryObject(
+			#key = Callback(updater.menu, title='Update Plugin'), 
+			key = Callback(Main), 
+			title = 'Plugin ist aktuell', 
+			summary = 'Plugin Version ' + VERSION + ' ist aktuell (kein Update vorhanden)',
+			tagline = 'weiter zum aktuellen Plugin',
+			thumb = R(ICON_OK)))
+
+	
+	return oc
+####################################################################################################
+@route(PREFIX + '/SendungenAZ')
 def SendungenAZ(name):		# Auflistung 0-9 (1 Eintrag), A-Z (einzeln) 
 	Log('SendungenAZ')
 	oc = ObjectContainer(view_group="InfoList", title1=NAME, title2=name, art = ObjectContainer.art)
@@ -169,7 +245,7 @@ def SendungenAZ(name):		# Auflistung 0-9 (1 Eintrag), A-Z (einzeln)
    
 ####################################################################################################
 # Hinweis zur Suche in der Mediathek: miserabler unscharfer Algorithmus - findet alles mögliche
-@route('/video/ardmediathek2016/Search')	# Suche - Verarbeitung der Eingabe
+@route(PREFIX + '/Search')	# Suche - Verarbeitung der Eingabe
 #def Search(query, url=None):
 def Search(query=None, title=L('Search'), s_type='video', offset=0, **kwargs):
 	Log('Search'); Log(query)
@@ -207,7 +283,7 @@ def Search(query=None, title=L('Search'), s_type='video', offset=0, **kwargs):
 	return oc
  
 ####################################################################################################
-@route('/video/ardmediathek2016/VerpasstWoche')	# Liste der Wochentage
+@route(PREFIX + '/VerpasstWoche')	# Liste der Wochentage
 # Ablauf: 	
 #		2. PageControl: Liste der Rubriken des gewählten Tages
 #		3. SinglePage: Sendungen der ausgewählten Rubrik mit Bildern (mehrere Sendungen pro Rubrik möglich)
@@ -259,7 +335,7 @@ def transl_wtag(tag):	# Wochentage engl./deutsch wg. Problemen mit locale-Settin
 #	Folgeseiten: mcontent=page (anders ARD-Mediathek: mcontents=page, stimmt Rest überein?)
 #
 # Info zu einslike: http://www.ard.de/home/ard/Gestatten__Einslike_/492028/index.html
-@route('/video/ardmediathek2016/Einslike')	# Menü Einslike (Rubrik-Liste)
+@route(PREFIX + '/Einslike')	# Menü Einslike (Rubrik-Liste)
 # Ablauf: 	
 #			hier: Rubrik-Liste zusammenstellen mit Links zu den "mehr"-Seiten, 
 #			weiter wie Verpasst Woche (->PageControl -> SinglePage -> Parseplaylist -> CreateVideoClipObject
@@ -286,7 +362,7 @@ def Einslike(title):	# Wochenliste zeigen
 		
 	return oc
 ####################################################################################################
-@route('/video/ardmediathek2016/PageControl')	# kontrolliert auf Folgeseiten. Mehrfache Verwendung.
+@route(PREFIX + '/PageControl')	# kontrolliert auf Folgeseiten. Mehrfache Verwendung.
 # Wir laden beim 1. Zugriff alle Seitenverweise in eine Liste. Bei den Folgezugriffen können die Seiten
 # verweise entfallen - der Rückschritt zur Liste ist dem Anwender nach jedem Listenelement  möglich.
 # Dagegen wird in der Mediathek geblättert.
@@ -386,7 +462,7 @@ def PageControl(cbKey, title, path, offset=0):  #
 	return oc
   
 ####################################################################################################
-@route('/video/ardmediathek2016/SinglePage')	# Liste der Sendungen eines Tages / einer Suche 
+@route(PREFIX + '/SinglePage')	# Liste der Sendungen eines Tages / einer Suche 
 #						# durchgehend angezeigt (im Original collapsed)
 def SinglePage(title, path, next_cbKey, offset=0):	# path komplett
 
@@ -443,7 +519,7 @@ def SinglePage(title, path, next_cbKey, offset=0):	# path komplett
 
 					 		
 ####################################################################################################
-@route('/video/ardmediathek2016/SingleSendung')	# einzelne Sendung, path in neuer Mediathekführt zur 
+@route(PREFIX + '/SingleSendung')	# einzelne Sendung, path in neuer Mediathekführt zur 
 												# Quellenseite (Ausgabe im Textformat)
 	# für weitere Infos zur Sendung müsste der Sendungspfad aus SinglePage (hier m3u8-Pfad) zusätzlich
 	# mitgeführt und hier übergeben werden. Weitere Infos sind z.B. in <meta name="description" die
@@ -514,7 +590,7 @@ def SingleSendung(path, title, thumb, duration, offset=0):	# -> CreateVideoClipO
 		if s[0:1] == "3":			
 			href_quality_XL = s[2:]
 	
-	Log(href_quality_S); Log(href_quality_M); Log(href_quality_L);  Log(href_quality_XL)
+	Log(duration); Log(href_quality_S); Log(href_quality_M); Log(href_quality_L);  Log(href_quality_XL)
 	if href_quality_XL:
 		title = 'Qualität EXTRALARGE'
 		oc.add(CreateVideoClipObject(url=href_quality_XL, title=title, 
@@ -537,11 +613,12 @@ def SingleSendung(path, title, thumb, duration, offset=0):	# -> CreateVideoClipO
 # **kwargs erforderlich bei Fehler: CreateVideoClipObject() got an unexpected keyword argument 'checkFiles'
 #	beobachtet bei Firefox (Suse Leap) + Chrome (Windows7)
 #	s.a. https://github.com/sander1/channelpear.bundle/tree/8605fc778a2d46243bb0378b0ab40a205c408da4
-@route('/video/ardmediathek2016/CreateVideoClipObject')	# <- SingleSendung Qualitätsstufen
+@route(PREFIX + '/CreateVideoClipObject')	# <- SingleSendung Qualitätsstufen
 def CreateVideoClipObject(url, title, summary, meta, thumb, duration,include_container=False, **kwargs):
   #title = title.encode("utf-8")		# ev. für alle ausgelesenen Details erforderlich
   Log('CreateVideoClipObject')
-  Log(url)
+  Log(url); Log(duration); 
+
  
   videoclip_obj = VideoClipObject(
   key = Callback(CreateVideoClipObject, url=url, title=title, summary=summary,
@@ -567,7 +644,7 @@ def CreateVideoClipObject(url, title, summary, meta, thumb, duration,include_con
 	return videoclip_obj
 	
 #####################################################################################################
-@route('/video/ardmediathek2016/SenderLiveListePre')	# LiveListe Vorauswahl - verwendet lokale Playlist
+@route(PREFIX + '/SenderLiveListePre')	# LiveListe Vorauswahl - verwendet lokale Playlist
 def SenderLiveListePre(title, offset=0):	# Vorauswahl: ARD, ZDF, Sonstige
 	Log.Debug('SenderLiveListePre')
 	playlist = Resource.Load(PLAYLIST)	# lokale XML-Datei (Pluginverz./Resources)
@@ -581,14 +658,14 @@ def SenderLiveListePre(title, offset=0):	# Vorauswahl: ARD, ZDF, Sonstige
 	for element in liste:
 		element_str = HTML.StringFromElement(element)
 		name = stringextract('<name>', '</name>', element_str)
-		img = stringextract('<thumbnail>', '</thumbnail>', element_str) 
+		img = stringextract('<thumbnail>', '</thumbnail>', element_str) # channel-thumbnail in playlist
 		Log(element_str); Log(name); Log(img);
 		oc.add(DirectoryObject(key=Callback(SenderLiveListe, title=name, listname=name),
 			title='Live-Sender: ' + name, thumb=img, tagline=''))
 			
 	return oc
 #-----------------------------------------------------------------------------------------------------
-@route('/video/ardmediathek2016/SenderLiveListe')	# LiveListe - verwendet lokale Playlist
+@route(PREFIX + '/SenderLiveListe')	# LiveListe - verwendet lokale Playlist
 def SenderLiveListe(title, listname, offset=0):	# 
 	# SenderLiveListe -> SenderLiveResolution (reicht nur durch) -> Parseplaylist (Ausw. m3u8)
 	#	-> CreateVideoStreamObject 
@@ -648,7 +725,7 @@ def SenderLiveListe(title, listname, offset=0):	#
 	return oc
 	
 ###################################################################################################
-@route('/video/ardmediathek2016/SenderLiveResolution')	# Auswahl der Auflösungstufen des Livesenders
+@route(PREFIX + '/SenderLiveResolution')	# Auswahl der Auflösungstufen des Livesenders
 #	Die URL der gewählten Auflösung führt zu weiterer m3u8-Datei (*.m3u8), die Links zu den 
 #	Videosegmenten (.ts-Files enthält). Diese  verarbeitet der Plexserver im Videoobject. 
 def SenderLiveResolution(path, title, thumb, include_container=False):
@@ -680,7 +757,7 @@ def SenderLiveResolution(path, title, thumb, include_container=False):
 ####################################################################################################
 # Die unter  https://api.arte.tv/api/player/v1/livestream/de?autostart=1 ausgelieferte Textdatei
 # 	enthält je 2 rtmp-Url und 2 hls-Url
-@route('/video/ardmediathek2016/Arteplaylist')	# Auswertung Arte-Parameter rtmp- + hls-streaming
+@route(PREFIX + '/Arteplaylist')	# Auswertung Arte-Parameter rtmp- + hls-streaming
 def Arteplaylist(oc, url, title, thumb):
 	Log('Arteplaylist')
 	playlist = HTTP.Request(url).content  # als Text, nicht als HTML-Element
@@ -720,7 +797,7 @@ def Arteplaylist(oc, url, title, thumb):
 
 ####################################################################################################
 # **kwargs - s. CreateVideoClipObject
-@route('/video/ardmediathek2016/CreateVideoStreamObject')	# <- LiveListe, SingleSendung (nur m3u8-Dateien)
+@route(PREFIX + '/CreateVideoStreamObject')	# <- LiveListe, SingleSendung (nur m3u8-Dateien)
 def CreateVideoStreamObject(url, title, summary, meta, thumb, include_container=False, **kwargs):
   # Zum Problem HTTP Live Streaming (HLS): Redirecting des Video-Callbacks in einen HTTPLiveStreamURL
   # s.https://forums.plex.tv/index.php/topic/40532-bug-http-live-streaming-doesnt-work-when-redirected/
@@ -775,7 +852,7 @@ def CreateVideoStreamObject(url, title, summary, meta, thumb, include_container=
 # PlayVideo: .m3u8 wurde in Route als fehlend bemängelt, wird aber als Attribut der Funktion nicht 
 #	akzeptiert - Ursache nicht gefunden. 
 #	Routine ab 03.04.2016 entbehrlich - s.o.
-@route('/video/ardmediathek2016/PlayVideo')  
+@route(PREFIX + '/PlayVideo')  
 def PlayVideo(url):  		
 	HTTP.Request(url).content
 	return Redirect(url)
@@ -842,7 +919,8 @@ def Parseplaylist(container, url_m3u8, thumb):		# master.m3u8 auswerten, Url mus
   return container
 
 #---------------------------------------------------------------- 
-def get_sendungen(container, sendungen): # Sendungen aus Verpasst + A-Z, ausgeschnitten mit class='teaser'
+def get_sendungen(container, sendungen): # Sendungen ausgeschnitten mit class='teaser', aus Verpasst + A-Z,
+	# 										Suche, Einslike
 	# Headline + Subtitel sind nicht via xpath erreichbar, daher Stringsuche:
 	# ohne linklist + Subtitel weiter (teaser Seitenfang od. Verweis auf Serie, bei A-Z teaser-Satz fast identisch,
 	#	nur linklist fehlt )
