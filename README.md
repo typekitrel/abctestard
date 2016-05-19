@@ -8,7 +8,7 @@ Das Plugin löst den Vorgänger Plex-Plugin-ARDMediathek2015 ab. Das alte Plugin
 
 #### TODO:  
 Vorschläge und Fehlerhinweise an rols1@gmx.de 
-
+  
 Funktionen: 
 ===================  
 - Suche nach Sendungen
@@ -55,5 +55,5 @@ Credits:
 ===================  
 - Credits to [Gammel] (https://gmlblog.de/2013/08/xbmc-tv-livestreams/): Playlist http://dl.gmlblog.de/deutschesender.xml 
 - Credits to [coder-alpha] https://forums.plex.tv/discussion/166602/rel-ccloudtv-channel-iptv/p1): (Channel updater, based on Channel updater by sharkone/BitTorrent.bundle)
-
+- Credits to [Arauco] (https://forums.plex.tv/profile/Arauco): processing of Senderlogos
 

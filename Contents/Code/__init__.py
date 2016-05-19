@@ -15,18 +15,9 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '1.5.0'	
-VDATE = '16.05.2016'
+VERSION =  '1.5.1'	
+VDATE = '19.05.2016'
 
-# akt. geändert (für Doku git):
-#	Log(duration); in SingleSendung # CreateVideoClipObject
-#	Doku-Hinweis zu WD TV Live (Vor- und Rückspulen)
-#	Funktionspfade: Umstellung auf PREFIX 
-#	Verzicht auf en.json (nicht benötigt)
-#	Updater hinzugefügt, Teilnahme am UAS (Unsupported AppStore V2) verworfen (Anwender müssten zusätzl.
-#		das Plugin  WebTools 2.0 installieren)
-#		Logos für Updater aus gtk themes / Adwaita
-#	README auf Markdown-Format umgestellt + aktualisiert
 
 # (c) 2016 by Roland Scholz, rols1@gmx.de Version
 #     Testing Enviroment: 
@@ -659,6 +650,10 @@ def SenderLiveListePre(title, offset=0):	# Vorauswahl: ARD, ZDF, Sonstige
 		element_str = HTML.StringFromElement(element)
 		name = stringextract('<name>', '</name>', element_str)
 		img = stringextract('<thumbnail>', '</thumbnail>', element_str) # channel-thumbnail in playlist
+		if img.find('://') == -1:	# Logo lokal? -> wird aus Resources geladen, Unterverz. leider n.m.
+			img = R(img)
+		else:
+			img = img
 		Log(element_str); Log(name); Log(img);
 		oc.add(DirectoryObject(key=Callback(SenderLiveListe, title=name, listname=name),
 			title='Live-Sender: ' + name, thumb=img, tagline=''))
@@ -706,11 +701,13 @@ def SenderLiveListe(title, listname, offset=0):	#
 									
 		title = stringextract('<title>', '</title>', element_str)
 		title = transl_umlaute(title)	# DirectoryObject verträgt keine Umlaute
-		
-		
+				
 		img = stringextract('<thumbnail>', '</thumbnail>', element_str) 
-		Log(link); Log(title); Log(img);
-
+		if img.find('://') == -1:	# Logo lokal? -> wird aus Resources geladen, Unterverz. leider n.m.
+			img = R(img)
+		else:
+			img = img
+		
 		Log(title); Log(link); Log(img); Log(i)
 		#img = ""		# Senderlogos lassen wir wg. fehlender Skalierungsmöglichkeit weg
 		Resolution = ""; Codecs = ""; duration = ""
