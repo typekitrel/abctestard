@@ -3,7 +3,7 @@
 #import requests	# u.a. Einlesen HTML-Seite, Methode außerhalb Plex-Framework 
 import string
 import os 			# u.a. Behandlung von Pfadnamen
-import re			# u.a. Reguläre Ausdrücke in CalculateDuration
+import re			# u.a. Reguläre Ausdrücke, z.B. in CalculateDuration
 import datetime
 import locale
 
@@ -15,8 +15,8 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '1.5.1'	
-VDATE = '19.05.2016'
+VERSION =  '2.1.1'	
+VDATE = '27.05.2016'
 
 
 # (c) 2016 by Roland Scholz, rols1@gmx.de Version
@@ -54,14 +54,17 @@ PREFIX = "/video/ardmediathek2016"
 
 PLAYLIST = 'livesender.xml'					# basiert auf der Channeldatei von gammel, Download:
 # http://dl.gmlblog.de/deutschesender.xml. Veröffentlicht: https://gmlblog.de/2013/08/xbmc-tv-livestreams/
-ART = 'art.png'
-ICON = 'icon.png'
-ICON_SEARCH = 'icon-search.png'					# gtk themes / Adwaita system-search-symbolic.symbolic.png
+ART = 'art.png'								# ARD 
+ICON = 'icon.png'							# ARD
+ICON_SEARCH = 'icon-search.png'				# gtk themes / Adwaita system-search-symbolic.symbolic.png
 
 ICON_AZ = 'icon-AZ.png'
-ICON_CAL = 'icon-calendar.png'					# gnome / Tango x-office-calendar.png
+ICON_CAL = 'icon-calendar.png'				# gnome / Tango x-office-calendar.png
 ICON_EINSLIKE = 'icon-Einslike.png'
-ICON_SENDER = 'ICON-Sender.png' 
+ICON_SENDER = 'icon-Sender.png' 
+ICON_RUBRIKEN = 'icon-Rubriken.png'
+ICON_Themen = 'icon-Themen.png'
+ICON_MEIST = 'icon-meist.png'
 
 ICON_UPDATER = "icon-updater.png"
 ICON_UPDATE_NEW = "icon-update-new.png"
@@ -70,6 +73,23 @@ ICON_WARNING = "icon-warning.png"
 ICON_NEXT = "icon-next.png"
 ICON_CANCEL = "icon-error.png"
 
+THUMBNAIL = [									# Vorgaben für THUMBNAILS in ZDF_BEITRAG_DETAILS 
+  '946x532',
+  '644x363',
+  '672x378',
+]
+ICON_RUBRIKEN
+SENDUNGENAZ = [									# ZDF A-Z
+  ['ABC', 'A', 'C'],
+  ['DEF', 'D', 'F'],
+  ['GHI', 'G', 'I'],
+  ['JKL', 'J', 'L'],
+  ['MNO', 'M', 'O'],
+  ['PQRS', 'P', 'S'],
+  ['TUV', 'T', 'V'],
+  ['WXYZ', 'W', 'Z'],
+  ['0-9', '0-9', '0-9']
+]
 
 BASE_URL = 'http://www.ardmediathek.de'
 ARD_VERPASST = '/tv/sendungVerpasst?tag='		# ergänzt mit 0, 1, 2 usw.
@@ -77,6 +97,19 @@ ARD_AZ = '/tv/sendungen-a-z?buchstabe='			# ergänzt mit 0-9, A, B, usw.
 ARD_Suche = '/tv/suche?searchText='				# ergänzt mit Suchbegriff
 ARD_Live = '/tv/live'
 ARD_Einslike = '/einslike'
+
+ZDF					 = 'http://www.zdf.de/ZDFmediathek/hauptnavigation/startseite?flash=off'	# Mediathek ohne Flash
+ZDF_RUBRIKEN         = 'http://www.zdf.de/ZDFmediathek/xmlservice/web/rubriken'
+ZDF_THEMEN           = 'http://www.zdf.de/ZDFmediathek/xmlservice/web/themen'
+ZDF_MEISTGESEHEN     = 'http://www.zdf.de/ZDFmediathek/xmlservice/web/meistGesehen?id=_GLOBAL&maxLength=10&offset=%s'
+ZDF_SENDUNGEN_AZ     = 'http://www.zdf.de/ZDFmediathek/xmlservice/web/sendungenAbisZ?characterRangeStart=%s&characterRangeEnd=%s&detailLevel=2'
+ZDF_SENDUNG_VERPASST = 'http://www.zdf.de/ZDFmediathek/xmlservice/web/sendungVerpasst?enddate=%s&maxLength=50&startdate=%s&offset=%s'
+# Bsp.: http://www.zdf.de/ZDFmediathek/xmlservice/web/sendungVerpasst?enddate=140516&maxLength=50&startdate=140516&offset=0
+ZDF_SENDUNG          = 'http://www.zdf.de/ZDFmediathek/xmlservice/web/aktuellste?id=%s&maxLength=25&offset=%s'
+ZDF_BEITRAG          = 'http://www.zdf.de/ZDFmediathek/beitrag/%s/%s'
+ZDF_BEITRAG_DETAILS = 'http://www.zdf.de/ZDFmediathek/xmlservice/web/beitragsDetails?id=%s'
+
+
 
 REPO_NAME = 'Plex-Plugin-ARDMediathek2016'
 GITHUB_REPOSITORY = 'rols1/' + REPO_NAME
@@ -113,48 +146,76 @@ Einzelsendungen:  SinglePage -> get_sendungen -> Parseplaylist:
 '''
 
 def Start():
-    #Log.Debug()  	# definiert in Info.plist
-    Plugin.AddViewGroup("InfoList", viewMode="InfoList", mediaType="items")
-    Plugin.AddViewGroup("List", viewMode="List", mediaType="items")
+	#Log.Debug()  	# definiert in Info.plist
+	Plugin.AddViewGroup("InfoList", viewMode="InfoList", mediaType="items")
+	Plugin.AddViewGroup("List", viewMode="List", mediaType="items")
 
-#   ObjectContainer.art        = R(ART)
-    ObjectContainer.art        = R(ICON)  # gefällt mir als Hintergrund besser
-    ObjectContainer.title1     = NAME
-    ObjectContainer.view_group = "InfoList"
+	#ObjectContainer.art        = R(ART)
+	ObjectContainer.art        = R(ICON)  # gefällt mir als Hintergrund besser
+	ObjectContainer.title1     = NAME
+	ObjectContainer.view_group = "InfoList"
 
-#   HTTP.CacheTime = CACHE_1HOUR	
-    HTTP.CacheTime = 0			# Debug
- 
+	HTTP.CacheTime = CACHE_1HOUR # Debugging: falls Logdaten ausbleiben, Browserdaten löschen
+
 # handler bindet an das bundle
 @route(PREFIX)
 @handler(PREFIX, NAME, art = ART, thumb = ICON)
 def Main():
 	Log('Funktion Main'); Log(PREFIX); Log(VERSION); Log(VDATE)
-	oc = ObjectContainer(view_group="List", art=ObjectContainer.art)	
+	oc = ObjectContainer(view_group="InfoList", art=ObjectContainer.art)	
+
+	# folgendes DirectoryObject ist Deko für das nicht sichtbare InputDirectoryObject dahinter:
+	oc.add(DirectoryObject(key=Callback(Main_ARD, name="ARD Mediathek"), title="ARD Mediathek",
+		summary='', tagline='TV', thumb=R('ard.png')))
+	oc.add(DirectoryObject(key=Callback(Main_ZDF, name="ZDF Mediathek"), title="ZDF Mediathek", 
+		summary='', tagline='TV', thumb=R('zdf.png')))
+	oc.add(DirectoryObject(key=Callback(SenderLiveListePre, title='Live-Sender-Vorauswahl'), title='Live-Sender-Vorauswahl',
+		summary='', tagline='TV', thumb=R(ICON_SENDER)))
+
+	repo_url = 'https://github.com/{0}/releases/'.format(GITHUB_REPOSITORY)
+	oc.add(DirectoryObject(key=Callback(SearchUpdate, title='Plugin-Update'), 
+		title='Plugin-Update | akt. Version: ' + VERSION + ', vom ' + VDATE,
+		summary='Suche nach neuen Updates starten', tagline='Bezugsquelle: ' + repo_url, thumb=R(ICON_UPDATER)))
+		
+	return oc	
+#---------------------------------------------------------------- 
+@route(PREFIX + '/Main_ARD')
+def Main_ARD(name):
+	Log('Funktion Main_ARD'); Log(PREFIX); Log(VERSION); Log(VDATE)
+	oc = ObjectContainer(view_group="InfoList", art=ObjectContainer.art)	
 	
 	# folgendes DirectoryObject ist Deko für das nicht sichtbare InputDirectoryObject dahinter:
 	oc.add(DirectoryObject(key=Callback(Main),title='Suche: im Suchfeld eingeben', summary='', tagline='TV'))
 	oc.add(InputDirectoryObject(key=Callback(Search, s_type='video', title=u'%s' % L('Search Video')),
 		title=u'%s' % L('Search'), prompt=u'%s' % L('Search Video'), thumb=R(ICON_SEARCH)))
-	oc.add(DirectoryObject(key=Callback(VerpasstWoche, name="Sendung Verpasst"), title="Sendung Verpasst (1 Woche)",
+	oc.add(DirectoryObject(key=Callback(VerpasstWoche, name=name), title=name + " Sendung Verpasst (1 Woche)",
 		summary='', tagline='TV', thumb=R(ICON_CAL)))
-	oc.add(DirectoryObject(key=Callback(SendungenAZ, name='Sendungen 0-9 | A-Z'), title='Sendungen A-Z',
+	oc.add(DirectoryObject(key=Callback(SendungenAZ, name=name + ' Sendungen 0-9 | A-Z'), title=name + ' Sendungen A-Z',
 		summary='', tagline='TV', thumb=R(ICON_AZ)))
-	oc.add(DirectoryObject(key=Callback(Einslike, title='Einslike'), title='Einslike',
+	oc.add(DirectoryObject(key=Callback(Einslike, title=name + ' Einslike'), title=name + ' Einslike',
 		summary='', tagline='TV', thumb=R(ICON_EINSLIKE)))
-	oc.add(DirectoryObject(key=Callback(SenderLiveListePre, title='Live-Sender-Vorauswahl'), title='Live-Sender-Vorauswahl',
-		summary='', tagline='TV', thumb=R(ICON_SENDER)))
-
-	oc.add(DirectoryObject(key=Callback(SearchUpdate, title='Plugin-Update'), title='Plugin-Update',
-		summary='Suche nach neuen Updates', tagline='akt. Version: ' + VERSION + ', ' + VDATE, thumb=R(ICON_UPDATER)))
 		
 	return oc	
 #---------------------------------------------------------------- 
+@route(PREFIX + '/Main_ZDF')
+def Main_ZDF(name):
+	Log('Funktion Main_ZDF'); Log(PREFIX); Log(VERSION); Log(VDATE)
+	oc = ObjectContainer(view_group="InfoList", art=ObjectContainer.art, title1=name)	
+	oc.add(DirectoryObject(key=Callback(VerpasstWoche, name=name), title="Sendung Verpasst (1 Woche)",
+		thumb=R(ICON_CAL)))
+	oc.add(DirectoryObject(key=Callback(ZDFSendungenAZ, name="Sendungen A-Z"), title="Sendungen A-Z",
+		thumb=R(ICON_AZ)))
+	oc.add(DirectoryObject(key=Callback(RubrikenThemen, auswahl="Rubriken"), title="Rubriken", 
+		thumb=R(ICON_RUBRIKEN)))
+	oc.add(DirectoryObject(key=Callback(RubrikenThemen, auswahl="Themen"), title="Themen", thumb=R(ICON_Themen)))
+	oc.add(DirectoryObject(key=Callback(Sendung, title="Meist Gesehen", assetId="MEISTGESEHEN"), title="Meist Gesehen",
+		thumb=R(ICON_MEIST)))
  
+	return oc	
 ####################################################################################################
 @route(PREFIX + '/SearchUpdate')
 def SearchUpdate(title):		#
-	oc = ObjectContainer(view_group="List", art=ObjectContainer.art)	
+	oc = ObjectContainer(view_group="InfoList", art=ObjectContainer.art)	
 
 	ret = updater.update_available(VERSION)
 	int_lv = ret[0]			# Version Github
@@ -187,13 +248,13 @@ def SearchUpdate(title):		#
 			summary = 'Plugin Version ' + VERSION + ' ist aktuell (kein Update vorhanden)',
 			tagline = 'weiter zum aktuellen Plugin',
 			thumb = R(ICON_OK)))
-
-	
+			
 	return oc
+	
 ####################################################################################################
 @route(PREFIX + '/SendungenAZ')
 def SendungenAZ(name):		# Auflistung 0-9 (1 Eintrag), A-Z (einzeln) 
-	Log('SendungenAZ')
+	Log('SendungenAZ: ' + name)
 	oc = ObjectContainer(view_group="InfoList", title1=NAME, title2=name, art = ObjectContainer.art)
 	azlist = list(string.ascii_uppercase)
 	azlist.append('0-9')
@@ -220,7 +281,7 @@ def SendungenAZ(name):		# Auflistung 0-9 (1 Eintrag), A-Z (einzeln)
 			inactive_char =  inactive_char + char
 	Log(inactive_char)							# z.B. XYXY
 	
-	for element in azlist:
+	for element in azlist:	
 		Log(element)
 		azPath = BASE_URL + ARD_AZ + element
 		button = element
@@ -231,13 +292,12 @@ def SendungenAZ(name):		# Auflistung 0-9 (1 Eintrag), A-Z (einzeln)
 					title=title, thumb=ICON))
 		else:
 			oc.add(DirectoryObject(key=Callback(SinglePage, title=title, path=azPath, next_cbKey=next_cbKey), 
-					title=title, thumb=ICON))
+					title=title,  thumb=R('ard.png')))
 	return oc
    
 ####################################################################################################
-# Hinweis zur Suche in der Mediathek: miserabler unscharfer Algorithmus - findet alles mögliche
 @route(PREFIX + '/Search')	# Suche - Verarbeitung der Eingabe
-#def Search(query, url=None):
+	# Hinweis zur Suche in der Mediathek: miserabler unscharfer Algorithmus - findet alles mögliche
 def Search(query=None, title=L('Search'), s_type='video', offset=0, **kwargs):
 	Log('Search'); Log(query)
 	
@@ -257,7 +317,7 @@ def Search(query=None, title=L('Search'), s_type='video', offset=0, **kwargs):
 	if i >= 0:
 		return NotFound()
 	
-	oc = PageControl(title=title, path=path, cbKey=next_cbKey) 	# wir springen direkt
+	oc = PageControl(title=name, path=path, cbKey=next_cbKey) 	# wir springen direkt
 	return oc
 	
 	err_txt = page.xpath("//h3[@class='headline']/text()")
@@ -269,28 +329,27 @@ def Search(query=None, title=L('Search'), s_type='video', offset=0, **kwargs):
 	except:					# Treffer
 		oc.add(DirectoryObject(key=Callback(PageControl, title=title, path=path, cbKey=next_cbKey), 
 				title=title, thumb=ICON))
-		
-   
+ 
 	return oc
  
 ####################################################################################################
 @route(PREFIX + '/VerpasstWoche')	# Liste der Wochentage
-# Ablauf: 	
-#		2. PageControl: Liste der Rubriken des gewählten Tages
-#		3. SinglePage: Sendungen der ausgewählten Rubrik mit Bildern (mehrere Sendungen pro Rubrik möglich)
-#		4. Parseplaylist: Auswertung m3u8-Datei (verschiedene Auflösungen)
-#		5. CreateVideoClipObject: einzelnes Video-Objekt erzeugen mit Bild + Laufzeit + Beschreibung
+	# Ablauf (ARD): 	
+	#		2. PageControl: Liste der Rubriken des gewählten Tages
+	#		3. SinglePage: Sendungen der ausgewählten Rubrik mit Bildern (mehrere Sendungen pro Rubrik möglich)
+	#		4. Parseplaylist: Auswertung m3u8-Datei (verschiedene Auflösungen)
+	#		5. CreateVideoClipObject: einzelnes Video-Objekt erzeugen mit Bild + Laufzeit + Beschreibung
 def VerpasstWoche(name):	# Wochenliste zeigen
+	Log('VerpasstWoche: ' + name)
 	oc = ObjectContainer(view_group="InfoList", title1=NAME, title2=name, art = ObjectContainer.art)
 	wlist = range(0,6)
 	now = datetime.datetime.now()
-	# Test auf Folgeseiten hier nicht nötig, immer nur 1 pro Tag
 
 	for nr in wlist:
-		#Log(element)
 		iPath = BASE_URL + ARD_VERPASST + str(nr)
 		rdate = now - datetime.timedelta(days = nr)
 		iDate = rdate.strftime("%d.%m.%Y")		# Formate s. man strftime (3)
+		zdfDate = rdate.strftime("%d%m%y")		
 		iWeekday =  rdate.strftime("%A")
 		punkte = '.'
 		if nr == 0:
@@ -302,9 +361,12 @@ def VerpasstWoche(name):	# Wochenliste zeigen
 		#title = ("%10s ..... %10s"% (iWeekday, iDate))	 # Formatierung in Plex ohne Wirkung
 		title = iWeekday + ' | ' + iDate	 # Bsp.: Heute........15.05.2015
 		cbKey = 'SinglePage'	# cbKey = Callback für Container in PageControl
-		oc.add(DirectoryObject(key=Callback(PageControl, title=title, path=iPath, cbKey='SinglePage'), 
+		if name.find('ARD') == 0 :
+			oc.add(DirectoryObject(key=Callback(PageControl, title=title, path=iPath, cbKey='SinglePage'), 
 				title=title, thumb=ICON))
-					
+		else:
+			oc.add(DirectoryObject(key=Callback(Sendung, title=title, assetId="VERPASST_"+zdfDate),	  
+				title=title, thumb=R('zdf.png')))
 	return oc
 
 def transl_wtag(tag):	# Wochentage engl./deutsch wg. Problemen mit locale-Setting 
@@ -320,16 +382,16 @@ def transl_wtag(tag):	# Wochentage engl./deutsch wg. Problemen mit locale-Settin
 	return wt_ret
 	
 ####################################################################################################
-# Erweiterung Einslike: http://www.ardmediathek.de/einslike
-# 	Liste Rubriken (6): Leben, Musik, Netz & Tech, Spaß & Fiktion, Info, Neueste Videos
-# 	<a class="more" href="/einslike/Spa%C3%9F-Fiktion/mehr?documentId=21301902"
-#	Folgeseiten: mcontent=page (anders ARD-Mediathek: mcontents=page, stimmt Rest überein?)
-#
-# Info zu einslike: http://www.ard.de/home/ard/Gestatten__Einslike_/492028/index.html
 @route(PREFIX + '/Einslike')	# Menü Einslike (Rubrik-Liste)
-# Ablauf: 	
-#			hier: Rubrik-Liste zusammenstellen mit Links zu den "mehr"-Seiten, 
-#			weiter wie Verpasst Woche (->PageControl -> SinglePage -> Parseplaylist -> CreateVideoClipObject
+	# Erweiterung Einslike: http://www.ardmediathek.de/einslike
+	# 	Liste Rubriken (6): Leben, Musik, Netz & Tech, Spaß & Fiktion, Info, Neueste Videos
+	# 	<a class="more" href="/einslike/Spa%C3%9F-Fiktion/mehr?documentId=21301902"
+	#	Folgeseiten: mcontent=page (anders ARD-Mediathek: mcontents=page, stimmt Rest überein?)
+	#
+	# Info zu einslike: http://www.ard.de/home/ard/Gestatten__Einslike_/492028/index.html
+	# Ablauf: 	
+	#			hier: Rubrik-Liste zusammenstellen mit Links zu den "mehr"-Seiten, 
+	#			weiter wie Verpasst Woche (->PageControl -> SinglePage -> Parseplaylist -> CreateVideoClipObject
 def Einslike(title):	# Wochenliste zeigen
 	title2='Einslike - Videos fuer Musik und Lifestyle in der ARD Mediathek'
 	oc = ObjectContainer(view_group="InfoList", title1=NAME, title2=title2, art = ObjectContainer.art)
@@ -354,12 +416,12 @@ def Einslike(title):	# Wochenliste zeigen
 	return oc
 ####################################################################################################
 @route(PREFIX + '/PageControl')	# kontrolliert auf Folgeseiten. Mehrfache Verwendung.
-# Wir laden beim 1. Zugriff alle Seitenverweise in eine Liste. Bei den Folgezugriffen können die Seiten
-# verweise entfallen - der Rückschritt zur Liste ist dem Anwender nach jedem Listenelement  möglich.
-# Dagegen wird in der Mediathek geblättert.
-
+	# Wir laden beim 1. Zugriff alle Seitenverweise in eine Liste. Bei den Folgezugriffen können die Seiten
+	# verweise entfallen - der Rückschritt zur Liste ist dem Anwender nach jedem Listenelement  möglich.
+	# Dagegen wird in der Mediathek geblättert.
 def PageControl(cbKey, title, path, offset=0):  # 
-	oc = ObjectContainer(view_group="InfoList", title1=NAME, title2='Folgeseiten: ' + title, art = ObjectContainer.art)
+	title1='Folgeseiten: ' + title
+	oc = ObjectContainer(view_group="InfoList", title1=title1, title2=title1, art = ObjectContainer.art)
 	page = HTML.ElementFromURL(path)
 	path_page1 = path							# Pfad der ersten Seite sichern, sonst gehts mit Seite 2 weiter
 	
@@ -454,7 +516,7 @@ def PageControl(cbKey, title, path, offset=0):  #
   
 ####################################################################################################
 @route(PREFIX + '/SinglePage')	# Liste der Sendungen eines Tages / einer Suche 
-#						# durchgehend angezeigt (im Original collapsed)
+								# durchgehend angezeigt (im Original collapsed)
 def SinglePage(title, path, next_cbKey, offset=0):	# path komplett
 
 	oc = ObjectContainer(view_group="InfoList", title1=title, art=ICON)
@@ -510,8 +572,8 @@ def SinglePage(title, path, next_cbKey, offset=0):	# path komplett
 
 					 		
 ####################################################################################################
-@route(PREFIX + '/SingleSendung')	# einzelne Sendung, path in neuer Mediathekführt zur 
-												# Quellenseite (Ausgabe im Textformat)
+@route(PREFIX + '/SingleSendung')		# einzelne Sendung, path in neuer Mediathekführt zur 
+										# Quellenseite (Ausgabe im Textformat)
 	# für weitere Infos zur Sendung müsste der Sendungspfad aus SinglePage (hier m3u8-Pfad) zusätzlich
 	# mitgeführt und hier übergeben werden. Weitere Infos sind z.B. in <meta name="description" die
 	# ausführliche Beschreibung der Sendung. Da Plex nicht über Möglichkeit der ganzeitigen Darstellung
@@ -555,7 +617,7 @@ def SingleSendung(path, title, thumb, duration, offset=0):	# -> CreateVideoClipO
 		#oc.add(CreateVideoClipObject(url=link_m3u8, title=title, 
 		#			summary='funktioniert nicht mit allen Playern', meta=path, thumb=thumb, duration=''))
 		Codecs = ''
-		oc.add(CreateVideoStreamObject(url=link_m3u8, title=title, 
+		oc.add(CreateVideoStreamObject(url=link_m3u8, title=title, rtmp_live='nein',
 			summary='funktioniert nicht mit allen Playern', meta=Codecs, thumb=thumb))
 
 		cont = Parseplaylist(oc, link_m3u8, thumb)	# Einträge für die einzelnen Auflösungen dort zusätzlich zum
@@ -599,40 +661,132 @@ def SingleSendung(path, title, thumb, duration, offset=0):	# -> CreateVideoClipO
 		oc.add(CreateVideoClipObject(url=href_quality_S, title=title, 
 		summary="", meta=path, thumb=thumb, duration=duration))		
 	return oc
+	
 ####################################################################################################
-# Plex-Warnung: Media part has no streams - attempting to synthesize | keine Auswirkung
-# **kwargs erforderlich bei Fehler: CreateVideoClipObject() got an unexpected keyword argument 'checkFiles'
-#	beobachtet bei Firefox (Suse Leap) + Chrome (Windows7)
-#	s.a. https://github.com/sander1/channelpear.bundle/tree/8605fc778a2d46243bb0378b0ab40a205c408da4
+def get_sendungen(container, sendungen): # Sendungen ausgeschnitten mit class='teaser', aus Verpasst + A-Z,
+	# 										Suche, Einslike
+	# Headline + Subtitel sind nicht via xpath erreichbar, daher Stringsuche:
+	# ohne linklist + Subtitel weiter (teaser Seitenfang od. Verweis auf Serie, bei A-Z teaser-Satz fast identisch,
+	#	nur linklist fehlt )
+	# Die Rückgabe-Liste send_arr nimmt die Datensätze auf (path, headline usw.)
+	
+	Log('get_sendungen')
+	# send_arr nimmt die folgenden Listen auf (je 1 Datensatz pro Sendung)
+	send_path = []; send_headline = []; send_subtitel = []; send_img_src = [];
+	send_img_alt = []; send_millsec_duration = []; send_dachzeile = []; send_sid = []; 
+	arr_ind = 0
+	img_alt = ""	# fehlt manchmal
+	for sendung in sendungen:					 
+		#s = lxml.html.tostring(sendung)
+		s = XML.StringFromElement(sendung)	# XML.StringFromElement Plex-Framework
+		# Log(s)							# umfangreiche Ausgabe (nur bei Bedarf)						
+		if s.find('<div class="linklist">') == -1 and s.find('subtitle') >= 0: 
+			dachzeile = re.search("<p class=\"dachzeile\">(.*?)</p>\s+?", s)  # Bsp. <p class="dachzeile">Weltspiegel</p>
+			if dachzeile:									# fehlt komplett bei ARD_SENDUNG_VERPASST
+				dachzeile = dachzeile.group(1)
+			else:
+				dachzeile = ''
+			headline = re.search("<h4 class=\"headline\">(.*?)</h4>\s+?", s) # Bsp. <h4 class="headline">Mit Armin ...</h4>
+			headline = headline.group(1)					# group(1) liefert bereits den Ausschnitt
+			#headline = stringextract('>', '<', s)
+			headline = headline .decode('utf-8')			# tagline-Attribute verlangt Unicode
+			if headline.find('- Hörfassung') >= 0:			# Hörfassung unterdrücken
+				continue
+			subtitel = re.search("<p class=\"subtitle\">(.*?)</p>\s+?", s)	# Bsp. <p class="subtitle">25 Min.</p>
+			subtitel = subtitel.group(1)
+			send_duration = subtitel
+			send_date = ''
+			if send_duration.find('Min.') >= 0:			# Bsp. 20 Min. | UT
+				send_duration = send_duration.split('Min.')[0]
+				duration = send_duration.split('Min.')[0]
+				#Log(duration)
+				if duration.find('|') >= 0:			# Bsp. 17.03.2016 | 29 Min. | UT 
+						duration = duration.split('|')[1]
+				#Log(duration)
+				millsec_duration = CalculateDuration(duration)
+			else:
+				millsec_duration = ''
+				
+			img_src = ""
+			if s.find('urlScheme') >= 0:					# Bildaddresse versteckt im img-Knoten
+				#s = s.split('urlScheme&#039;:&#039;')[0]	#	zwischen beiden split-strings
+				s = s.split('urlScheme')[1]					#	klappt wg. Sonderz. nur so	
+				img_src = s.split('##width##')[0]
+				img_src  = img_src [3:]						# 	vorne ':' abschneiden
+				img_src = BASE_URL + img_src + '320'			# Größe nicht in Quelle, getestet: 160,320,640
+
+			try:
+				extr_path = sendung.xpath("./div/div/a/@href")[0]   	# ohne Pfad weiter (mehrere teaser am Seitenanfang)				
+				Log(extr_path)
+				sid = ""
+				if extr_path.find('documentId=') >= 0:
+					sid = extr_path.split('documentId=')[1]
+				Log(sid)
+				path = extr_path	# korrigiert in SinglePage für Einzelsendungen in  '/play/media/' + sid
+				Log(path)
+				#path = BASE_URL + '/play/media/' + sid			# -> *.mp4 (Quali.-Stufen) + master.m3u8-Datei
+				#path = BASE_URL + path.split('documentId=')[0] + sid + '&documentId=' + sid			
+				img_alt = sendung.xpath("./div/div/a/img/@alt")[0] 
+				Log(img_alt)
+							
+			except:
+				Log('xpath-Fehler in Liste class=teaserbox, sendung: ' + s )
+		
+			Log('neuer Satz')
+			Log(sid); Log(extr_path); Log(path); Log(img_src); Log(img_alt); Log(headline);  
+			Log(subtitel); Log(send_duration); Log(millsec_duration); Log(dachzeile); 
+
+			send_path.append(path)			# erst die Listen füllen
+			send_headline.append(headline)
+			send_subtitel.append(subtitel)
+			send_img_src.append(img_src)
+			send_img_alt.append(img_alt)
+			send_millsec_duration.append(millsec_duration)
+			send_dachzeile.append(dachzeile)		
+			send_sid.append(sid)	
+			
+											# dann der komplette Listen-Satz ins Array		
+	send_arr = [send_path, send_headline, send_subtitel, send_img_src, send_img_alt, send_millsec_duration, 
+		send_dachzeile, send_sid]
+	# Log(send_arr)					# umfangreich - nur bei Bedarf
+	return send_arr
+	
+####################################################################################################
 @route(PREFIX + '/CreateVideoClipObject')	# <- SingleSendung Qualitätsstufen
+	# Plex-Warnung: Media part has no streams - attempting to synthesize | keine Auswirkung
+	# **kwargs erforderlich bei Fehler: CreateVideoClipObject() got an unexpected keyword argument 'checkFiles'
+	#	beobachtet bei Firefox (Suse Leap) + Chrome (Windows7)
+	#	s.a. https://github.com/sander1/channelpear.bundle/tree/8605fc778a2d46243bb0378b0ab40a205c408da4
 def CreateVideoClipObject(url, title, summary, meta, thumb, duration,include_container=False, **kwargs):
-  #title = title.encode("utf-8")		# ev. für alle ausgelesenen Details erforderlich
-  Log('CreateVideoClipObject')
-  Log(url); Log(duration); 
+	#title = title.encode("utf-8")		# ev. für alle ausgelesenen Details erforderlich
+	Log('CreateVideoClipObject')
+	Log(url); Log(duration); 
 
  
-  videoclip_obj = VideoClipObject(
-  key = Callback(CreateVideoClipObject, url=url, title=title, summary=summary,
-	meta=meta, thumb=thumb, duration=duration, include_container=True),
-	rating_key = url,
-	title = title,
-	summary = summary,
-	thumb = thumb,
-	items = [
-		MediaObject(
-			parts = [
-				PartObject(key=url)
-			],
-			container = Container.MP4,  	# weitere Video-Details für Chrome nicht erf., aber Firefox 
-			video_codec = VideoCodec.H264,	# benötigt VideoCodec + AudioCodec zur Audiowiedergabe
-			audio_codec = AudioCodec.AAC,	# 
-		)
+	videoclip_obj = VideoClipObject(
+	key = Callback(CreateVideoClipObject, url=url, title=title, summary=summary,
+		meta=meta, thumb=thumb, duration=duration, include_container=True),
+		rating_key = url,
+		title = title,
+		summary = summary,
+		thumb = thumb,
+		items = [
+			MediaObject(
+				parts = [
+					PartObject(key=url)
+					# PartObject(key=Callback(PlayVideo, url=url, resolution=resolution)) # s.u., verzichtbar
+				],
+				container = Container.MP4,  	# weitere Video-Details für Chrome nicht erf., aber Firefox 
+				video_codec = VideoCodec.H264,	# benötigt VideoCodec + AudioCodec zur Audiowiedergabe
+				audio_codec = AudioCodec.AAC,	# 
+				
+			)  									# <- for resolution in [720, 540, 480] (in PlayVideo übergeben)
 	])
 
-  if include_container:
-	return ObjectContainer(objects=[videoclip_obj])
-  else:
-	return videoclip_obj
+	if include_container:						# Abfrage anscheinend verzichtbar, schadet aber auch nicht 
+		return ObjectContainer(objects=[videoclip_obj])
+	else:
+		return videoclip_obj
 	
 #####################################################################################################
 @route(PREFIX + '/SenderLiveListePre')	# LiveListe Vorauswahl - verwendet lokale Playlist
@@ -723,10 +877,9 @@ def SenderLiveListe(title, listname, offset=0):	#
 	
 ###################################################################################################
 @route(PREFIX + '/SenderLiveResolution')	# Auswahl der Auflösungstufen des Livesenders
-#	Die URL der gewählten Auflösung führt zu weiterer m3u8-Datei (*.m3u8), die Links zu den 
-#	Videosegmenten (.ts-Files enthält). Diese  verarbeitet der Plexserver im Videoobject. 
+	#	Die URL der gewählten Auflösung führt zu weiterer m3u8-Datei (*.m3u8), die Links zu den 
+	#	Videosegmenten (.ts-Files enthält). Diese  verarbeitet der Plexserver im Videoobject. 
 def SenderLiveResolution(path, title, thumb, include_container=False):
-	#oc = ObjectContainer(view_group="InfoList", title1=title + ' Live', art=ICON)
 	#page = HTML.ElementFromURL(path)
 	url_m3u8 = path
 	Log(title); Log(url_m3u8);
@@ -741,20 +894,20 @@ def SenderLiveResolution(path, title, thumb, include_container=False):
 		
 	if url_m3u8.find('rtmp') == 0:		# hier noch flash-Infos auswerten
 		oc.add(CreateVideoStreamObject(url=url_m3u8, title=title, 
-			summary='', meta=Codecs, thumb=thumb))
+			summary='', meta=Codecs, thumb=thumb, rtmp_live='ja'))
 		return oc
 		
 	# alle übrigen (i.d.R. http-Links)
 	oc.add(CreateVideoStreamObject(url=url_m3u8, title=title + ' | Bandbreite und Auflösung automatisch', 
-		summary='funktioniert nicht mit allen Playern', meta=Codecs, thumb=thumb))
+		summary='funktioniert nicht mit allen Playern', meta=Codecs, thumb=thumb, rtmp_live='nein'))
 	# Auslösungsstufen (bei relativen Pfaden nutzlos):
 	oc = Parseplaylist(oc, url_m3u8, thumb)	# Auswertung *.m3u8-Datei, Auffüllung Container mit Auflösungen
 	return oc								# (-> CreateVideoStreamObject pro Auflösungstufe)
 
 ####################################################################################################
-# Die unter  https://api.arte.tv/api/player/v1/livestream/de?autostart=1 ausgelieferte Textdatei
-# 	enthält je 2 rtmp-Url und 2 hls-Url
 @route(PREFIX + '/Arteplaylist')	# Auswertung Arte-Parameter rtmp- + hls-streaming
+	# Die unter  https://api.arte.tv/api/player/v1/livestream/de?autostart=1 ausgelieferte Textdatei
+	# 	enthält je 2 rtmp-Url und 2 hls-Url
 def Arteplaylist(oc, url, title, thumb):
 	Log('Arteplaylist')
 	playlist = HTTP.Request(url).content  # als Text, nicht als HTML-Element
@@ -780,22 +933,22 @@ def Arteplaylist(oc, url, title, thumb):
 	hls1_url = repl_char('\\', r1)	# Quotierung für Slashes entfernen
 	hls2_url = repl_char('\\', r2)		
 	
-	oc.add(CreateVideoStreamObject(url=rtmp1_url, title=title + ' (de) | rtmp', 
-		summary='RTMP-Streaming deutsch', meta='', thumb=thumb))
-	oc.add(CreateVideoStreamObject(url=rtmp2_url, title=title + ' (fr) | rtmp', 
-		summary='RTMP-Streaming französisch', meta='', thumb=thumb))
+	oc.add(CreateVideoStreamObject(url=rtmp1_url, title=title + ' (de) | rtmp', 	# weniger stabil als HLS
+		summary='RTMP-Streaming deutsch', meta='', thumb=thumb, rtmp_live='ja'))
+	oc.add(CreateVideoStreamObject(url=rtmp2_url, title=title + ' (fr) | rtmp', 	# weniger stabil als HLS
+		summary='RTMP-Streaming französisch', meta='', thumb=thumb, rtmp_live='ja'))
 	oc.add(CreateVideoStreamObject(url=hls1_url, title=title + ' (de) | http', 
-		summary='HLS-Streaming deutsch', meta='', thumb=thumb))
+		summary='HLS-Streaming deutsch', meta='', thumb=thumb, rtmp_live='nein'))
 	oc.add(CreateVideoStreamObject(url=hls2_url, title=title + ' (fr) | http', 
-		summary='HLS-Streaming französisch', meta='', thumb=thumb))
+		summary='HLS-Streaming französisch', meta='', thumb=thumb, rtmp_live='nein'))
 	
 	Log(rtmp1_url); Log(rtmp2_url); Log(hls1_url); Log(hls2_url); Log(len(oc))
 	return oc
 
 ####################################################################################################
-# **kwargs - s. CreateVideoClipObject
 @route(PREFIX + '/CreateVideoStreamObject')	# <- LiveListe, SingleSendung (nur m3u8-Dateien)
-def CreateVideoStreamObject(url, title, summary, meta, thumb, include_container=False, **kwargs):
+											# **kwargs - s. CreateVideoClipObject
+def CreateVideoStreamObject(url, title, summary, meta, thumb, rtmp_live, include_container=False, **kwargs):
   # Zum Problem HTTP Live Streaming (HLS): Redirecting des Video-Callbacks in einen HTTPLiveStreamURL
   # s.https://forums.plex.tv/index.php/topic/40532-bug-http-live-streaming-doesnt-work-when-redirected/
   # s.a. https://forums.plex.tv/discussion/88056/httplivestreamurl
@@ -810,17 +963,32 @@ def CreateVideoStreamObject(url, title, summary, meta, thumb, include_container=
   #		Aber: keine Auswirkung auf andere Player im Netz
   
   #	resolution = [720, 540, 480] # Parameter bei Livestream nicht akzeptiert +  auch nicht nötig
+  # rtmp_live: Steuerung via False/True nicht möglich. Bei zweiten Durchlauf gehen Bool-Parameter verloren
 	
+	Log('CreateVideoStreamObject: ' + url); Log('rtmp_live: ' + rtmp_live) 
 	if url.find('rtmp:') >= 0:	# rtmp = Protokoll für flash, rtmpdump ermittelt Quellen
-		mo = MediaObject(parts=[PartObject(key=RTMPVideoURL(url=url,live=True))])
-		rating_key = title
-		videoclip_obj = VideoClipObject(
-			key = Callback(CreateVideoStreamObject, url=url, title=title, summary=summary, 
-			meta=meta, thumb=thumb, include_container=True), 
-			rating_key=title,
-			title=title,
-			summary=summary,
-			thumb=thumb,)   # live=True nicht aktzeptiert
+		#mo = MediaObject(parts=[PartObject(key=RTMPVideoURL(url=url,live=True))]) # live=True nur Streaming
+		if rtmp_live == 'ja':
+			Log('rtmp_live: ' + rtmp_live) 
+			mo = MediaObject(parts=[PartObject(key=RTMPVideoURL(url=url,live=True))])
+			rating_key = title
+			videoclip_obj = VideoClipObject(
+				key = Callback(CreateVideoStreamObject, url=url, title=title, summary=summary, 
+				meta=meta, thumb=thumb, rtmp_live='ja', include_container=True), 
+				rating_key=title,
+				title=title,
+				summary=summary,
+				thumb=thumb,)  
+		else:
+			mo = MediaObject(parts=[PartObject(key=RTMPVideoURL(url=url))])
+			rating_key = title
+			videoclip_obj = VideoClipObject(
+				key = Callback(CreateVideoStreamObject, url=url, title=title, summary=summary, 
+				meta=meta, thumb=thumb, rtmp_live='nein', include_container=True), 
+				rating_key=title,
+				title=title,
+				summary=summary,
+				thumb=thumb,) 			 
 
 	else:
 		# Auslösungsstufen weglassen? (bei relativen Pfaden nutzlos) 
@@ -829,7 +997,7 @@ def CreateVideoStreamObject(url, title, summary, meta, thumb, include_container=
 		rating_key = title
 		videoclip_obj = VideoClipObject(
 			key = Callback(CreateVideoStreamObject, url=url, title=title, summary=summary,
-			meta=meta, thumb=thumb, include_container=True), 
+			meta=meta, thumb=thumb, rtmp_live=rtmp_live, include_container=True), 
 			rating_key=title,
 			title=title,
 			summary=summary,
@@ -850,12 +1018,318 @@ def CreateVideoStreamObject(url, title, summary, meta, thumb, include_container=
 #	akzeptiert - Ursache nicht gefunden. 
 #	Routine ab 03.04.2016 entbehrlich - s.o.
 @route(PREFIX + '/PlayVideo')  
-def PlayVideo(url):  		
+def PlayVideo(url):		# resolution übergeben, falls im  videoclip_obj verwendet
+	Log('PlayVideo')  		
 	HTTP.Request(url).content
 	return Redirect(url)
 
 ####################################################################################################
-#									Hilfsroutinen
+#									ZDF-Funktionen
+#
+@route(PREFIX + '/ZDFSendungenAZ')
+def ZDFSendungenAZ(name):
+	Log('ZDFSendungenAZ')
+	oc = ObjectContainer(title2=name, view_group="List")
+
+	# A to Z
+	for page in SENDUNGENAZ:
+		oc.add(DirectoryObject(key=Callback(SendungenAZList, char=page[0]), title=page[0], thumb=R('zdf.png')))
+	return oc
+
+####################################################################################################
+@route(PREFIX + '/RubrikenThemen')
+def RubrikenThemen(auswahl):
+	#auswahl = 'Rubriken'
+	Log.Debug('RubrikenThemen: ' + auswahl)
+	oc = ObjectContainer(title2='ZDF: ' + auswahl, view_group="List")
+	if(auswahl == 'Rubriken'):
+		content = XML.ElementFromURL(ZDF_RUBRIKEN, cacheTime=CACHE_1HOUR)
+		#content = XML.ElementFromURL(ZDF_RUBRIKEN, cacheTime=0)	# Debug
+	elif(auswahl == 'Themen'):
+		content = XML.ElementFromURL(ZDF_THEMEN, cacheTime=CACHE_1HOUR)
+		#content = XML.ElementFromURL(ZDF_THEMEN, cacheTime=0)	# Debug
+	else:
+		raise Ex.MediaNotAvailable
+		
+	Log(content)
+	teasers = content.xpath('//teaserlist/teasers/teaser')
+	for teaser in teasers:
+		typ = teaser.xpath('./type')[0].text
+		if(typ != 'rubrik' and typ != 'topthema' and typ != 'thema'):
+			Log('RubrikenThemen: Unsupported type ' + typ)
+			continue
+      
+		for res in THUMBNAIL:
+			thumb = teaser.xpath('./teaserimages/teaserimage[@key="%s"]' % (res))[0].text
+			if thumb.find('fallback') == -1:
+				break
+      
+		title = teaser.xpath('./information/title')[0].text
+		summary = teaser.xpath('./information/detail')[0].text
+		assetId = teaser.xpath('./details/assetId')[0].text
+
+		tagline = None
+		if(typ == 'topthema'):
+			title = 'Topthema - %s' % (title)
+			tagline = 'Topthema'
+		oc.add(DirectoryObject(key=Callback(Sendung, title=title, assetId=assetId), title=title, 
+			thumb=thumb, summary=summary, tagline=tagline))
+			
+	Log(auswahl); Log(title); Log(assetId);
+	return oc
+	
+####################################################################################################
+@route(PREFIX + '/SendungenAZList/{char}')
+def SendungenAZList(char):
+	Log('SendungenAZList')
+	oc = ObjectContainer(title2=char, view_group="List")
+	for page in SENDUNGENAZ:
+		if page[0] != char:
+			continue
+		content = XML.ElementFromURL(ZDF_SENDUNGEN_AZ % (page[1], page[2]), cacheTime=CACHE_1HOUR)
+		#content = XML.ElementFromURL(ZDF_SENDUNGEN_AZ % (page[1], page[2]), cacheTime=0)	# Debug
+		teasers = content.xpath('//teaserlist/teasers/teaser')
+		for teaser in teasers:
+			for res in THUMBNAIL:
+				thumb = teaser.xpath('./teaserimages/teaserimage[@key="%s"]' % (res))[0].text
+				if thumb.find('fallback') == -1:
+					break
+      
+			title = teaser.xpath('./information/title')[0].text
+			summary = teaser.xpath('./information/detail')[0].text
+			assetId = teaser.xpath('./details/assetId')[0].text
+			oc.add(DirectoryObject(key=Callback(Sendung, title=title, assetId=assetId), title=title, 
+				thumb=thumb, summary=summary))
+  
+	if len(oc) == 0:
+		return MessageContainer("Empty", "There aren't any speakers whose name starts with " + char)
+
+	return oc
+  
+####################################################################################################
+@route(PREFIX + '/Sendung/{assetId}', allow_sync = True)
+def Sendung(title, assetId, offset=0):
+	Log('Sendung: ' + title); Log(assetId); Log(offset);
+	oc = ObjectContainer(title2=title.decode(encoding="utf-8", errors="ignore"), view_group="InfoList")
+	if(assetId == 'MEISTGESEHEN'):
+		maxLength = 25	# vormals 10
+		content = XML.ElementFromURL(ZDF_MEISTGESEHEN % (offset), cacheTime=CACHE_1HOUR)
+		#content = XML.ElementFromURL(ZDF_MEISTGESEHEN % (offset), cacheTime=0)	# Debug
+	elif(assetId.find('VERPASST_') != -1):
+		maxLength = 50
+		Log(maxLength); 
+		d = re.search('VERPASST_([0-9]{1,6})', assetId)
+		#if(d == None):
+		#  return oc
+		day = d.group(1)
+		content = XML.ElementFromURL(ZDF_SENDUNG_VERPASST % (day, day, offset), cacheTime=CACHE_1HOUR)
+		#content = XML.ElementFromURL(ZDF_SENDUNG_VERPASST % (day, day, offset), cacheTime=0)	# Debug
+	else:
+		maxLength = 25
+		content = XML.ElementFromURL(ZDF_SENDUNG % (str(assetId), offset), cacheTime=CACHE_1HOUR)
+		#content = XML.ElementFromURL(ZDF_SENDUNG % (str(assetId), offset), cacheTime=0)	# Debug
+	Log(assetId);  Log(content); 
+
+	more = content.xpath('//teaserlist/additionalTeaser')[0].text == 'true'
+	teasers = content.xpath('//teaserlist/teasers/teaser')
+	Log(more); Log(teasers)
+	for teaser in teasers:
+		Log('teaser: '); Log(teaser)
+		typ = teaser.xpath('./type')[0].text
+		for res in THUMBNAIL:
+			thumb = teaser.xpath('./teaserimages/teaserimage[@key="%s"]' % (res))[0].text
+			if thumb.find('fallback') == -1:
+				break
+
+		ttitle = teaser.xpath('./information/title')[0].text	
+		tsummary = teaser.xpath('./information/detail')[0].text
+		tassetId = teaser.xpath('./details/assetId')[0].text
+		Log(typ); Log(ttitle); Log(tsummary); Log(tassetId);	
+		
+		'''			
+		Problematik Video-URL:
+			Videoquellen werden im Webservice der ZDF-Mediathek über folgende URL ermittelt (Bsp.:)
+				details-Bsp.: http://www.zdf.de/ZDFmediathek/xmlservice/web/beitragsDetails?id=2739308
+			Die Auswahl ist umfangreich - häufig ca. 30 Quellen in verschiedenen Auflösungen, darunter 
+			h264-mpeg4-Videos, rtsp-Streams, vod-Streams (Video-on-Demand, Dateiendung manifest.f4m), 
+			http-Streams (Dateiendung manifest.mp4), rtmp/rtmpt-Streams (Dateiendungen .smil, .meta), 
+			MOV-Videos (QuickTime Movie, Dateiendung .mov), WebM-Videos (HTML5-Videos, Dateiendung .webm),
+			m3u8-Streaming (Playlist-Datei, Dateiendung .m3u8).
+			Zusätzliche gibt es noch eine Version für HBBTV (mit spez. Receiver) im Feld <tvUrl>.
+			
+			In ZDFMediathek V2.0 wurde die Video-URL für h264-mpeg4-Videos (basetype="h264_aac_mp4_http_na_na")
+			ermittelt. Die Server sind unterschiedlich (z.B. vdl.zdf.de, nrodl.zdf.de); einige blocken die 
+			Auslieferung (beobachtet bei  vdl.zdf.de), ev. um Downloads zu verhindern.
+			
+			Wir verwenden hier vorerst nur die m3u8-Streaming-Angebote, da solche sich im Plugin ARDMediathek2016
+			bewährt haben und die offenichtlich bei jeder Sendung angeboten werden (hier: 
+			basetype="h264_aac_ts_http_m3u8_http". Bei Bedarf können später andere nachgerüstet werden.		
+		'''
+		if(typ == 'video'):
+			show = teaser.xpath('./details/originChannelTitle')[0].text
+			if(show != title):
+				ttitle = '%s - %s' % (show, ttitle)
+
+			#date = Datetime.ParseDate(teaser.xpath('./details/airtime')[0].text).date()
+			airtime = teaser.xpath('./details/onlineairtime')[0].text
+			date = Datetime.ParseDate(airtime)
+			lengthSec = teaser.xpath('./details/lengthSec')[0].text
+			minutes = int(lengthSec) / 60
+			if minutes >= 1:
+				dauer = 'Dauer: ' + str(minutes) + ' min'
+			else:
+				dauer = 'Dauer: ' + str(lengthSec) + ' sec'
+			tagline = airtime + ' | ' + dauer
+			duration = CalculateDuration(teaser.xpath('./details/length')[0].text)
+			details = XML.ElementFromURL(ZDF_BEITRAG_DETAILS % tassetId, cacheTime=CACHE_1HOUR)
+			#details = XML.ElementFromURL(ZDF_BEITRAG_DETAILS % tassetId, cacheTime=0)	# Debug
+			vtype = details.xpath('//video/type')[0].text
+			Log('vtype: ' + vtype); Log(tagline); Log(dauer); Log(duration); Log(details); 
+				
+			if(vtype == 'video' or vtype == 'livevideo'):  # wir verwenden nur m3u8-Dateien, falls vorhanden
+				try:	# manchmal nur im Angebot: vcmsUrl (Verweis auf Beitrag in der Mediathek)  oder tvUrl (HBBTV) 
+					#videoURL = details.xpath('//formitaet[@basetype="h264_aac_mp4_http_na_na" and quality="veryhigh" and ratio="16:9"]/url')[0].text # V 2.0
+					videoURL = details.xpath('//formitaet[@basetype="h264_aac_ts_http_m3u8_http" and quality="high"]/url')[0].text
+				except:
+					Log('vtype: ' + 'kein Video zum m3u8-Streaming gefunden')
+					break	# ohne Hinweis überspringen
+			else:
+				Log('PlayVideo: unkown Type ' + vtype)	
+				Log(" -> PICKED %s", videoURL)
+			
+			Log('videoURL ' +videoURL)		# OK: nrodl.zdf.de, rodl.zdf.de, geblockt: tvdl.zdf.de
+			if videoURL:		# erst master.m3u8 komplett, Auswertung einzelner Auflösungen in VideoParameterAuswahl
+				oc.add(DirectoryObject(key=Callback(VideoParameterAuswahl, tassetId=tassetId, videoURL=videoURL, 
+					title=ttitle, duration=duration,thumb=thumb, summary=tsummary), title=ttitle, thumb=thumb, 
+					summary=tsummary, tagline=tagline))
+
+		elif(typ == 'thema' or typ == 'sendung'):
+				oc.add(DirectoryObject(key=Callback(Sendung, title=ttitle, assetId=tassetId), title=ttitle, 
+					thumb=thumb, summary=tsummary))
+		elif(typ == 'imageseries_informativ'):
+				oc.add(PhotoAlbumObject(url=ZDF_BEITRAG % ('bilderserie', tassetId), title=ttitle, 
+					summary=tsummary, thumb=thumb))
+					
+	
+	Log(len(oc)); Log(more); Log(offset); Log(maxLength); 
+	#Somehow the webservice does not support an offset over 100	
+	if more and int(offset) + maxLength <= 100:
+		oc.add(NextPageObject(key=Callback(Sendung, title=title, assetId=assetId, offset=str(int(offset)+maxLength)), 
+			title=str("Weitere Beiträge").decode('utf-8', 'strict'), summary=None, thumb="more.png"))
+	return oc
+
+#--------------------------------------------------------------------------------------------
+@route(PREFIX + '/VideoParameterAuswahl', allow_sync = True)
+	# duration für CreateVideoStreamObject nicht benötigt, ev. bei Bedarf für andere Videoformate
+def VideoParameterAuswahl(videoURL, title, tassetId, duration, thumb, summary):
+	Log('VideoParameterAuswahl:' + videoURL); 
+	oc = ObjectContainer(title2=title.decode(encoding="utf-8", errors="ignore"), view_group="InfoList")
+	oc.add(CreateVideoStreamObject(videoURL, title=title, 	# master.m3u8 high
+		summary='automatische Auflösung | funktioniert nicht mit allen Playern', meta='', thumb=thumb, rtmp_live='nein'))
+	oc = Parseplaylist(oc, videoURL, thumb)	# Einträge für die einzelnen Auflösungen dort zusätzlich zum
+											# Eintrag '..automatisch'
+	oc.add(DirectoryObject(key=Callback(OtherSources, tassetId=tassetId, videoURL=videoURL, title=title, 
+		duration=duration, thumb=thumb,  summary=summary), title='weitere Videos - nicht alle getestet', 
+			 summary='Rueckmeldung im Plex-Forum willkommen', thumb=thumb))
+	
+	Log(len(oc))
+	return oc
+
+#--------------------------------------------------------------------------------------------
+@route(PREFIX + '/OtherSources', allow_sync = True)	# weitere Videoquellen, neuer XML-Request erforderlich,
+													# da das Objekt details in Sendung nicht übergeben werden kann 
+def OtherSources(videoURL, tassetId, title, duration, thumb, summary):
+	Log('OtherSources:' + videoURL); 
+	#oc = ObjectContainer(title2=title.decode(encoding="utf-8", errors="ignore"), view_group="InfoList")
+	#oc = ObjectContainer(title2='weitere Videos - teilweise in Plex nicht lauffaehig', view_group="InfoList")
+	oc = ObjectContainer(title2='weitere Videos - nicht alle getestet', view_group="InfoList")
+	#details = XML.ElementFromURL(ZDF_BEITRAG_DETAILS % tassetId, cacheTime=0)	# Debug 
+	details = XML.ElementFromURL(ZDF_BEITRAG_DETAILS % tassetId, cacheTime=CACHE_1HOUR)
+	
+	try:	#  3GPP-Multimedia								- OK 24.05.2016
+		url = details.xpath('//formitaet[@basetype="h264_aac_3gp_http_na_na" and quality="high"]/url')[0].text
+		oc.add(CreateVideoClipObject(url=url, title=title, 
+		summary='3GPP-Multimedia-Video', meta=url, thumb=thumb, duration=duration))				
+	except:
+		Log('OtherSources: ' + 'Typ >h264_aac_3gp_http_na_na< nicht vorhanden')
+		
+	try:	#  RTSP (Real-Time Streaming Protocol)			- 24.05.2016 neg.: VLC, Chrome + Firefox OK (nur direkt)
+		url = details.xpath('//formitaet[@basetype="h264_aac_3gp_rtsp_na_na" and quality="high"]/url')[0].text
+		oc.add(CreateVideoClipObject(url=url, title=title, 
+		summary='RTSP (Real-Time Streaming Protocol)', meta=url, thumb=thumb, duration=duration))			
+	except:
+		Log('OtherSources: ' + 'Typ >h264_aac_3gp_rtsp_na_na< nicht vorhanden')
+		
+	# nicht umsetzbar (zur Zeit):
+	#	1. HDS: Link führt zu Textdatei *.f4m Video-Url nicht ableitbar
+	#		details.xpath('//formitaet[@basetype="h264_aac_f4f_http_f4m_http" and quality="high"]/url')[0].text
+		
+	#	2. SMIL (Synchronized Multimedia Integration Language) Link führt zu Textdatei *.smil Video-Url nicht ableitbar
+	#		details.xpath('//formitaet[@basetype="h264_aac_mp4_rtmp_smil_http" and quality="high"]/url')[0].text
+	
+	
+	try:	#  Metafile-Video mit RTMP-Stream				- OK 24.05.2016
+		meta_url = details.xpath('//formitaet[@basetype="h264_aac_mp4_rtmp_zdfmeta_http" and quality="high"]/url')[0].text
+		doc =  HTTP.Request(meta_url).content	# Textdatei *.meta laden
+		url =  stringextract('<default-stream-url>', '</default-stream-url>', doc)
+		oc.add(CreateVideoStreamObject(url=url, title=title, 
+		summary='Metafile-Video mit RTMP-Stream', meta=url, thumb=thumb, duration=duration, rtmp_live='nein'))			
+	except:
+		Log('OtherSources: ' + 'Typ >h264_aac_mp4_rtmp_zdfmeta_http< nicht vorhanden')
+	
+	try:	#  Schleife: Auswertung für hbbtv, progressive, restriction_useragent 
+		list = details.xpath('//formitaet[@basetype="h264_aac_mp4_http_na_na" and quality="high"]')
+		Log(list)
+	except:
+		list = None	
+	if list:
+		for spez in list:
+			#Log(HTML.StringFromElement(spez))
+			Log(spez.xpath('./facets/facet/text()')[0])
+			if spez.xpath('./facets/facet/text()')[0] == "hbbtv":		# neg.: VLC, Chrome + Firefox OK (nur direkt)
+				url = spez.xpath('./url')[0].text								
+				oc.add(CreateVideoClipObject(url=url, title=title, 
+				summary='HbbTV (Hybrid broadcast broadband TV)', meta=url, thumb=thumb, duration=duration))							
+			if spez.xpath('./facets/facet/text()')[0] == "progressive":				# OK 24.05.2016 Web + VLC
+				url = spez.xpath('./url')[0].text
+				oc.add(CreateVideoClipObject(url=url, title=title, 
+				summary='H.264 Video - progressive ', meta=url, thumb=thumb, duration=duration))			
+			if spez.xpath('./facets/facet/text()')[0] == "restriction_useragent":	# OK 24.05.2016 Web + VLC
+				url = spez.xpath('./url')[0].text
+				oc.add(CreateVideoClipObject(url=url, title=title, 
+				summary='H.264 Video - restriction_useragent', meta=url, thumb=thumb, duration=duration))			
+			Log(url)
+
+	try:	#  mov-Videos (Apples QuickTime)					- 25.05.2016 neg.: VLC, Chrome + Firefox OK (nur direkt)
+		meta_url = details.xpath('//formitaet[@basetype="h264_aac_mp4_rtsp_mov_http" and quality="high"]/url')[0].text
+		doc =  HTTP.Request(meta_url).content	# Textdatei *.mov laden
+		pos = doc.find('rtsp://')				# 1. Zeile: RTSPtext, 2. Zeile rtsp-Url 
+		url = doc[pos:]
+		oc.add(CreateVideoClipObject(url=url, title=title, 
+		summary='mov-Videos (Apples QuickTime)', meta=url, thumb=thumb, duration=duration))			
+	except:
+		Log('OtherSources: ' + 'Typ >h264_aac_mp4_rtsp_mov_http< nicht vorhanden')
+ 
+	try:	#  webm-Videos (Container für Audio + Video im HTML5-Standard)	- 25.05.2016 OK, BubbleUPnP neg.
+		url = details.xpath('//formitaet[@basetype="vp8_vorbis_webm_http_na_na" and quality="high"]/url')[0].text
+		#oc.add(CreateVideoStreamObject(url=url, title=title, 
+		#summary='webm-Videos (Container im HTML5-Standard)', meta=url, thumb=thumb, duration=duration, rtmp_live='nein'))			
+		oc.add(CreateVideoClipObject(url=url, title=title, 
+		summary='webm-Videos (Container im HTML5-Standard)', meta=url, thumb=thumb, duration=duration))			
+	except:
+		Log('OtherSources: ' + 'Typ >vp8_vorbis_webm_http_na_na< nicht vorhanden')
+	
+	Log('Anzahl Formate: ' + str(len(oc)))							
+	if len(oc) == 0:
+		summary='zurueck zur Video-Parameter-Auswahl'
+		oc.add(DirectoryObject(key=Callback(VideoParameterAuswahl, videoURL=videoURL, details=details, title=title, 
+			 duration=duration,thumb=thumb, summary=summary), title=title, thumb=thumb, 
+			 summary=summary, tagline='keine weiteren geeignete Videoquellen gefunden'))
+			
+	return oc
+
+####################################################################################################
+#									Hilfsfunktionen
 def Parseplaylist(container, url_m3u8, thumb):		# master.m3u8 auswerten, Url muss komplett sein
 #													# container muss nicht leer ein (siehe SingleSendung)
 #  1. Besonderheit: in manchen *.m3u8-Dateien sind die Pfade nicht vollständig,
@@ -866,6 +1340,7 @@ def Parseplaylist(container, url_m3u8, thumb):		# master.m3u8 auswerten, Url mus
 #	versucht die ts-Stücke in Dauerschleife zu laden.
 #	Wir prüfen daher besser auf Pfadbeginne mit http:// und verwerfen Nichtpassendes - auch wenn dabei ein
 #	Sender komplett ausfällt.
+#	aktuelle Lösung (ab April 2016):  Sonderbehandlung Arte in Arteplaylists
 #  2. Besonderheit: fast identische URL's zu einer Auflösung (...av-p.m3u8, ...av-b.m3u8) Unterschied n.b.
 #  3. Besonderheit: für manche Sendungen nur 1 Qual.-Stufe verfügbar (Bsp. Abendschau RBB)
 
@@ -904,7 +1379,7 @@ def Parseplaylist(container, url_m3u8, thumb):		# master.m3u8 auswerten, Url mus
 				
 			Log(url); Log(title); Log(thumb); 
 			container.add(CreateVideoStreamObject(url=url, title=title, # Einbettung in DirectoryObject zeigt bei
-				summary= Resolution, meta=Codecs, thumb=thumb))			# AllConnect trotzdem nur letzten Eintrag
+				summary= Resolution, meta=Codecs, thumb=thumb, rtmp_live='nein'))# AllConnect trotzdem nur letzten Eintrag
 			BandwithOld = Bandwith
 				
   	i = i + 1	# Index für URL
@@ -915,94 +1390,6 @@ def Parseplaylist(container, url_m3u8, thumb):		# master.m3u8 auswerten, Url mus
 	
   return container
 
-#---------------------------------------------------------------- 
-def get_sendungen(container, sendungen): # Sendungen ausgeschnitten mit class='teaser', aus Verpasst + A-Z,
-	# 										Suche, Einslike
-	# Headline + Subtitel sind nicht via xpath erreichbar, daher Stringsuche:
-	# ohne linklist + Subtitel weiter (teaser Seitenfang od. Verweis auf Serie, bei A-Z teaser-Satz fast identisch,
-	#	nur linklist fehlt )
-	# Die Rückgabe-Liste send_arr nimmt die Datensätze auf (path, headline usw.)
-	
-	Log('get_sendungen')
-	# send_arr nimmt die folgenden Listen auf (je 1 Datensatz pro Sendung)
-	send_path = []; send_headline = []; send_subtitel = []; send_img_src = [];
-	send_img_alt = []; send_millsec_duration = []; send_dachzeile = []; send_sid = []; 
-	arr_ind = 0
-	img_alt = ""	# fehlt manchmal
-	for sendung in sendungen:					 
-		#s = lxml.html.tostring(sendung)
-		s = XML.StringFromElement(sendung)	# XML.StringFromElement Plex-Framework
-		# Log(s)							# umfangreiche Ausgabe (nur bei Bedarf)						
-		if s.find('<div class="linklist">') == -1 and s.find('subtitle') >= 0: 
-			dachzeile = re.search("<p class=\"dachzeile\">(.*?)</p>\s+?", s)  # Bsp. <p class="dachzeile">Weltspiegel</p>
-			if dachzeile:									# fehlt komplett bei ARD_SENDUNG_VERPASST
-				dachzeile = dachzeile.group(1)
-			else:
-				dachzeile = ''
-			headline = re.search("<h4 class=\"headline\">(.*?)</h4>\s+?", s) # Bsp. <h4 class="headline">Mit Armin ...</h4>
-			headline = headline.group(1)					# group(1) liefert bereits den Ausschnitt
-			#headline = stringextract('>', '<', s)
-			headline = headline .decode('utf-8')			# tagline-Attribute verlangt Unicode
-			if headline.find('- Hörfassung') >= 0:			# Hörfassung unterdrücken
-				continue
-			subtitel = re.search("<p class=\"subtitle\">(.*?)</p>\s+?", s)	# Bsp. <p class="subtitle">25 Min.</p>
-			subtitel = subtitel.group(1)
-			send_duration = subtitel
-			send_date = ''
-			if send_duration.find('Min.') >= 0:			# Bsp. 20 Min. | UT
-				send_duration = send_duration.split('Min.')[0]
-				duration = send_duration.split('Min.')[0]
-				#Log(duration)
-				if duration.find('|') >= 0:			# Bsp. 17.03.2016 | 29 Min. | UT 
-						duration = duration.split('|')[1]
-				#Log(duration)
-				millsec_duration = CalculateDuration(duration)
-			else:
-				millsec_duration = ''
-				
-			img_src = ""
-			if s.find('urlScheme') >= 0:					# Bildaddresse versteckt im img-Knoten
-				#s = s.split('urlScheme&#039;:&#039;')[0]	#	zwischen beiden split-strings
-				s = s.split('urlScheme')[1]					#	klappt wg. Sonderz. nur so	
-				img_src = s.split('##width##')[0]
-				img_src  = img_src [3:]						# 	vorne ':' abschneiden
-				img_src = BASE_URL + img_src + '320'			# Größe nicht in Quelle, getestet: 160,320,640
-
-			try:
-				extr_path = sendung.xpath("./div/div/a/@href")[0]   	# ohne Pfad weiter (mehrere teaser am Seitenanfang)				
-				Log(extr_path)
-				sid = ""
-				if extr_path.find('documentId=') >= 0:
-					sid = extr_path.split('documentId=')[1]
-				Log(sid)
-				path = extr_path	# korrigiert in SinglePage für Einzelsendungen in  '/play/media/' + sid
-				Log(path)
-				#path = BASE_URL + '/play/media/' + sid			# -> *.mp4 (Quali.-Stufen) + master.m3u8-Datei
-				#path = BASE_URL + path.split('documentId=')[0] + sid + '&documentId=' + sid			
-				img_alt = sendung.xpath("./div/div/a/img/@alt")[0] 
-				Log(img_alt)
-							
-			except:
-				Log('xpath-Fehler in Liste class=teaserbox, sendung: ' + s )
-		
-			Log('neuer Satz')
-			Log(sid); Log(extr_path); Log(path); Log(img_src); Log(img_alt); Log(headline);  
-			Log(subtitel); Log(send_duration); Log(millsec_duration); Log(dachzeile); 
-
-			send_path.append(path)			# erst die Listen füllen
-			send_headline.append(headline)
-			send_subtitel.append(subtitel)
-			send_img_src.append(img_src)
-			send_img_alt.append(img_alt)
-			send_millsec_duration.append(millsec_duration)
-			send_dachzeile.append(dachzeile)		
-			send_sid.append(sid)	
-			
-											# dann der komplette Listen-Satz ins Array		
-	send_arr = [send_path, send_headline, send_subtitel, send_img_src, send_img_alt, send_millsec_duration, 
-		send_dachzeile, send_sid]
-	# Log(send_arr)					# umfangreich - nur bei Bedarf
-	return send_arr
 #----------------------------------------------------------------  
 def GetAttribute(text, attribute, delimiter1 = '=', delimiter2 = ','):
 # Bsp.: #EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=61000,CODECS="mp4a.40.2"
@@ -1028,20 +1415,25 @@ def NotFound():
     )
 
 #----------------------------------------------------------------  
-def CalculateDuration(timecode):	# Übergabeform: 05:12, Zeit in Millisekunden wird vom VideoClipObject
-  milliseconds = 0					# benötigt, um dem User die Positionierung im Video zu ermöglichen
-  minutes      = 0
-  seconds      = 0
-  timecode = timecode.strip()
-  if timecode.find(':') == -1:		# in neuer Mediathek fehlen die Sekundenangaben
-		timecode = timecode + ':00'
-  minutes = timecode.split(':')[0]	
-  seconds = timecode.split(':')[1]
-  minutes = int(minutes)
-  seconds = int(seconds)
-  milliseconds += minutes * 60 * 1000
-  milliseconds += seconds * 1000		
-  return milliseconds
+def CalculateDuration(timecode):
+	milliseconds = 0
+	hours        = 0
+	minutes      = 0
+	seconds      = 0
+	d = re.search('([0-9]{1,2}) min', timecode)
+	if(None != d):
+		minutes = int( d.group(1) )
+	else:
+		d = re.search('([0-9]{1,2}):([0-9]{1,2}):([0-9]{1,2}).([0-9]{1,3})', timecode)
+		if(None != d):
+			hours = int ( d.group(1) )
+			minutes = int ( d.group(2) )
+			seconds = int ( d.group(3) )
+			milliseconds = int ( d.group(4) )
+	milliseconds += hours * 60 * 60 * 1000
+	milliseconds += minutes * 60 * 1000
+	milliseconds += seconds * 1000
+	return milliseconds
 #----------------------------------------------------------------  
 def stringextract(mFirstChar, mSecondChar, mString):  # extrahiert Zeichenkette zwischen 1. + 2. Zeichenkette
 	pos1 = mString.find(mFirstChar)

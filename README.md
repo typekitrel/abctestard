@@ -1,20 +1,35 @@
 ﻿Plex-Plugin-ARDMediathek2016
 ===================
 Plex Plugin für die ARD Mediathek - mit Live-TV der ARD + weiteren Sendern
+ab Version 2.0.0 mit ZDF Mediathek (Integration ZDF Mediathek.bundle V2.0)
 
 Download aktuelle Version: https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 
-Das Plugin löst den Vorgänger Plex-Plugin-ARDMediathek2015 ab. Das alte Plugin ist inkompatibel mit der neuen Struktur der Webseiten.
+Das Plugin löst den Vorgänger Plex-Plugin-ARDMediathek2015 ab. Das alte Plugin ist inkompatibel mit der neuen Struktur der Webseiten. Die ZDF Mediathek ist ab Version 2.1.1 integriert.
 
-#### TODO:  
-Vorschläge und Fehlerhinweise an rols1@gmx.de 
+#### Rückmeldungen willkommen:
+Im Forum: https://forums.plex.tv/discussion/213947/plex-plugin-ardmediathek2016
+direkt: rols1@gmx.de 
   
-Funktionen: 
-===================  
+Funktionen ab Version 2.1.1: 
+===================
+- Sender Live (z.Z. 30 Sender, siehe Hinweise zu Sender Live)
+
+#### ARD Mediathek:  
 - Suche nach Sendungen
 - Sendung Verpasst (Sendungen der letzten 7 Tage)
 - Sendungen A-Z
-- Sender Live (z.Z. 30 Sender, siehe Hinweise zu Sender Live)
+
+#### ZDF Mediathek: 
+- Sendung Verpasst (Sendungen der letzten 7 Tage)
+- Sendungen A-Z
+- Rubriken
+- Themen
+- MeistGesehen
+
+#### Videobehandlung ARD Mediathek und ZDF Mediathek:
+- Videostreams: Auflistung der verfügbaren Angebote an Bandbreiten + Auflösungen (Ausnahme Audio ohne Video)
+- Videoclips: Auflistung der verfügbaren Angebote an Qualitätstufen sowie zusätzlich verfügbarer Videoformate (Ausnahme HDS + SMIL) 
 
 
 INSTALLATION:
@@ -43,9 +58,9 @@ Meine Test- und Gebrauchsumgebung:
 
 Hinweise zu Sender Live:
 ===================  
-Das Plugin verwendet die mitgelieferte Playlist im Unterverzeichnis Contents/Resources/livesender.xml. Diese muss ev. erneuert werden, falls die Sender den Zugriff ändern. Aktuell enthält sie neben den Regional-Sendern der ARD auch ZDF, ZDF-neo, ZDFkultur und ZDFinfo, sowie N24, n-tv, NRW.TV, Joiz und DAF
+Das Plugin verwendet die mitgelieferte Playlist im Unterverzeichnis Contents/Resources/livesender.xml. Diese muss ev. erneuert werden, falls die Sender den Zugriff ändern. Aktuell enthält sie neben den Regional-Sendern der ARD auch ZDF, ZDF-neo, ZDFkultur und ZDFinfo, sowie N24, n-tv, NRW.TV, Joiz und DAF.
 
-ARTE ist inzwischen lauffähig, getrennte Behandlung im Programmcode: 4 Streams, deutsch/französisch, RTMP/HTTP
+ARTE ist inzwischen lauffähig, getrennte Behandlung im Programmcode: 4 Streams, deutsch/französisch, RTMP/HTTP.
  
 RTMP-Streaming wird vom Plugin unterstützt, klappt aber nicht mit beliebigen neuen Sendern.
 
@@ -56,4 +71,4 @@ Credits:
 - Credits to [Gammel] (https://gmlblog.de/2013/08/xbmc-tv-livestreams/): Playlist http://dl.gmlblog.de/deutschesender.xml 
 - Credits to [coder-alpha] https://forums.plex.tv/discussion/166602/rel-ccloudtv-channel-iptv/p1): (Channel updater, based on Channel updater by sharkone/BitTorrent.bundle)
 - Credits to [Arauco] (https://forums.plex.tv/profile/Arauco): processing of Senderlogos
-
+- Credits to [Sender1] (https://github.com/plexinc-plugins/ZDFMediathek.bundle): Plex-Plugin ZDFMediathek
