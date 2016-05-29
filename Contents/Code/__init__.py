@@ -15,8 +15,8 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.1.1'	
-VDATE = '27.05.2016'
+VERSION =  '2.1.2'		
+VDATE = '29.05.2016'
 
 
 # (c) 2016 by Roland Scholz, rols1@gmx.de Version
@@ -97,6 +97,7 @@ ARD_AZ = '/tv/sendungen-a-z?buchstabe='			# ergänzt mit 0-9, A, B, usw.
 ARD_Suche = '/tv/suche?searchText='				# ergänzt mit Suchbegriff
 ARD_Live = '/tv/live'
 ARD_Einslike = '/einslike'
+ARD_Rubriken = 'http://www.ardmediathek.de/tv/Rubriken/mehr?documentId=21282550'
 
 ZDF					 = 'http://www.zdf.de/ZDFmediathek/hauptnavigation/startseite?flash=off'	# Mediathek ohne Flash
 ZDF_RUBRIKEN         = 'http://www.zdf.de/ZDFmediathek/xmlservice/web/rubriken'
@@ -188,12 +189,16 @@ def Main_ARD(name):
 	oc.add(DirectoryObject(key=Callback(Main),title='Suche: im Suchfeld eingeben', summary='', tagline='TV'))
 	oc.add(InputDirectoryObject(key=Callback(Search, s_type='video', title=u'%s' % L('Search Video')),
 		title=u'%s' % L('Search'), prompt=u'%s' % L('Search Video'), thumb=R(ICON_SEARCH)))
-	oc.add(DirectoryObject(key=Callback(VerpasstWoche, name=name), title=name + " Sendung Verpasst (1 Woche)",
+	oc.add(DirectoryObject(key=Callback(VerpasstWoche, name=name), title=" Sendung Verpasst (1 Woche)",
 		summary='', tagline='TV', thumb=R(ICON_CAL)))
-	oc.add(DirectoryObject(key=Callback(SendungenAZ, name=name + ' Sendungen 0-9 | A-Z'), title=name + ' Sendungen A-Z',
+	oc.add(DirectoryObject(key=Callback(SendungenAZ, name='Sendungen 0-9 | A-Z'), title='Sendungen A-Z',
 		summary='', tagline='TV', thumb=R(ICON_AZ)))
-	oc.add(DirectoryObject(key=Callback(Einslike, title=name + ' Einslike'), title=name + ' Einslike',
+	oc.add(DirectoryObject(key=Callback(Einslike, title='Einslike'), title='Einslike',
 		summary='', tagline='TV', thumb=R(ICON_EINSLIKE)))
+		
+	title=name + ' Rubriken' # Übersichtsseite leider nicht kompatibel mit SinglePage -> get_sendungen
+	oc.add(DirectoryObject(key=Callback(ARDRubriken, title='Rubriken'), title='Rubriken',
+		summary='', tagline='TV', thumb=R(ICON_RUBRIKEN)))
 		
 	return oc	
 #---------------------------------------------------------------- 
@@ -368,7 +373,7 @@ def VerpasstWoche(name):	# Wochenliste zeigen
 			oc.add(DirectoryObject(key=Callback(Sendung, title=title, assetId="VERPASST_"+zdfDate),	  
 				title=title, thumb=R('zdf.png')))
 	return oc
-
+#------------
 def transl_wtag(tag):	# Wochentage engl./deutsch wg. Problemen mit locale-Setting 
 	wt_engl = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 	wt_deutsch = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"]
@@ -414,6 +419,33 @@ def Einslike(title):	# Wochenliste zeigen
 		#	tagline=title2, summary='', thumb='', art=ICON))
 		
 	return oc
+	
+####################################################################################################
+@route(PREFIX + '/ARDRubriken')	# Übersicht Rubriken (16) alle filme, krimi
+def ARDRubriken(title):	#
+	Log('ARDRubriken');
+	title2='Rubriken in der ARD Mediathek'
+	oc = ObjectContainer(view_group="InfoList", title1=NAME, title2=title2, art = ObjectContainer.art)
+	page = HTML.ElementFromURL(ARD_Rubriken)
+	next_cbKey = 'SingleSendung'	#
+	list = page.xpath("//*[@class='media mediaA']")		
+	list = list[1:]										# Rubriken erst ab 2. Element
+	Log(page); Log(list)
+	
+	for element in list:	# [@class='media mediaA'] 
+		s = XML.StringFromElement(element)
+		Log('element :' + s)
+		url = element.xpath("./a/@href")[0]
+		headl = url.split('/')[2]			# Rubrikname aus url ermitteln | class="headline" nicht im element
+		url = BASE_URL + url
+		img_src = img_urlScheme(s, 320) 	# Bsp.: 'urlScheme':'/image/00/34/52/92/68/555337067/16x9/##width##'
+		img_alt = element.xpath("./a/noscript/img/@alt")[0]
+		Log('url: ' + url); Log('img_src: ' + img_src); Log('img_alt :' + img_alt);  Log('headl :' + headl); 
+		oc.add(DirectoryObject(key=Callback(SinglePage, path=url, title=title, next_cbKey=next_cbKey), title=headl, 
+			tagline='', summary='', thumb=img_src, art=ICON))		
+		
+	return oc
+
 ####################################################################################################
 @route(PREFIX + '/PageControl')	# kontrolliert auf Folgeseiten. Mehrfache Verwendung.
 	# Wir laden beim 1. Zugriff alle Seitenverweise in eine Liste. Bei den Folgezugriffen können die Seiten
@@ -709,11 +741,7 @@ def get_sendungen(container, sendungen): # Sendungen ausgeschnitten mit class='t
 				
 			img_src = ""
 			if s.find('urlScheme') >= 0:					# Bildaddresse versteckt im img-Knoten
-				#s = s.split('urlScheme&#039;:&#039;')[0]	#	zwischen beiden split-strings
-				s = s.split('urlScheme')[1]					#	klappt wg. Sonderz. nur so	
-				img_src = s.split('##width##')[0]
-				img_src  = img_src [3:]						# 	vorne ':' abschneiden
-				img_src = BASE_URL + img_src + '320'			# Größe nicht in Quelle, getestet: 160,320,640
+				img_src = img_urlScheme(s,320)				# ausgelagert - s.u.
 
 			try:
 				extr_path = sendung.xpath("./div/div/a/@href")[0]   	# ohne Pfad weiter (mehrere teaser am Seitenanfang)				
@@ -750,7 +778,18 @@ def get_sendungen(container, sendungen): # Sendungen ausgeschnitten mit class='t
 		send_dachzeile, send_sid]
 	# Log(send_arr)					# umfangreich - nur bei Bedarf
 	return send_arr
-	
+#-------------------
+# def img_urlScheme: img-Url ermitteln für get_sendungen, ARDRubriken. text = string, dim = Dimension
+def img_urlScheme(text, dim):
+	Log('img_urlScheme')
+	#text = text.split('urlScheme&#039;:&#039;')[0]	#	zwischen beiden split-strings
+	text = text.split('urlScheme')[1]					#	klappt wg. Sonderz. nur so	
+	img_src = text.split('##width##')[0]
+	img_src  = img_src [3:]						# 	vorne ':' abschneiden
+	img_src = BASE_URL + img_src + str(dim)			# Größe nicht in Quelle, getestet: 160,265,320,640
+	Log('img_urlScheme: ' + img_src)
+		
+	return img_src
 ####################################################################################################
 @route(PREFIX + '/CreateVideoClipObject')	# <- SingleSendung Qualitätsstufen
 	# Plex-Warnung: Media part has no streams - attempting to synthesize | keine Auswirkung

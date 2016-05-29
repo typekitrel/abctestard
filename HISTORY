@@ -2,7 +2,7 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------	
 
-
+29.05.2016 2.1.1 Update		ARD Mediathek: Rubriken hinzugefügt
 27.05.2016 2.1.1 Update		ZDF Mediathek: provisorische Plakate für die Menüauswahl "Rubriken", "Themen"
 				und "MeistGesehen" erstellt.
 				Symbol icon-ok.png geändert (Kantenglättung, Größe, Farbe).
@@ -16,7 +16,7 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 				Nicht umgesetzt: HDS + SMIL (Video-Url nicht ableitbar)
 25.05.2016 2.0.4 Update		gemeiname Nutzung Funktion CreateVideoClipObject + Hilfsroutinen
 24.05.2016 2.0.3 Update		gemeiname Nutzung Funktion CreateVideoStreamObject
-24.05.2016 2.0.2 Update		Anpassung Menüs, Funktionspfade, gemeiname Nutzung Funktion VerpasstWoche,
+24.05.2016 2.0.2 Update		Anpassung Menüs, Funktionspfade, gemeiname Nutzung Funktion VerpasstWoche
 23.05.2016 2.0.1 Update		Codeänderung ZDF Mediathek: Lauffähigkeit ohne URL-Service
 22.05.2016 2.0.0 Update		Integration ZDF Mediathek
 16.05.2016 1.5.1 Update:	Senderlogos überarbeitet von Arauco (Plex-Forum). Senderlogos wahlweise lokal
