@@ -214,6 +214,27 @@
 		<epg></epg>
 		<fanart></fanart>
 	</item>
+	<item>
+		<title>Arte</title>
+		<link>https://api.arte.tv/api/player/v1/livestream/de?autostart=1</link>
+		<thumbnail>arte.png</thumbnail>
+		<1link>http://www.arte.tv/arte_vp/index.php?json_url=https://api.arte.tv/api/player/v1/livestream/de?autostart=1&lang=de_DE&config=arte_tvguide_live</1link>
+		<genre>TV</genre>
+		<info>arte</info>
+		<date>31.07.2014</date>
+		<epg></epg>
+		<fanart>http://upload.wikimedia.org/wikipedia/commons/thumb/4/47/2011_Arte_Strasbourg.JPG/1280px-2011_Arte_Strasbourg.JPG</fanart>
+	</item>
+	<item>
+		<title>3sat</title>
+		<link>http://zdf0910-lh.akamaihd.net/i/dach10_v1@392872/master.m3u8</link>
+		<thumbnail>3sat.png</thumbnail>
+		<genre>TV</genre>
+		<info>3sat</info>
+		<date>13.03.2015</date>
+		<epg></epg>
+		<fanart>http://upload.wikimedia.org/wikipedia/commons/7/78/ZDF_Sendezentrum_2.jpg</fanart>
+	</item>
 </items>
 </channel>
 
@@ -261,27 +282,6 @@
 		<date>10.05.2014</date>
 		<epg></epg>
 		<fanart></fanart>
-	</item>
-	<item>
-		<title>3sat</title>
-		<link>http://zdf0910-lh.akamaihd.net/i/dach10_v1@392872/master.m3u8</link>
-		<thumbnail>3sat.png</thumbnail>
-		<genre>TV</genre>
-		<info>3sat</info>
-		<date>13.03.2015</date>
-		<epg></epg>
-		<fanart>http://upload.wikimedia.org/wikipedia/commons/7/78/ZDF_Sendezentrum_2.jpg</fanart>
-	</item>
-	<item>
-		<title>Arte</title>
-		<link>https://api.arte.tv/api/player/v1/livestream/de?autostart=1</link>
-		<thumbnail>arte.png</thumbnail>
-		<1link>http://www.arte.tv/arte_vp/index.php?json_url=https://api.arte.tv/api/player/v1/livestream/de?autostart=1&lang=de_DE&config=arte_tvguide_live</1link>
-		<genre>TV</genre>
-		<info>arte</info>
-		<date>31.07.2014</date>
-		<epg></epg>
-		<fanart>http://upload.wikimedia.org/wikipedia/commons/thumb/4/47/2011_Arte_Strasbourg.JPG/1280px-2011_Arte_Strasbourg.JPG</fanart>
 	</item>
 </items>
 </channel>
