@@ -15,8 +15,8 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.1.6'		
-VDATE = '03.06.2016'
+VERSION =  '2.2.1'		
+VDATE = '07.06.2016'
 
 
 # (c) 2016 by Roland Scholz, rols1@gmx.de Version
@@ -48,13 +48,13 @@ VDATE = '03.06.2016'
 
 ####################################################################################################
 
-# NAME = L('Title')								# s. Strings/en.json
 NAME = 'ARD Mediathek 2016'
-PREFIX = "/video/ardmediathek2016"
-
-PLAYLIST = 'livesender.xml'					# basiert auf der Channeldatei von gammel, Download:
+PREFIX = "/video/ardmediathek2016"			# Liste der Stationen. Einzelne Sender und Links werden 
+											#	vom Plugin ermittelt
+PLAYLIST = 'livesenderTV.xml'				# basiert auf der Channeldatei von gammel, Download:
 # http://dl.gmlblog.de/deutschesender.xml. Veröffentlicht: https://gmlblog.de/2013/08/xbmc-tv-livestreams/
-# Sender-Logos erstellt von: Arauco (Plex-Forum)
+# Sender-Logos erstellt von: Arauco (Plex-Forum). 
+PLAYLIST_Radio = 'livesenderRadio.xml'		# 
 
 ART = 'art.png'								# ARD 
 ICON = 'icon.png'							# ARD
@@ -74,6 +74,7 @@ ICON_FilmeAllARD = 'icon-FilmeAllARD.png'
 ICON_DokusARD = 'icon-DokusARD.png'			# Clipart LibreOffice
 ICON_DokusAllARD = 'icon-DokusAllARD.png'	# Clipart LibreOffice
 ICON_SerienARD = 'icon-SerienARD.png'		# Artwork LibreOffice
+ICON_ARDRadio = 'Icon-ARDRadio.png'		# gimp-Bastelei
 
 
 ICON_UPDATER = "icon-updater.png"
@@ -115,6 +116,7 @@ ARD_Dokus = 'http://www.ardmediathek.de/tv/Ausgew%C3%A4hlte-Dokus/mehr?documentI
 ARD_DokusAll = 'http://www.ardmediathek.de/tv/Alle-Dokus-Reportagen/mehr?documentId=29897596'
 ARD_Filme = 'http://www.ardmediathek.de/tv/Ausgew%C3%A4hlte-Filme/mehr?documentId=33649088'
 ARD_FilmeAll = 'http://www.ardmediathek.de/tv/Alle-Filme/mehr?documentId=33594630'
+ARD_RadioAll = 'http://www.ardmediathek.de/radio/live?genre=Alle+Genres&kanal=Alle'
 
 ZDF					 = 'http://www.zdf.de/ZDFmediathek/hauptnavigation/startseite?flash=off'	# Mediathek ohne Flash
 ZDF_RUBRIKEN         = 'http://www.zdf.de/ZDFmediathek/xmlservice/web/rubriken'
@@ -189,6 +191,8 @@ def Main():
 		summary='', tagline='TV', thumb=R('zdf.png')))
 	oc.add(DirectoryObject(key=Callback(SenderLiveListePre, title='Live-Sender-Vorauswahl'), title='Live-Sender-Vorauswahl',
 		summary='', tagline='TV', thumb=R(ICON_SENDER)))
+	oc.add(DirectoryObject(key=Callback(RadioLiveListe, path=ARD_RadioAll, title='ARD Radio-Live-Streams'), 
+		title='ARD Radio-Live-Streams', summary='', tagline='Radio', thumb=R(ICON_ARDRadio)))
 
 	repo_url = 'https://github.com/{0}/releases/'.format(GITHUB_REPOSITORY)
 	oc.add(DirectoryObject(key=Callback(SearchUpdate, title='Plugin-Update'), 
@@ -718,7 +722,7 @@ def SinglePage(title, path, next_cbKey, offset=0):	# path komplett
 #		im Listenformat, nicht m3u8-Format, die verlinkte master.m3u8 ist aber im 3u8-Format
 #	2. Text-Seite mit rtmp-Streams (Listenformat ähnlich Zif. 1, rtmp-Pfade müssen zusammengesetzt
 #		werden
-
+#  
 def SingleSendung(path, title, thumb, duration, offset=0):	# -> CreateVideoClipObject
 	title = title.decode(encoding="utf-8", errors="ignore")	# ohne: Exception All strings must be XML compatible 
 
@@ -727,52 +731,42 @@ def SingleSendung(path, title, thumb, duration, offset=0):	# -> CreateVideoClipO
 	# Log(path)
 	page = HTTP.Request(path).content  # als Text, nicht als HTML-Element
 
-	link_m3u8 = teilstring(page, 'http', '.m3u8')		# im Text Verweise auf .m3u8-Datei?
-	if link_m3u8 > 12: 
-		link_path,link_img = parseLinksMp4(page)		# link_img nicht erforderlich - kommt bereits mit thumb
-	
-	rtmp = False
-	if link_m3u8 == '':
-		if page.find('rtmp://vod.daserste.de/ardfs/') > 0:	# 
-			link_path,link_img = parseLinksRtmp(page)
-			rtmp = True
-						
-	Log(link_m3u8); Log(link_path); Log(link_img);  
+	link_path,link_img, m3u8_master = parseLinks_Mp4_Rtmp(page)	# link_img kommt bereits mit thumb,  hier auf Vorrat						
+	Log(link_path); Log(link_img); Log(m3u8_master);  
 
- 	if link_m3u8 == '' and len(link_path[0]) < 2:			# nicht im Format: 0|http://... od. 0|rtmp://...
-		Log('Länge link_path 0: ' + str(len(link_path[0]))) # manchmal nur 1 Video bei 1|, 2| ... vorhanden
+ 	if link_path == []:	      		# keine Videos gefunden		
+		Log('link_path == []') 		 
 		msgH = 'keine Videoquelle gefunden - Abbruch'; msg = '.keine Videoquelle gefunden - Abbruch. Seite: ' + path;
 		return ObjectContainer(header=msgH, message=msg)
   
 	# *.m3u8-Datei vorhanden -> auswerten, falls ladefähig. die Alternative 'Client wählt selbst' (master.m3u8)
 	# stellen wir voran (WDTV-Live OK, VLC-Player auf Nexus7 'schwerwiegenden Fehler'), MXPlayer läuft dagegen
-	if link_m3u8 != '':	  		  								# nicht bei rtmp-Links (ohne master wie m3u8)
+	if m3u8_master:	  		  								# nicht bei rtmp-Links (ohne master wie m3u8)
 		title = 'Bandbreite und Auflösung automatisch'			# master.m3u8
 		Codecs = ''
-		oc.add(CreateVideoStreamObject(url=link_m3u8, title=title, rtmp_live='nein',
-			# summary='funktioniert nicht mit allen Playern', meta=Codecs, thumb=thumb, resolution=''))
+		oc.add(CreateVideoStreamObject(url=m3u8_master, title=title, rtmp_live='nein',
 			summary='automatische Auflösung | Auswahl durch den Player', meta=Codecs, thumb=thumb, 
 			resolution=''))
 
-		cont = Parseplaylist(oc, link_m3u8, thumb)	# Einträge für die einzelnen Auflösungen dort zusätzlich zum
-		Log(cont)  									# Eintrag '..automatisch'
-
-	# im alten Mediathekformat gab es zu einer Sendung unterschiedliche Qualitätsstufen und häufig zusätzlich
-	# eine *.m3u8-Datei.
-	# Im neuen Format ist eine weitere Datei (Textformat) einzulesen, die im Listenformat sowohl den Link
-	# zu einer  *.m3u8-Datei als auch die direkten Links zu .mp4-Videos verschiedener Quali.-Stufen enthält.
-	# Bei letzteren erfolgt die Transcodierung durch Plex-Server (falls direkte Wiedergabe abgeschaltet)
+		cont = Parseplaylist(oc, m3u8_master, thumb)	# Liste der zusätzlichen einzelnen Auflösungen 
+		#del link_path[0]								# master.m3u8 entfernen, Rest bei m3u8_master: mp4-Links
+		Log(cont)  										
 	 
-	#description = ...  # bisher nicht verwendet, kein passender key im Videoobjekt
-
-	# ab hier Auswertung der restlichen mp4-Links bzw. rtmp-Links (aus parseLinksMp4 oder parseLinksRtmp)
+	# ab hier Auswertung der restlichen mp4-Links bzw. rtmp-Links (aus parseLinks_Mp4_Rtmp)
 	# Format: 0|http://mvideos.daserste.de/videoportal/Film/c_610000/611560/format706220.mp4
 	# 	oder: rtmp://vod.daserste.de/ardfs/mp4:videoportal/mediathek/...
-	# 1. mp4-Links:
 	href_quality_S 	= ''; href_quality_M 	= ''; href_quality_L 	= ''; href_quality_XL 	= ''
 	for i in range(len(link_path)):
-		s = link_path[i]	
-		summary='Video-Format: MP4'		
+		s = link_path[i]
+		#Log(s)
+		if s[0:4] == "auto":	# m3u8_master bereits entfernt. Bsp. hier: 	
+			# http://tagesschau-lh.akamaihd.net/z/tagesschau_1@119231/manifest.f4m?b=608,1152,1992,3776 
+			#	Platzhalter für künftige Sendungen, z.B. Tagesschau (Meldung in Original-Mediathek:
+			# 	'ieser Livestream ist noch nicht verfügbar!'
+			href_quality_Auto = s[2:]	
+			title = 'Qualität AUTO'
+			url = href_quality_Auto
+			resolution = ''
 		if s[0:1] == "0":			
 			href_quality_S = s[2:]
 			title = 'Qualität SMALL'
@@ -793,81 +787,84 @@ def SingleSendung(path, title, thumb, duration, offset=0):	# -> CreateVideoClipO
 			title = 'Qualität EXTRALARGE'
 			url = href_quality_XL
 			resolution = 720
-			
+		
 		Log('url ' + title + ': ' + url); 	
 		if url:
-			# 2. rtmp-Links:				
-			if rtmp == True:
+			if url == m3u8_master:
+				del link_path[0]			# 1. master.m3u8 entfernen, oben bereits abgehandelt
+				continue
+						
+			if url.find('rtmp://') >= 0:	# 2. rtmp-Links:	
 				summary='Video-Format: RTMP-Stream'	
 				oc.add(CreateVideoStreamObject(url=url, title=title, 
 					summary=summary, meta=path, thumb=thumb, duration=duration, rtmp_live='nein', resolution=''))					
 			else:
+				summary='Video-Format: MP4'	# 3. mp4-Links:	
 				oc.add(CreateVideoClipObject(url=url, title=title, 
 					summary=summary, meta=path, thumb=thumb, duration=duration, resolution=''))
-			
-	
 		
 	return oc
-#--------------------------
-def parseLinksRtmp(page):		# extrahiert aus Textseite .rtmp-Links (Aufrufer SingleSendung)
-	link_img = teilstring(page, 'http://www.ardmediathek.de/image', '\",\"_subtitleOffset')
-	link_img = link_img.split('\",\"_subtitleOffset')[0]
-	Log(link_img)
-	
-	s = page.split('\"_quality\":')
-	try:			# kann leer sein - kein _quality-video-Link gefunden
-		del s[0]	# 1. Teil entfernen, nicht benötigt
-	except:
-		s = ''
-	
-	link_path = []	# Liste nimmt Pfade und Quali.-Markierung auf
-	for i in range(len(s)):
-		s1 =  s[i]
-		Log('s1: ' + s1)
-		t1 = stringextract('server\":\"', '\",\"_cdn\"', s1) 
-		t2 = stringextract( '\"_stream\":\"', '\"}', s1) 
-		s2 = t1 + t2	# beide rtmp-Teile verbinden
-		
-		pos = s1.find(',')	# entweder Ziffern 0,1,2,3 oder "auto"
-		mark = s1[:pos]
-		mark = str(mark)
-		s2 = mark + '|' + s2		
-		link_path.append(s2)
-		
-	#del link_path[0]		# 1. Eintrag (auto) entfernen - entspricht link_m3u8
-	link_path = list(set(link_path))	# Doppel entfernen (gesehen: 0, 1, 2 doppelt)
-	link_path.sort()					# Original: 0,1,2,0,1,2,3
-	
-	return link_path, link_img 	
 #--------------------------			 		
-def parseLinksMp4(page):		# extrahiert aus Textseite .mp4-Links (Aufrufer SingleSendung)
-	link_img = teilstring(page, 'http://www.ardmediathek.de/image', '\",\"_subtitleUrl')
-	link_img = link_img.split('\",\"_subtitleUrl')[0]
+def parseLinks_Mp4_Rtmp(page):		# extrahiert aus Textseite .mp4- und rtmp-Links (Aufrufer SingleSendung)
+									# akt. Bsp. rtmp: http://www.ardmediathek.de/play/media/35771780
+	Log('parseLinks_Mp4_Rtmp')		# akt. Bsp. m3u8: 
+	if page.find('http://www.ardmediathek.de/image') >= 0:
+		#link_img = teilstring(page, 'http://www.ardmediathek.de/image', '\",\"_subtitleUrl')
+		link_img = stringextract('_previewImage\":\"', '\",\"_subtitle', page)
+	else:
+		link_img = ""
 
-	s = page.split('\"_quality\":')	
-	try:			# kann leer sein - kein _quality-video-Link gefunden
-		del s[0]	# 1. Teil entfernen, nicht benötigt
-	except:
-		s = ''
-		
-	link_path = []	# Liste nimmt Pfade und Quali.-Markierung auf
-	for i in range(len(s)):
-		s1 =  s[i]
-		#print s1
-		pos = s1.find(',')	# entweder Ziffern 0,1,2,3 oder "auto"
-		mark = s1[:pos]
-		mark = str(mark)
-		
-		s2 = teilstring(s1, 'http://','.mp4' )	# nicht nur 'http' - kann auch weiter hinten im Link stehen
-		s2 = mark + '|' + s2			# Markierung + Pfad verbinden (wird später wieder entfernt)
-		link_path.append(s2)
-		
-	del link_path[0]		# 1. Eintrag (auto) entfernen - entspricht link_m3u8
-	link_path = list(set(link_path))	# Doppel entfernen (gesehen: 0, 1, 2 doppelt)
-	link_path.sort()					# Original: 0,1,2,0,1,2,3
-		
-	return link_path, link_img 				 		
+	link_path = []							# Liste nimmt Pfade und Quali.-Markierung auf
+	m3u8_master = ''						# nimmt master.m3u8 zusätzlich auf
 	
+	if page.find('\"_quality\":') >= 0:
+		s = page.split('\"_quality\":')	
+		# Log(s)							# nur bei Bedarf
+		del s[0]							# 1. Teil entfernen - enthält img-Quelle (s.o.)
+		
+		for i in range(len(s)):
+			s1 =  s[i]
+			s2 = ''
+			Log(s1)
+				
+			if s1.find('rtmp://') >= 0: # rtmp-Stream 
+				Log('s1: ' + s1)
+				t1 = stringextract('server\":\"', '\",\"_cdn\"', s1) 
+				t2 = stringextract( '\"_stream\":\"', '\"}', s1) 
+				s2 = t1 + t2	# beide rtmp-Teile verbinden
+				#Log(s2)				# nur bei Bedarf
+			
+			if s1.find('http://') >= 0: # http: master.m3u8 + mp4
+				if s1.find('master.m3u8') >= 0 :
+					s2 = teilstring(s1, 'http://','master.m3u8' )
+					m3u8_master = s2
+					#Log(s2)				# nur bei Bedarf
+				elif s1.find('.mp4')  >= 0:
+					s2 = teilstring(s1, 'http://','.mp4' )
+					#Log(s2)
+				elif s1.find('master.m3u8') == -1 and s1.find('.mp4') == -1: # Video-Urls ohne Extension
+					s2 = stringextract('_stream\":\"', '\"}]}]', s1) 
+					#Log(s2)				# nur bei Bedarf
+					
+			#Log(s2); Log(len(s2))				# nur bei Bedarf
+			if len(s2) > 9:						# schon url gefunden? Dann Markierung ermitteln
+				if s1.find('auto') >= 0:
+					mark = 'auto' + '|'					
+				else:
+					m = s1[0:1] 				# entweder Ziffern 0,1,2,3 
+					mark = m + '|' 	
+								
+				link = mark + s2				# Qualität voranstellen			
+				link_path.append(link)
+				Log(mark); Log(s2); Log(link); Log(link_path)
+			
+	Log(link_path)				
+	link_path = list(set(link_path))			# Doppel entfernen (gesehen: 0, 1, 2 doppelt)
+	link_path.sort()							# Sortierung - Original Bsp.: 0,1,2,0,1,2,3
+	Log(link_path); Log(len(link_path))					
+		
+	return link_path, link_img, m3u8_master				 		
+		
 ####################################################################################################
 def get_sendungen(container, sendungen): # Sendungen ausgeschnitten mit class='teaser', aus Verpasst + A-Z,
 	# 										Suche, Einslike
@@ -1135,12 +1132,15 @@ def SenderLiveResolution(path, title, thumb, include_container=False):
 		return oc
 		
 	# alle übrigen (i.d.R. http-Links)
-	oc.add(CreateVideoStreamObject(url=url_m3u8, title=title + ' | Bandbreite und Auflösung automatisch', 
-		summary='funktioniert nicht mit allen Playern', meta=Codecs, thumb=thumb, rtmp_live='nein', resolution=''))
-	# Auslösungsstufen (bei relativen Pfaden nutzlos):
-	oc = Parseplaylist(oc, url_m3u8, thumb)	# Auswertung *.m3u8-Datei, Auffüllung Container mit Auflösungen
-	return oc								# (-> CreateVideoStreamObject pro Auflösungstufe)
-
+	if url_m3u8.find('.m3u8') >= 0:		# häufigstes Format
+		oc.add(CreateVideoStreamObject(url=url_m3u8, title=title + ' | Bandbreite und Auflösung automatisch', 
+			summary='funktioniert nicht mit allen Playern', meta=Codecs, thumb=thumb, rtmp_live='nein', resolution=''))
+		# Auslösungsstufen (bei relativen Pfaden nutzlos):
+		oc = Parseplaylist(oc, url_m3u8, thumb)	# Auswertung *.m3u8-Datei, Auffüllung Container mit Auflösungen
+		return oc								# (-> CreateVideoStreamObject pro Auflösungstufe)
+	else:	# keine oder unbekannte Extension - Format unbekannt
+		return ObjectContainer(header='SenderLiveResolution: ', message='unbekanntes Format in ' + url_m3u8)
+				
 ####################################################################################################
 @route(PREFIX + '/Arteplaylist')	# Auswertung Arte-Parameter rtmp- + hls-streaming
 	# Die unter  https://api.arte.tv/api/player/v1/livestream/de?autostart=1 ausgelieferte Textdatei
@@ -1235,7 +1235,7 @@ def CreateVideoStreamObject(url, title, summary, meta, thumb, rtmp_live, resolut
 		rating_key = title
 		videoclip_obj = VideoClipObject(
 			key = Callback(CreateVideoStreamObject, url=url, title=title, summary=summary,
-			meta=meta, thumb=thumb, rtmp_live=rtmp_live, resolution='', include_container=True), 
+			meta=meta, thumb=thumb, rtmp_live='nein', resolution='', include_container=True), 
 			rating_key=title,
 			title=title,
 			summary=summary,
@@ -1251,7 +1251,7 @@ def CreateVideoStreamObject(url, title, summary, meta, thumb, rtmp_live, resolut
 		return videoclip_obj
 
 	return oc
-
+#-----------------------------
 # PlayVideo: .m3u8 wurde in Route als fehlend bemängelt, wird aber als Attribut der Funktion nicht 
 #	akzeptiert - Ursache nicht gefunden. 
 #	Routine ab 03.04.2016 entbehrlich - s.o.
@@ -1260,7 +1260,139 @@ def PlayVideo(url, resolution):		# resolution übergeben, falls im  videoclip_ob
 	Log('PlayVideo: ' + url); Log('PlayVideo: ' + resolution)	 		
 	HTTP.Request(url).content
 	return Redirect(url)
+	
+####################################################################################################
+@route(PREFIX + '/RadioLiveListe')  
+def RadioLiveListe(path, title):
+	Log('RadioLiveListe');
+	oc = ObjectContainer(view_group="InfoList", title1=title, art=ICON)
+	#page = HTML.ElementFromURL(path)
+	#Log(page)
+	playlist = Resource.Load(PLAYLIST_Radio) 
+	#Log(playlist)					
+	
+	doc = HTML.ElementFromString(playlist)		# unterschlägt </link>	
+	liste = doc.xpath('//item')					# z.Z. nur 1 Channel (ARD). Bei Bedarf Schleife ereweitern
+	Log(liste)
+	
+	# Unterschied zur TV-Playlist livesenderTV.xml: Liste nur Stationen, nicht einzelne Sender.
+	#	Nach Auswahl durch den Nutzer werden in RadioAnstalten die einzelnen Sender der Station
+	#	ermittelt.
+	#	Nach Auswahl einer Station wird in RadioLiveSender der Audiostream-Link ermittelt und
+	#	in CreateAudioStreamObject endverarbeitet.
+	#
+	for element in liste:
+		s = HTML.StringFromElement(element) 		# Ergebnis wie XMML.StringFromElement
+		Log(s)				
+		title = stringextract('<title>', '</title>', s)
+		title = title.decode(encoding="utf-8", errors="ignore")
+		link = stringextract('<link>', '<thumbnail>', s) 	# HTML.StringFromElement unterschlägt </link>
+		link = link.strip()							# \r + Leerz. am Ende entfernen
+		link = repl_char('amp;',link)				# amp; entfernen! Herkunft: HTML.ElementFromString bei &-Zeichen
+		img = stringextract('<thumbnail>', '</thumbnail>', s) 
+		if img.find('://') == -1:	# Logo lokal? -> wird aus Resources geladen, Unterverz. leider n.m.
+			img = R(img)
+		else:
+			img = img
+		Log(title); Log(link); Log(img); 												
+		oc.add(DirectoryObject(key=Callback(RadioAnstalten, path=link, title=title), title=title,
+			summary='weitere Sender', tagline='Radio', thumb=img))
+	return oc
+#-----------------------------
+@route(PREFIX + '/RadioAnstalten')  
+def RadioAnstalten(path, title):
+	Log('RadioAnstalten');
+	oc = ObjectContainer(view_group="InfoList", title1='Radiosender von ' + title, art=ICON)
+	page = HTML.ElementFromURL(path) 
+	entries = page.xpath("//*[@class='teaser']")
+	
+	del entries[0:2]								# "Javascript-Fehler" überspringen (2 Elemente)
+	Log(entries)
 
+	for element in entries:
+		s = XML.StringFromElement(element)	# XML.StringFromElement Plex-Framework
+		#Log(s)								#  nur bei Bedarf)						
+		
+		img_src = ""
+		if s.find('urlScheme') >= 0:					# Bildaddresse versteckt im img-Knoten
+			img_src = img_urlScheme(s,320)				# ausgelagert - s.u.
+			
+		headline = ''; subtitel = ''		# nicht immer beide enthalten
+		if s.find('headline') >= 0:
+			headline = re.search("<h4 class=\"headline\">(.*?)</h4>\s+?", s) 
+			headline = headline.group(1)				# group(1) liefert bereits den Ausschnitt
+			headline = headline .decode('utf-8')		# tagline-Attribute verlangt Unicode
+		if s.find('subtitel') >= 0:	
+			subtitel = re.search("<p class=\"subtitle\">(.*?)</p>\s+?", s)	# Bsp. <p class="subtitle">25 Min.</p>
+			subtitel = subtitel.group(1)
+			
+		href = element.xpath("./div/div/a/@href")[0]
+		sid = href.split('documentId=')[1]
+		
+		path = BASE_URL + '/play/media/' + sid + '?devicetype=pc&features=flash'	# -> Textdatei mit Streamlink
+		path_content = HTTP.Request(path).content
+		Log(path_content)				# wir nehmen den 1. Streamlink, bei Bedarf nach _quality erweitern
+		slink = stringextract('_stream\":\"', '\"}', path_content) 
+		Log(slink)
+		if slink.find('.m3u') > 9:			# der .m3u-Link führt zu weiterer Textdatei, die den Streamlink enthält
+			slink_content = HTTP.Request(slink).content	# z.B. bei den RBB-Sendern
+			z = slink_content.split()
+			Log(z)
+			slink = z[-1]				# Link in letzter Zeile
+			
+		Log(img_src); Log(headline); Log(subtitel); Log(sid); Log(slink);		
+			
+		oc.add(CreateAudioStreamObject(url=slink, title=headline, 
+			summary=subtitel, thumb=img_src, fmt='mp3'))		# funktioniert hier auch mit aac
+	
+	return oc
+#-----------------------------
+@route(PREFIX + '/CreateAudioStreamObject')
+def CreateAudioStreamObject(url, title, summary, fmt, thumb, include_container=False, **kwargs):
+	Log('CreateAudioStreamObject: ' + url)
+
+	if fmt == 'mp3':				# z.Z. noch entbehrlich
+		container = Container.MP3
+		audio_codec = AudioCodec.MP3
+	elif fmt == 'aac':
+		container = Container.MP4
+		audio_codec = AudioCodec.AAC
+
+	track_object = TrackObject(
+		key = Callback(CreateAudioStreamObject, url=url, title=title, summary=summary, fmt=fmt, 
+			thumb=thumb, include_container=True),
+		rating_key = url,
+		title = title,
+		summary = summary,
+		thumb=thumb,
+		items = [
+			MediaObject(
+				parts = [
+					PartObject(key=Callback(PlayAudio, url=url)) # Parameter ext=fmt entbehrlich
+				],
+				container = container,
+				audio_codec = audio_codec,
+				#bitrate = 128,			# bitrate entbehrlich
+				#audio_channels = 2		# audio_channels entbehrlich
+			)
+		]
+	)
+
+	if include_container:
+		return ObjectContainer(objects=[track_object])
+	else:
+		return track_object
+
+#------------------------------
+@route(PREFIX + '/PlayAudio')  
+def PlayAudio(url):
+	Log('PlayAudio: ' + url)
+	
+	if url:
+		return Redirect(url)
+	else:
+		raise Ex.MediaNotAvailable
+		
 ####################################################################################################
 #									ZDF-Funktionen
 #
@@ -1408,8 +1540,8 @@ def Sendung(title, assetId, offset=0):
 			if(show != title):
 				ttitle = '%s - %s' % (show, ttitle)
 
-			#date = Datetime.ParseDate(teaser.xpath('./details/airtime')[0].text).date()
-			airtime = teaser.xpath('./details/onlineairtime')[0].text
+			#airtime = teaser.xpath('./details/onlineairtime')[0].text  # Archivierungszeitpunkt?
+			airtime = teaser.xpath('./details/airtime')[0].text
 			date = Datetime.ParseDate(airtime)
 			lengthSec = teaser.xpath('./details/lengthSec')[0].text
 			minutes = int(lengthSec) / 60
@@ -1682,7 +1814,7 @@ def stringextract(mFirstChar, mSecondChar, mString):  # extrahiert Zeichenkette 
 	pos1 = mString.find(mFirstChar)
 	ind = len(mFirstChar)
 	pos2 = mString.find(mSecondChar, pos1 + ind+1)
-	rString = "leer"
+	rString = ''
 
 	if pos1 and pos2:
 		rString = mString[pos1+ind:pos2]	# extrahieren 
@@ -1701,7 +1833,7 @@ def teilstring(zeile, startmarker, endmarker):  # in init ändern!
     teils = zeile[pos1:pos2+len(endmarker)]	# Versatz +5 schneidet die begrenzenden Suchstellen ab 
   else:
     teils = ''
-  #Log(pos1) Log(pos2) Log(len(href)) Log(href)
+  #Log(pos1) Log(pos2) 
   return teils
 #----------------------------------------------------------------  
 def repl_dop(liste):	# Doppler entfernen, im Python-Script OK, Problem in Plex - s. PageControl

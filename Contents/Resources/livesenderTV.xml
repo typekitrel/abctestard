@@ -1,0 +1,348 @@
+<channels>
+ <channels_info>
+  <title>Deutsche Sender</title>
+  <genre>TV</genre>
+  <description>Livestreams</description>
+  <thumbnail>http://community-links.googlecode.com/svn/icons/news-icon.png</thumbnail>
+  <fanart>http://community-links.googlecode.com/svn/icons/news-fanart.jpg</fanart>
+  <date>27.03.2016</date>
+  <credits>Gammel</credits>
+ </channels_info>
+ 
+<channel>
+<name>ARD</name>
+<thumbnail>ard.png</thumbnail>
+<fanart></fanart>
+<items>
+	<item>
+		<title>Das Erste</title>
+		<link>http://daserste_live-lh.akamaihd.net/i/daserste_de@91204/master.m3u8</link>
+		<thumbnail>das-erste.png</thumbnail>
+		<genre>TV</genre>
+		<info>daserste</info>
+		<date>10.05.2014</date>
+		<epg></epg>
+		<fanart>http://www.daserste.de/specials/das-erste-logo-100~_v-facebook1200_d7e296.jpg</fanart>
+	</item>
+	<item>
+		<title>Tagesschau</title>
+		<link>http://tagesschau-lh.akamaihd.net/i/tagesschau_1@119231/master.m3u8</link>
+		<thumbnail>tagesschau.png</thumbnail>
+		<genre>TV</genre>
+		<info>tagesschau</info>
+		<date>08.05.2014</date>
+		<epg></epg>
+		<fanart>https://upload.wikimedia.org/wikipedia/commons/4/44/Tagesschau_kulissen.JPG</fanart>
+	</item>
+	<item>
+		<title>WDR</title>
+		<link>http://www.metafilegenerator.de/WDR/WDR_FS/m3u8/wdrfernsehen.m3u8</link>
+		<thumbnail>wdr.png</thumbnail>
+		<genre>TV</genre>
+		<info>WDR</info>
+		<date>11.08.2013</date>
+		<epg></epg>
+		<fanart></fanart>
+	</item>
+	<item>
+		<title>NDR Fernsehen Hamburg</title>
+		<link>http://ndr_fs-lh.akamaihd.net/i/ndrfs_hh@119223/master.m3u8</link>
+		<thumbnail>ndr-hamburg.png</thumbnail>
+		<genre>TV</genre>
+		<info>ndr_hh</info>
+		<date>08.05.2014</date>
+		<epg></epg>
+		<fanart>https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/13-02-19-landtag-h-vorab-N3S_1766.NEF.jpg/1280px-13-02-19-landtag-h-vorab-N3S_1766.NEF.jpg</fanart>
+	</item>
+	<item>
+		<title>NDR Fernsehen Mecklenburg-Vorpommern</title>
+		<link>http://ndr_fs-lh.akamaihd.net/i/ndrfs_mv@119226/master.m3u8</link>
+		<thumbnail>ndr-mecklenburg-vorpommern.png</thumbnail>
+		<genre>TV</genre>
+		<info>ndr_mv</info>
+		<date>08.05.2014</date>
+		<epg></epg>
+		<fanart>https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/13-02-19-landtag-h-vorab-N3S_1766.NEF.jpg/1280px-13-02-19-landtag-h-vorab-N3S_1766.NEF.jpg</fanart>
+	</item>
+	<item>
+		<title>NDR Fernsehen Niedersachsen</title>
+		<link>http://ndr_fs-lh.akamaihd.net/i/ndrfs_nds@119224/master.m3u8</link>
+		<thumbnail>ndr-niedersachsen.png</thumbnail>
+		<genre>TV</genre>
+		<info>ndr_ns</info>
+		<date>08.05.2014</date>
+		<epg></epg>
+		<fanart>https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/13-02-19-landtag-h-vorab-N3S_1766.NEF.jpg/1280px-13-02-19-landtag-h-vorab-N3S_1766.NEF.jpg</fanart>
+	</item>
+	<item>
+		<title>NDR Fernsehen Schleswig-Holstein</title>
+		<link>http://ndr_fs-lh.akamaihd.net/i/ndrfs_sh@119225/master.m3u8</link>
+		<thumbnail>ndr-schleswig-holstein.png</thumbnail>
+		<genre>TV</genre>
+		<info>ndr_sh</info>
+		<date>08.05.2014</date>
+		<epg></epg>
+		<fanart>https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/13-02-19-landtag-h-vorab-N3S_1766.NEF.jpg/1280px-13-02-19-landtag-h-vorab-N3S_1766.NEF.jpg</fanart>
+	</item>
+	<item>
+		<title>rbb Berlin</title>
+		<link>http://rbb_live-lh.akamaihd.net/i/rbb_berlin@108248/master.m3u8</link>
+		<thumbnail>rbb-berlin.png</thumbnail>
+		<genre>TV</genre>
+		<info>rbb_ber</info>
+		<date>21.12.2013</date>
+		<epg></epg>
+		<fanart>https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/RBB_Babelsberg.JPG/100px-RBB_Babelsberg.JPG</fanart>
+	</item>
+	<item>
+		<title>rbb Brandenburg</title>
+		<link>http://rbb_live-lh.akamaihd.net/i/rbb_brandenburg@107638/master.m3u8</link>
+		<thumbnail>rbb-brandenburg.png</thumbnail>
+		<genre>TV</genre>
+		<info>rbb_br</info>
+		<date>21.12.2013</date>
+		<epg></epg>
+		<fanart>https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/RBB_Babelsberg.JPG/100px-RBB_Babelsberg.JPG</fanart>
+	</item>
+	<item>
+		<title>MDR Sachsen-Anhalt</title>
+		<link>http://mdr_sa_hls-lh.akamaihd.net/i/livetvmdrsachsenanhalt_de@106901/master.m3u8</link>
+		<thumbnail>mdr-sachsen-anhalt.png</thumbnail>
+		<genre>TV</genre>
+		<info>mdr_sa</info>
+		<date>08.05.2014</date>
+		<epg></epg>
+		<fanart>https://upload.wikimedia.org/wikipedia/commons/thumb/d/da/131008-MDR-Leipzig-Studio.JPG/1280px-131008-MDR-Leipzig-Studio.JPG</fanart>
+	</item>
+	<item>
+		<title>MDR Sachsen</title>
+		<link>http://mdr_sachsen_hls-lh.akamaihd.net/i/livetvmdrsachsen_de@106902/master.m3u8</link>
+		<thumbnail>mdr-sachsen.png</thumbnail>
+		<genre>TV</genre>
+		<info>mdr_s</info>
+		<date>08.05.2014</date>
+		<epg></epg>
+		<fanart>https://upload.wikimedia.org/wikipedia/commons/thumb/d/da/131008-MDR-Leipzig-Studio.JPG/100px-131008-MDR-Leipzig-Studio.JPG</fanart>
+	</item>
+	<item>
+		<title>MDR Thüringen</title>
+		<link>http://mdr_th_hls-lh.akamaihd.net/i/livetvmdrthueringen_de@106903/master.m3u8</link>
+		<thumbnail>mdr-thueringen.png</thumbnail>
+		<genre>TV</genre>
+		<info>mdr_th</info>
+		<date>08.05.2014</date>
+		<epg></epg>
+		<fanart>https://upload.wikimedia.org/wikipedia/commons/thumb/d/da/131008-MDR-Leipzig-Studio.JPG/100px-131008-MDR-Leipzig-Studio.JPG</fanart>
+	</item>
+	<item>
+		<title>Saarländischer Rundfunk</title>
+		<link>http://livestream.sr-online.de/live.m3u8</link>
+		<thumbnail>sr.png</thumbnail>
+		<genre>TV</genre>
+		<info>sr</info>
+		<date>24.07.2014</date>
+		<epg></epg>
+		<fanart>http://upload.wikimedia.org/wikipedia/commons/3/37/Bundesarchiv_B_145_Bild-P094175%2C_Saarbr%C3%BCcken%2C_Saarl%C3%A4ndischer_Rundfunk.jpg</fanart>
+	</item>
+	<item>
+		<title>Bayerischer Rundfunk</title>
+		<link>http://livestreams.br.de/i/bfsnord_germany@119898/master.m3u8</link>
+		<thumbnail>br.png</thumbnail>
+		<genre>TV</genre>
+		<info>br</info>
+		<date>07.09.2014</date>
+		<epg></epg>
+		<fanart>http://upload.wikimedia.org/wikipedia/commons/4/47/Entrance_Bayerischer_Rundfunk_Fernsehstudio_Unterf%C3%B6hring_DE_2010-06-09.jpg</fanart>
+	</item>
+	<item>
+		<title>Südwestrundfunk</title>
+		<link>http://swrrp-lh.akamaihd.net/i/swrrp_live@196739/master.m3u8</link>
+		<thumbnail>swr.png</thumbnail>
+		<genre>TV</genre>
+		<info>swr</info>
+		<date>08.09.2014</date>
+		<epg></epg>
+		<fanart>http://upload.wikimedia.org/wikipedia/commons/a/a3/SWR_Funkhaus_Stuttgart.jpg</fanart>
+	</item>
+	<item>
+		<title>KiKA</title>
+		<link>http://kika_geo-lh.akamaihd.net/i/livetvkika_de@75114/master.m3u8</link>
+		<thumbnail>kika.png</thumbnail>
+		<genre>TV</genre>
+		<info>kinderkanal</info>
+		<date>31.12.2015</date>
+		<epg></epg>
+		<fanart>http://www.ardmediathek.de/image/00/29/02/60/50/555337067/16x9/960</fanart>
+	</item>
+	<item>
+		<title>Phoenix</title>
+		<link>http://zdf0910-lh.akamaihd.net/i/de09_v1@392871/master.m3u8</link>
+		<thumbnail>phoenix.png</thumbnail>
+		<genre>TV</genre>
+		<info>phoenix</info>
+		<date>31.12.2015</date>
+		<epg></epg>
+		<fanart>https://upload.wikimedia.org/wikipedia/commons/3/3a/Phoenix.JPG</fanart>
+	</item>
+	<item>
+		<title>HR</title>
+		<link>http://live1_hr-lh.akamaihd.net/i/hr_fernsehen@75910/master.m3u8</link>
+		<thumbnail>hr.png</thumbnail>
+		<genre>TV</genre>
+		<info>hr</info>
+		<date>10.03.2016</date>
+		<epg></epg>
+		<fanart>https://upload.wikimedia.org/wikipedia/commons/1/13/Hessischer-rundfunk-ffm001.jpg</fanart>
+	</item>
+	<item>
+		<title>ARD-Alpha</title>
+		<link>http://livestreams.br.de/i/bralpha_germany@119899/master.m3u8</link>
+		<thumbnail>alpha.png</thumbnail>
+		<genre>TV</genre>
+		<info>ardalpha</info>
+		<date>10.03.2016</date>
+		<epg></epg>
+		<fanart></fanart>
+	</item>
+	<item>
+		<title>Deutsche Welle</title>
+		<link>http://dwstream3-lh.akamaihd.net/i/dwstream3_live@124409/master.m3u8</link>
+		<thumbnail>deutsche-welle.png</thumbnail>
+		<genre>TV</genre>
+		<info>Deutsche_Welle</info>
+		<date>02.05.2016</date>
+		<epg></epg>
+		<fanart></fanart>
+	</item>
+	<item>
+		<title>Arte</title>
+		<link>https://api.arte.tv/api/player/v1/livestream/de?autostart=1</link>
+		<thumbnail>arte.png</thumbnail>
+		<1link>http://www.arte.tv/arte_vp/index.php?json_url=https://api.arte.tv/api/player/v1/livestream/de?autostart=1&lang=de_DE&config=arte_tvguide_live</1link>
+		<genre>TV</genre>
+		<info>arte</info>
+		<date>31.07.2014</date>
+		<epg></epg>
+		<fanart>http://upload.wikimedia.org/wikipedia/commons/thumb/4/47/2011_Arte_Strasbourg.JPG/1280px-2011_Arte_Strasbourg.JPG</fanart>
+	</item>
+	<item>
+		<title>3sat</title>
+		<link>http://zdf0910-lh.akamaihd.net/i/dach10_v1@392872/master.m3u8</link>
+		<thumbnail>3sat.png</thumbnail>
+		<genre>TV</genre>
+		<info>3sat</info>
+		<date>13.03.2015</date>
+		<epg></epg>
+		<fanart>http://upload.wikimedia.org/wikipedia/commons/7/78/ZDF_Sendezentrum_2.jpg</fanart>
+	</item>
+</items>
+</channel>
+
+<channel>
+<name>ZDF</name>
+<thumbnail>zdf.png</thumbnail>
+<fanart></fanart>
+<items>
+	<item>
+		<title>ZDF</title>
+		<link>http://zdf1314-lh.akamaihd.net/i/de14_v1@392878/master.m3u8</link>
+		<thumbnail>zdf.png</thumbnail>
+		<genre>TV</genre>
+		<info>zdf</info>
+		<date>10.05.2014</date>
+		<epg></epg>
+		<fanart>http://th09.deviantart.net/fs71/PRE/f/2012/239/f/4/xbmc_addon_wallpaper_zdf_by_marco126-d5ckqk2.jpg</fanart>
+	</item>
+	<item>
+		<title>ZDFneo</title>
+		<link>http://zdf1314-lh.akamaihd.net/i/de13_v1@392877/master.m3u8</link>
+		<thumbnail>zdf-neo.png</thumbnail>
+		<genre>TV</genre>
+		<info>zdf_neo</info>
+		<date>10.05.2014</date>
+		<epg></epg>
+		<fanart></fanart>
+	</item>
+	<item>
+		<title>ZDFkultur</title>
+		<link>http://zdf1112-lh.akamaihd.net/i/de11_v1@392881/master.m3u8</link>
+		<thumbnail>zdf-kultur.png</thumbnail>
+		<genre>TV</genre>
+		<info>zdf_kultur</info>
+		<date>10.05.2014</date>
+		<epg></epg>
+		<fanart></fanart>
+	</item>
+	<item>
+		<title>ZDFinfo</title>
+		<link>http://zdf1112-lh.akamaihd.net/i/de12_v1@392882/master.m3u8</link>
+		<thumbnail>zdf-info.png</thumbnail>
+		<genre>TV</genre>
+		<info>zdf_info</info>
+		<date>10.05.2014</date>
+		<epg></epg>
+		<fanart></fanart>
+	</item>
+</items>
+</channel>
+
+<channel>
+<name>Sonstige</name>
+<thumbnail>http://upload.wikimedia.org/wikipedia/commons/0/05/Effelsberg_total2.jpg</thumbnail>
+<fanart>http://upload.wikimedia.org/wikipedia/commons/c/cd/Arecibo_Observatory_Aerial_View.jpg</fanart>
+<items>
+	<item>
+		<title>NRW.TV</title>
+		<oldlink>http://streaming001.broadcast.tneg.de/nrwtv/nrwtv.stream</oldlink>
+		<link>http://streaming006.broadcast.tneg.de:1935/nrwtv-new/_definst_/smil:nrw.smil/playlist.m3u8</link>
+		<thumbnail>nrw-tv.png</thumbnail>
+		<genre>TV</genre>
+		<info>nrw_tv</info>
+		<date>01.10.2014</date>
+		<epg></epg>
+		<fanart></fanart>
+	</item>
+	<item>
+		<title>Joiz</title>
+		<link>http://ooyalahd2-f.akamaihd.net/i/joizgerm01_delivery@324125/index_2528_av-p.m3u8</link>
+		<thumbnail>joiz.png</thumbnail>
+		<genre>TV</genre>
+		<info>joiz</info>
+		<date>08.10.2014</date>
+		<epg></epg>
+		<fanart>http://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Joiz_studio.jpg/1280px-Joiz_studio.jpg</fanart>
+	</item>
+	<item>
+		<title>DAF</title>
+		<link>rtmp://fms.daf.tmt.de/live/flv:dafstream100</link>
+		<thumbnail>daf.png</thumbnail>
+		<l1ink>rtmp://fms.daf.tmt.de/live/ playpath=dafstream100 swfurl=http://partner.anleger-fernsehen.de/20/ext_content/jwplayer.flash.swf pageUrl=http://partner.anleger-fernsehen.de/20/live.php live=true timeout=15</l1ink>
+		<genre>TV</genre>
+		<info>DAF</info>
+		<date>25.02.2015</date>
+		<epg></epg>
+		<fanart>http://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/Deutsche-boerse-parkett-ffm001.jpg/1280px-Deutsche-boerse-parkett-ffm001.jpg</fanart>
+	</item>
+	<item>
+		<title>N24</title>
+		<link>http://n24-live.hls.adaptive.level3.net/hls-live/n24-pssimn24live/_definst_/live.m3u8</link>
+		<thumbnail>n24.png</thumbnail>
+		<genre>TV</genre>
+		<info>n24</info>
+		<date>13.03.2015</date>
+		<epg></epg>
+		<fanart></fanart>
+	</item>
+	<item>
+		<title>n-tv</title>
+		<link>http://p.live.fra.n-tv.de/playlists/ntvlive.m3u8</link>
+		<thumbnail>ntv.png</thumbnail>
+		<genre>TV</genre>
+		<info>n-tv</info>
+		<date>13.03.2015</date>
+		<epg></epg>
+		<fanart></fanart>
+	</item>
+</items>
+</channel>
+</channels>

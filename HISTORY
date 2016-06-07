@@ -2,7 +2,18 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------			gelöschte Releases: älter als  1.3		
 
-01.06.2016 2.1.6 Korrektur	SingleSendung: Auslagerung m3u8- und rtmp-Auswertung (rtmp-Videos z.B. in 
+07.06.2016 2.2.1 Korrektur	RadioAnstalten: Berücksichtigung von .m3u-Links. Im Gegensatz zu den übrigen
+				Stream-Links führen diese zu weiterer Textdatei, die den eigentlichen 
+				Stream-Link enthält
+06.06.2016 2.2.0 Update		Radio-Live-Stream-Funktionen hinzugefügt. Die lokale Datei livesenderRadio.xml
+				enthält die Stationsübersicht; die einzelnen Sender werden in Funktion 
+				RadioAnstalten ermittelt. Nach Auswahl einer Station wird in RadioLiveSender der
+				Audiostream-Link ermittelt und in CreateAudioStreamObject endverarbeitet.
+05.06.2016 2.1.7 Korrektur	ARD Mediathek (SingleSendung): gemeinsame Auswertung für m3u8-, rtmp- und
+				mp4-Videoquellen in neuer Funktion parseLinks_Mp4_Rtmp
+04.06.2016 2.1.6 Korrektur	ZDF Mediathek: Austausch xpath-Detail onlineairtime gegen airtime (onlineairtime
+				vermutlich Archivierungszeitpunkt, airtime = Sendezeitpunkt)
+03.06.2016 2.1.6 Korrektur	SingleSendung: Auslagerung m3u8- und rtmp-Auswertung (rtmp-Videos z.B. in 
 				"Alle Filme"). Code übersichtlicher geordnet  + neu kommentiert.
 				Provisorische Plakate ergänzt + überarbeitet.
 				Funktionstests (OK) in meiner Test- und Gebrauchsumgebung (siehe README).

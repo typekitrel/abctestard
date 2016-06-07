@@ -11,7 +11,7 @@ Das Plugin löst den Vorgänger Plex-Plugin-ARDMediathek2015 ab. Das alte Plugin
 Im Forum: https://forums.plex.tv/discussion/213947/plex-plugin-ardmediathek2016
 direkt: rols1@gmx.de 
   
-Funktionen ab Version 2.1.1: 
+Funktionen ab Version 2.2.0: 
 ===================
 - Sender Live (z.Z. 30 Sender, siehe Hinweise zu Sender Live)
 
@@ -27,6 +27,9 @@ Funktionen ab Version 2.1.1:
 - Themen
 - MeistGesehen
 
+#### Radio-Live-Streams der ARD:
+- alle Radiosender von Bayern, HR, mdr, NDR, Radio Bremen, RBB, SR, SWR, WDR, Deutschlandfunk. Insgesamt 10 Stationen, 63 Sender
+ 
 #### Videobehandlung ARD Mediathek und ZDF Mediathek:
 - Videostreams: Auflistung der verfügbaren Angebote an Bandbreiten + Auflösungen (Ausnahme Audio ohne Video)
 - Videoclips: Auflistung der verfügbaren Angebote an Qualitätstufen sowie zusätzlich verfügbarer Videoformate (Ausnahme HDS + SMIL) 
