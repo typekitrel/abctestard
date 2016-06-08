@@ -15,52 +15,52 @@
 	<item>
 		<title>Bayern</title>
 		<link>http://www.ardmediathek.de/radio/live?genre=Alle+Genres&amp;kanal=508</link>
-		<thumbnail>http://www.ardmediathek.de/image/00/21/52/01/90/445341358/16x9/512</thumbnail>
+		<thumbnail>Icon-Radio-Bayern.png</thumbnail>
 	</item>
 	<item>
 		<title>HR</title>
 		<link>http://www.ardmediathek.de/radio/live?genre=Alle+Genres&amp;kanal=750</link>
-		<thumbnail>http://www.ardmediathek.de/image/00/21/52/27/86/549738937/16x9/512</thumbnail>
+		<thumbnail>Icon-Radio-HR.png</thumbnail>
 	</item>
 	<item>
 		<title>mdr</title>
 		<link>http://www.ardmediathek.de/radio/live?genre=Alle+Genres&amp;kanal=620</link>
-		<thumbnail>http://www.ardmediathek.de/image/00/35/06/24/18/-1774185891/16x9/512</thumbnail>
+		<thumbnail>Icon-Radio-MDR.png</thumbnail>
 	</item>
 	<item>
 		<title>NDR</title>
 		<link>http://www.ardmediathek.de/radio/live?genre=Alle+Genres&amp;kanal=680</link>
-		<thumbnail>http://www.ardmediathek.de/image/00/27/82/61/06/-1774185891/16x9/512</thumbnail>
+		<thumbnail>Icon-Radio-NDR.png</thumbnail>
 	</item>
 	<item>
 		<title>Radio Bremen</title>
 		<link>http://www.ardmediathek.de/radio/live?genre=Alle+Genres&amp;kanal=1116</link>
-		<thumbnail>http://www.ardmediathek.de/image/00/21/52/34/52/549738937/16x9/512</thumbnail>
+		<thumbnail>Icon-Radio-Bremen.png</thumbnail>
 	</item>
 	<item>
 		<title>RBB</title>
 		<link>http://www.ardmediathek.de/radio/live?genre=Alle+Genres&amp;kanal=570</link>
-		<thumbnail>http://www.ardmediathek.de/image/00/21/52/01/86/1367813292/16x9/512</thumbnail>
+		<thumbnail>Icon-Radio-RBB.png</thumbnail>
 	</item>
 	<item>
 		<title>SR</title>
 		<link>http://www.ardmediathek.de/radio/live?genre=Alle+Genres&amp;kanal=1128</link>
-		<thumbnail>http://www.ardmediathek.de/image/00/27/13/82/62/1367813292/16x9/512</thumbnail>
+		<thumbnail>Icon-Radio-SR.png</thumbnail>
 	</item>
 	<item>
 		<title>SWR</title>
 		<link>http://www.ardmediathek.de/radio/live?genre=Alle+Genres&amp;kanal=728</link>
-		<thumbnail>http://www.ardmediathek.de/image/00/21/52/39/28/1367813292/16x9/512</thumbnail>
+		<thumbnail>Icon-Radio-SWR.png</thumbnail>
 	</item>
 	<item>
 		<title>WDR</title>
 		<link>http://www.ardmediathek.de/radio/live?genre=Alle+Genres&amp;kanal=638</link>
-		<thumbnail>http://www.ardmediathek.de/image/00/21/52/34/92/1367813292/16x9/512</thumbnail>
+		<thumbnail>Icon-Radio-WDR.png</thumbnail>
 	</item>
 	<item>
 		<title>Deutschlandfunk</title>
 		<link>http://www.ardmediathek.de/radio/live?genre=Alle+Genres&amp;kanal=21475696</link>
-		<thumbnail>http://www.ardmediathek.de/image/00/22/04/71/18/2123768360/16x9/512</thumbnail>
+		<thumbnail>Icon-Radio-DFunk.png</thumbnail>
 	</item>
 </items>
 </channel>

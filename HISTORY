@@ -2,6 +2,12 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------			gelöschte Releases: älter als  1.3		
 
+08.06.2016 2.2.2 Update		10 Logos für die Radio-Stationsübersicht neu erstellt (Skalierung 512x512).
+				SingleSendung: Abfangen bereits abgehandelter .m3u8-Dateien.
+				Live-TV-Sender: RTL 2 YOU - Livestream hinzugefügt. Da direkter Zugriff
+				auf die Streaming-URL nicht möglich, Verwendung einer lokalen m3u8-Datei
+				- Anpassungen (Code + Doku) in SenderLiveListe, SenderLiveResolution und
+				Parseplaylist.
 07.06.2016 2.2.1 Korrektur	RadioAnstalten: Berücksichtigung von .m3u-Links. Im Gegensatz zu den übrigen
 				Stream-Links führen diese zu weiterer Textdatei, die den eigentlichen 
 				Stream-Link enthält

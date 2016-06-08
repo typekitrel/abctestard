@@ -15,8 +15,8 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.2.1'		
-VDATE = '07.06.2016'
+VERSION =  '2.2.2'		
+VDATE = '08.06.2016'
 
 
 # (c) 2016 by Roland Scholz, rols1@gmx.de Version
@@ -790,8 +790,8 @@ def SingleSendung(path, title, thumb, duration, offset=0):	# -> CreateVideoClipO
 		
 		Log('url ' + title + ': ' + url); 	
 		if url:
-			if url == m3u8_master:
-				del link_path[0]			# 1. master.m3u8 entfernen, oben bereits abgehandelt
+			if url.find('.m3u8') >= 9:
+				del link_path[i]			# 1. master.m3u8 entfernen, oben bereits abgehandelt
 				continue
 						
 			if url.find('rtmp://') >= 0:	# 2. rtmp-Links:	
@@ -1086,6 +1086,11 @@ def SenderLiveListe(title, listname, offset=0):	#
 		#link = link.replace('amp;', len(link))		# replace verweigert solche Strings, daher -> 	repl_char
 		link = repl_char('amp;',link)				# amp; entfernen! Herkunft: HTML.ElementFromString bei &-Zeichen
 		Log(link)
+		
+		# Bei link in lokaler Datei (Resources) reagieren SenderLiveResolution und ParsePlayList entsprechend:
+		#	der erste Eintrag (automatisch) entfällt, da für die lokale Reource kein HTTP-Request durchge-
+		#	führt werden kann. In ParsePlayList werden die enthaltenen Einträge wie üblich aufbereitet
+		#	 
 									
 		title = stringextract('<title>', '</title>', element_str)
 		title = transl_umlaute(title)	# DirectoryObject verträgt keine Umlaute
@@ -1093,8 +1098,7 @@ def SenderLiveListe(title, listname, offset=0):	#
 		img = stringextract('<thumbnail>', '</thumbnail>', element_str) 
 		if img.find('://') == -1:	# Logo lokal? -> wird aus Resources geladen, Unterverz. leider n.m.
 			img = R(img)
-		else:
-			img = img
+		
 		
 		Log(title); Log(link); Log(img); Log(i)
 		#img = ""		# Senderlogos lassen wir wg. fehlender Skalierungsmöglichkeit weg
@@ -1132,10 +1136,12 @@ def SenderLiveResolution(path, title, thumb, include_container=False):
 		return oc
 		
 	# alle übrigen (i.d.R. http-Links)
-	if url_m3u8.find('.m3u8') >= 0:		# häufigstes Format
-		oc.add(CreateVideoStreamObject(url=url_m3u8, title=title + ' | Bandbreite und Auflösung automatisch', 
-			summary='funktioniert nicht mit allen Playern', meta=Codecs, thumb=thumb, rtmp_live='nein', resolution=''))
-		# Auslösungsstufen (bei relativen Pfaden nutzlos):
+	if url_m3u8.find('.m3u8') >= 0:					# häufigstes Format
+		if url_m3u8.find('http://') == 0:			# URL oder lokale Datei? (loakl entfällt Eintrag "autom.")
+			oc.add(CreateVideoStreamObject(url=url_m3u8, title=title + ' | Bandbreite und Auflösung automatisch', 
+				summary='automatische Auflösung | Auswahl durch den Player', meta=Codecs, thumb=thumb, 
+				rtmp_live='nein', resolution=''))
+		
 		oc = Parseplaylist(oc, url_m3u8, thumb)	# Auswertung *.m3u8-Datei, Auffüllung Container mit Auflösungen
 		return oc								# (-> CreateVideoStreamObject pro Auflösungstufe)
 	else:	# keine oder unbekannte Extension - Format unbekannt
@@ -1311,7 +1317,7 @@ def RadioAnstalten(path, title):
 
 	for element in entries:
 		s = XML.StringFromElement(element)	# XML.StringFromElement Plex-Framework
-		#Log(s)								#  nur bei Bedarf)						
+		Log(s)								#  nur bei Bedarf)						
 		
 		img_src = ""
 		if s.find('urlScheme') >= 0:					# Bildaddresse versteckt im img-Knoten
@@ -1718,8 +1724,12 @@ def Parseplaylist(container, url_m3u8, thumb):		# master.m3u8 auswerten, Url mus
 #  2. Besonderheit: fast identische URL's zu einer Auflösung (...av-p.m3u8, ...av-b.m3u8) Unterschied n.b.
 #  3. Besonderheit: für manche Sendungen nur 1 Qual.-Stufe verfügbar (Bsp. Abendschau RBB)
 
-  Log(url_m3u8)
-  playlist = HTTP.Request(url_m3u8).content  # als Text, nicht als HTML-Element
+  Log (url_m3u8)
+  if url_m3u8.find('http://') == 0:			# URL oder lokale Datei?
+	playlist = HTTP.Request(url_m3u8).content  # als Text, nicht als HTML-Element
+  else:
+	playlist = Resource.Load(url_m3u8) 
+	 
   lines = playlist.splitlines()
   #Log(lines)
   lines.pop(0)		# 1. Zeile entfernen (#EXTM3U)

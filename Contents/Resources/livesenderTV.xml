@@ -343,6 +343,16 @@
 		<epg></epg>
 		<fanart></fanart>
 	</item>
+	<item>
+		<title>RTL 2 YOU</title>
+		<link>cbcyoumain.m3u8</link>
+		<thumbnail>RTL_2_YOU.png</thumbnail>
+		<genre>TV</genre>
+		<info>RTL 2 YOU</info>
+		<date>08.06.2016</date>
+		<epg></epg>
+		<fanart></fanart>
+	</item>
 </items>
 </channel>
 </channels>
