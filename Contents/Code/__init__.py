@@ -15,7 +15,7 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.2.2'		
+VERSION =  '2.2.3'		
 VDATE = '08.06.2016'
 
 
@@ -807,7 +807,9 @@ def SingleSendung(path, title, thumb, duration, offset=0):	# -> CreateVideoClipO
 #--------------------------			 		
 def parseLinks_Mp4_Rtmp(page):		# extrahiert aus Textseite .mp4- und rtmp-Links (Aufrufer SingleSendung)
 									# akt. Bsp. rtmp: http://www.ardmediathek.de/play/media/35771780
-	Log('parseLinks_Mp4_Rtmp')		# akt. Bsp. m3u8: 
+	#Log('parseLinks_Mp4_Rtmp')		# akt. Bsp. m3u8: 
+	Log('parseLinks_Mp4_Rtmp: ' + page)		# bei Bedarf
+	
 	if page.find('http://www.ardmediathek.de/image') >= 0:
 		#link_img = teilstring(page, 'http://www.ardmediathek.de/image', '\",\"_subtitleUrl')
 		link_img = stringextract('_previewImage\":\"', '\",\"_subtitle', page)
@@ -843,7 +845,8 @@ def parseLinks_Mp4_Rtmp(page):		# extrahiert aus Textseite .mp4- und rtmp-Links 
 					s2 = teilstring(s1, 'http://','.mp4' )
 					#Log(s2)
 				elif s1.find('master.m3u8') == -1 and s1.find('.mp4') == -1: # Video-Urls ohne Extension
-					s2 = stringextract('_stream\":\"', '\"}]}]', s1) 
+					#s2 = stringextract('_stream\":\"', '\"}]}]', s1) 
+					s2 = stringextract('_stream\":\"', '\"}]', s1) 
 					#Log(s2)				# nur bei Bedarf
 					
 			#Log(s2); Log(len(s2))				# nur bei Bedarf
@@ -1338,19 +1341,37 @@ def RadioAnstalten(path, title):
 		path = BASE_URL + '/play/media/' + sid + '?devicetype=pc&features=flash'	# -> Textdatei mit Streamlink
 		path_content = HTTP.Request(path).content
 		Log(path_content)				# wir nehmen den 1. Streamlink, bei Bedarf nach _quality erweitern
-		slink = stringextract('_stream\":\"', '\"}', path_content) 
-		Log(slink)
-		if slink.find('.m3u') > 9:			# der .m3u-Link führt zu weiterer Textdatei, die den Streamlink enthält
-			slink_content = HTTP.Request(slink).content	# z.B. bei den RBB-Sendern
-			z = slink_content.split()
-			Log(z)
-			slink = z[-1]				# Link in letzter Zeile
+		
+		#slink = stringextract('_stream\":\"', '\"}', path_content) 		# bei nur 1 Streamlink 
+		link_path,link_img, m3u8_master = parseLinks_Mp4_Rtmp(path_content)	# manchmal mehrere Streamlinks		
+		Log(link_path); Log(link_img); Log(m3u8_master);  
+		
+		for i in range(len(link_path)):
+			s = link_path[i]
+			Log(s)
+			mark = s[0]
+			slink = s[2:]
+			Log(s); Log(mark); Log(slink); 
+			if slink.find('.m3u') > 9:		# der .m3u-Link führt zu weiterer Textdatei, die den Streamlink enthält
+				try:						# Request kann fehlschlagen - 08.06.2016 live_s.m3u Radio Fritz
+					slink_content = HTTP.Request(slink).content	# z.B. bei den RBB-Sendern
+					z = slink_content.split()
+					Log(z)
+					slink = z[-1]				# Link in letzter Zeile
+				except:
+					slink = ""
 			
-		Log(img_src); Log(headline); Log(subtitel); Log(sid); Log(slink);		
-			
-		oc.add(CreateAudioStreamObject(url=slink, title=headline, 
-			summary=subtitel, thumb=img_src, fmt='mp3'))		# funktioniert hier auch mit aac
-	
+			Log(img_src); Log(headline); Log(subtitel); Log(sid); Log(slink);		
+			if slink:						# normaler Link oder Link über .m3u ermittelt
+				oc.add(CreateAudioStreamObject(url=slink, title=headline + ', Stream ' + str(i + 1), 
+					summary=subtitel, thumb=img_src, fmt='mp3'))		# funktioniert hier auch mit aac
+		
+		if len(oc) < 1:	      		# keine Radiostreams gefunden		
+			Log('link_path == []') 		 
+			msgH = 'keine Radioquelle gefunden/verfuegbar' 
+			msg = '.keine Radioquelle gefunden/verfuegbar. Seite: ' + path
+			return ObjectContainer(header=msgH, message=msg)
+		
 	return oc
 #-----------------------------
 @route(PREFIX + '/CreateAudioStreamObject')
