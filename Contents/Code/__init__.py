@@ -1208,9 +1208,13 @@ def CreateVideoStreamObject(url, title, summary, meta, thumb, rtmp_live, resolut
   #		andernfalls Fehler: HTTP Error 503: Service Unavailable
   #		Aber: keine Auswirkung auf andere Player im Netz
   
-  #	resolution = [720, 540, 480] # Parameter bei Livestream nicht akzeptiert +  auch nicht nötig
-  #				bisherige Erfahrung: Clients skalieren besser selbst. 
+  #	resolution = [720, 540, 480] # Parameter bei HTTPLivestream nicht akzeptiert +  auch nicht nötig
+  #				bisherige Erfahrung: Clients skalieren besser selbst. Anders bei rtmp!
   # rtmp_live: Steuerung via False/True nicht möglich. Bei zweiten Durchlauf gehen Bool-Parameter verloren
+  #				DAF (auch anderes Streams?) benötigt mindestens 1 resolution-Parameter - sonst Fehler.
+  #				resolution ohne Auswirkung auf Player-Einstellungen
+  #				Die CRITICAL Meldung CreateVideoStreamObject() takes at least 7 arguments (7 given) führt
+  #				nicht zum Abbruch des Streams.
   
 	Log('CreateVideoStreamObject: ' + url); Log('rtmp_live: ' + rtmp_live) 
 
@@ -1221,7 +1225,7 @@ def CreateVideoStreamObject(url, title, summary, meta, thumb, rtmp_live, resolut
 			rating_key = title
 			videoclip_obj = VideoClipObject(
 				key = Callback(CreateVideoStreamObject, url=url, title=title, summary=summary, 
-				meta=meta, thumb=thumb, rtmp_live='ja', resolution='', include_container=True), 
+				meta=meta, thumb=thumb, rtmp_live='ja', resolution=[720, 540, 480], include_container=True), 
 				rating_key=title,
 				title=title,
 				summary=summary,
@@ -1252,8 +1256,8 @@ def CreateVideoStreamObject(url, title, summary, meta, thumb, rtmp_live, resolut
 			
 	videoclip_obj.add(mo)
 
-	Log(url); Log(title); Log(summary); Log(meta); Log(thumb); 
-	Log(rating_key);  
+	Log(url); Log(title); Log(summary); 
+	Log(meta); Log(thumb); Log(rating_key);  
 	if include_container:
 		return ObjectContainer(objects=[videoclip_obj])
 	else:
