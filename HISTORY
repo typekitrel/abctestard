@@ -2,6 +2,8 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------			gelöschte Releases: älter als  1.3		
 
+09.06.2016 2.2.3 Update		Radio-Live-Streams: Abfangroutine vom 8.6. mit Timeout versehen (toleranter bei
+				langsameren Antworten, wie z.B. RBB, SSR und SWR) 
 08.06.2016 2.2.3 Update		Radio-Live-Streams: Auswertung ev. weiterer verfügbarer Streams eines Senders. 
 				Abfangen nicht funktionierender Radio-Streams.
 08.06.2016 2.2.2 Update		10 Logos für die Radio-Stationsübersicht neu erstellt (Skalierung 512x512).

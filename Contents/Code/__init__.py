@@ -15,8 +15,8 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.2.3'		
-VDATE = '08.06.2016'
+VERSION =  '2.2.4'		
+VDATE = '09.06.2016'
 
 
 # (c) 2016 by Roland Scholz, rols1@gmx.de Version
@@ -807,8 +807,8 @@ def SingleSendung(path, title, thumb, duration, offset=0):	# -> CreateVideoClipO
 #--------------------------			 		
 def parseLinks_Mp4_Rtmp(page):		# extrahiert aus Textseite .mp4- und rtmp-Links (Aufrufer SingleSendung)
 									# akt. Bsp. rtmp: http://www.ardmediathek.de/play/media/35771780
-	#Log('parseLinks_Mp4_Rtmp')		# akt. Bsp. m3u8: 
-	Log('parseLinks_Mp4_Rtmp: ' + page)		# bei Bedarf
+	Log('parseLinks_Mp4_Rtmp')		# akt. Bsp. m3u8: 
+	#Log('parseLinks_Mp4_Rtmp: ' + page)		# bei Bedarf
 	
 	if page.find('http://www.ardmediathek.de/image') >= 0:
 		#link_img = teilstring(page, 'http://www.ardmediathek.de/image', '\",\"_subtitleUrl')
@@ -1311,6 +1311,7 @@ def RadioLiveListe(path, title):
 @route(PREFIX + '/RadioAnstalten')  
 def RadioAnstalten(path, title):
 	Log('RadioAnstalten');
+	entry_path = path	# sichern
 	oc = ObjectContainer(view_group="InfoList", title1='Radiosender von ' + title, art=ICON)
 	page = HTML.ElementFromURL(path) 
 	entries = page.xpath("//*[@class='teaser']")
@@ -1340,10 +1341,10 @@ def RadioAnstalten(path, title):
 		
 		path = BASE_URL + '/play/media/' + sid + '?devicetype=pc&features=flash'	# -> Textdatei mit Streamlink
 		path_content = HTTP.Request(path).content
-		Log(path_content)				# wir nehmen den 1. Streamlink, bei Bedarf nach _quality erweitern
-		
-		#slink = stringextract('_stream\":\"', '\"}', path_content) 		# bei nur 1 Streamlink 
-		link_path,link_img, m3u8_master = parseLinks_Mp4_Rtmp(path_content)	# manchmal mehrere Streamlinks		
+		Log(path_content)				# enthält nochmal Bildquelle + Auflistung Streams (_quality)
+										# Streamlinks mit .m3u-Ext. führen zu weiterer Textdatei - Auswert. folgt 
+		#slink = stringextract('_stream\":\"', '\"}', path_content) 		# nur 1 Streamlink? nicht mehr aktuell
+		link_path,link_img, m3u8_master = parseLinks_Mp4_Rtmp(path_content)	# mehrere Streamlinks auswerten	
 		Log(link_path); Log(link_img); Log(m3u8_master);  
 		
 		for i in range(len(link_path)):
@@ -1354,7 +1355,8 @@ def RadioAnstalten(path, title):
 			Log(s); Log(mark); Log(slink); 
 			if slink.find('.m3u') > 9:		# der .m3u-Link führt zu weiterer Textdatei, die den Streamlink enthält
 				try:						# Request kann fehlschlagen - 08.06.2016 live_s.m3u Radio Fritz
-					slink_content = HTTP.Request(slink).content	# z.B. bei den RBB-Sendern
+					#slink_content = HTTP.Request(slink).content	# z.B. bei den RBB-Sendern
+					slink_content = HTTP.Request(slink,timeout=float(1)).content	# timeout 0,5 für RBB + SR zu klein
 					z = slink_content.split()
 					Log(z)
 					slink = z[-1]				# Link in letzter Zeile
@@ -1363,14 +1365,21 @@ def RadioAnstalten(path, title):
 			
 			Log(img_src); Log(headline); Log(subtitel); Log(sid); Log(slink);		
 			if slink:						# normaler Link oder Link über .m3u ermittelt
-				oc.add(CreateAudioStreamObject(url=slink, title=headline + ', Stream ' + str(i + 1), 
+				msg = ', Stream ' + str(i + 1) + ': OK'
+				oc.add(CreateAudioStreamObject(url=slink, title=headline + msg, 
 					summary=subtitel, thumb=img_src, fmt='mp3'))		# funktioniert hier auch mit aac
-		
-		if len(oc) < 1:	      		# keine Radiostreams gefunden		
-			Log('link_path == []') 		 
-			msgH = 'keine Radioquelle gefunden/verfuegbar' 
-			msg = '.keine Radioquelle gefunden/verfuegbar. Seite: ' + path
-			return ObjectContainer(header=msgH, message=msg)
+			else:
+				msg = ' Stream ' + str(i + 1) + ': nicht verfügbar'	# einzelnen nicht zeigen - verwirrt nur
+				#oc.add(DirectoryObject(key=Callback(RadioAnstalten, path=entry_path, title=msg), 
+				#	title=headline + msg, summary='', tagline='', thumb=img_src))
+				
+	
+	if len(oc) < 1:	      		# keine Radiostreams gefunden		
+		Log('oc = 0, keine Radiostreams gefunden') 		 
+		msgH = 'keine Radiostreams bei ' + title + ' gefunden/verfuegbar' 
+		msg =  'keine Radiostreams bei ' + title + ' gefunden/verfuegbar, ' + 'Seite: ' + path
+		return ObjectContainer(header=msgH, message=msg)	# bricht Auswertung für Anstalt komplett ab				
+			
 		
 	return oc
 #-----------------------------
