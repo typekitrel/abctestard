@@ -15,8 +15,8 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.2.4'		
-VDATE = '09.06.2016'
+VERSION =  '2.2.5'		
+VDATE = '10.06.2016'
 
 
 # (c) 2016 by Roland Scholz, rols1@gmx.de Version
@@ -1333,12 +1333,11 @@ def RadioAnstalten(path, title):
 			
 		headline = ''; subtitel = ''		# nicht immer beide enthalten
 		if s.find('headline') >= 0:
-			headline = re.search("<h4 class=\"headline\">(.*?)</h4>\s+?", s) 
-			headline = headline.group(1)				# group(1) liefert bereits den Ausschnitt
+			headline = stringextract('\"headline\">', '</h4>', s)
 			headline = headline .decode('utf-8')		# tagline-Attribute verlangt Unicode
-		if s.find('subtitel') >= 0:	
-			subtitel = re.search("<p class=\"subtitle\">(.*?)</p>\s+?", s)	# Bsp. <p class="subtitle">25 Min.</p>
-			subtitel = subtitel.group(1)
+		if s.find('subtitle') >= 0:	
+			subtitel = stringextract('\"subtitle\">', '</p>', s)
+		Log(headline); Log(subtitel);
 			
 		href = element.xpath("./div/div/a/@href")[0]
 		sid = href.split('documentId=')[1]
@@ -1358,8 +1357,8 @@ def RadioAnstalten(path, title):
 			slink = s[2:]
 			Log(s); Log(mark); Log(slink); 
 			if slink.find('.m3u') > 9:		# der .m3u-Link führt zu weiterer Textdatei, die den Streamlink enthält
-				try:						# Request kann fehlschlagen - 08.06.2016 live_s.m3u Radio Fritz
-					#slink_content = HTTP.Request(slink).content	# z.B. bei den RBB-Sendern
+				try:						# Request kann fehlschlagen, z.B. bei RBB, SR, SWR
+					#slink_content = HTTP.Request(slink).content	# 
 					slink_content = HTTP.Request(slink,timeout=float(1)).content	# timeout 0,5 für RBB + SR zu klein
 					z = slink_content.split()
 					Log(z)
@@ -1370,8 +1369,9 @@ def RadioAnstalten(path, title):
 			Log(img_src); Log(headline); Log(subtitel); Log(sid); Log(slink);		
 			if slink:						# normaler Link oder Link über .m3u ermittelt
 				msg = ', Stream ' + str(i + 1) + ': OK'
-				oc.add(CreateAudioStreamObject(url=slink, title=headline + msg, 
-					summary=subtitel, thumb=img_src, fmt='mp3'))		# funktioniert hier auch mit aac
+				oc.add(CreateAudioStreamObject(url=slink, title=headline + msg, summary=subtitel,
+					 thumb=img_src, fmt='mp3'))				# funktioniert hier auch mit aac
+					 	
 			else:
 				msg = ' Stream ' + str(i + 1) + ': nicht verfügbar'	# einzelnen nicht zeigen - verwirrt nur
 				#oc.add(DirectoryObject(key=Callback(RadioAnstalten, path=entry_path, title=msg), 
