@@ -2,6 +2,10 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------			gelöschte Releases: älter als  1.3		
 
+12.06.2016 2.2.6 Update		TV-Live-Streams ARD: EPG-Daten hinzugefügt - soweit auf den Webseiten der 
+				Livesender der ARD verfügbar - Ausgabe im summary-Parameter.
+				Neue Funktion: get_epg. Neue Hilfsfunktionen: unescape, mystrip
+				Links zu den Quellen in Playlist livesenderTV.xml (Feld egp) ergänzt.
 10.06.2016 2.2.5 Update		Radio-Live-Streams: Subtitel zu den einzelnen Sendern ergänzt
 09.06.2016 2.2.4 Update		Radio-Live-Streams: Abfangroutine vom 8.6. mit Timeout versehen (toleranter bei
 				langsameren Antworten, wie z.B. RBB, SR und SWR)

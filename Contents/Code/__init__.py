@@ -15,8 +15,8 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.2.5'		
-VDATE = '10.06.2016'
+VERSION =  '2.2.6'		
+VDATE = '12.06.2016'
 
 
 # (c) 2016 by Roland Scholz, rols1@gmx.de Version
@@ -1080,10 +1080,9 @@ def SenderLiveListe(title, listname, offset=0):	#
 	#
 	i = 0		# Debug-Zähler
 	for element in liste:
-		Log(HTML.StringFromElement(element))		# Ergebnis wie XMML.StringFromElement
 		#title = element.xpath("./title/text()")	# xpath arbeitet fehlerhaft bei Sonderzeichen (z.B. in URL)
-		#link =  element.xpath("./link/text()")		
 		element_str = HTML.StringFromElement(element)
+		Log(element_str)
 		link = stringextract('<link>', '<thumbnail>', element_str) 	# HTML.StringFromElement unterschlägt </link>
 		link = link.strip()							# \r + Leerz. am Ende entfernen
 		#link = link.replace('amp;', len(link))		# replace verweigert solche Strings, daher -> 	repl_char
@@ -1096,26 +1095,63 @@ def SenderLiveListe(title, listname, offset=0):	#
 		#	 
 									
 		title = stringextract('<title>', '</title>', element_str)
-		title = transl_umlaute(title)	# DirectoryObject verträgt keine Umlaute
-				
+		title = title.decode(encoding="utf-8", errors="ignore")	
+		
+		summary=''; tagline=''   
+		epg_url = stringextract('<epg_url>', '</epg_url>', element_str)	# Link auf Seite mit Info zur Sendung
+		Log(epg_url); Log(len(epg_url));
+		
+		if epg_url:
+			epg_date, epg_title, epg_text = get_epg(epg_url, listname)	# EPG-Daten holen		
+			if epg_date and epg_title:
+				summary = epg_date + ' | ' + epg_title
+			if epg_text:								# kann fehlen
+				tagline = epg_text
+			summary = summary.decode(encoding="utf-8", errors="ignore")			
+			tagline = tagline.decode(encoding="utf-8", errors="ignore")			
+					
 		img = stringextract('<thumbnail>', '</thumbnail>', element_str) 
 		if img.find('://') == -1:	# Logo lokal? -> wird aus Resources geladen, Unterverz. leider n.m.
 			img = R(img)
-		
-		
-		Log(title); Log(link); Log(img); Log(i)
-		#img = ""		# Senderlogos lassen wir wg. fehlender Skalierungsmöglichkeit weg
+			
+		Log(title); Log(link); Log(img); Log(i); Log(summary);  Log(tagline[0:80]);
 		Resolution = ""; Codecs = ""; duration = ""
 		i = i +1	
 		#if link.find('rtmp') == 0:				# rtmp-Streaming s. CreateVideoStreamObject
 
         # Link zu master.m3u8 erst auf Folgeseite? - SenderLiveResolution reicht an  Parseplaylist durch  
 		oc.add(DirectoryObject(key=Callback(SenderLiveResolution, path=link, title=title, thumb=img),
-			title=title, thumb=img, tagline=''))
+			title=title, summary=summary,  tagline=tagline, thumb=img))
 
 	Log(len(oc))
 	return oc
-	
+#----------------------
+def get_epg(epg_url, listname):					# EPG-Daten ermitteln für SenderLiveListe
+	Log('get_epg: ' + listname)
+	epg_date = ''; epg_title=''; epg_text=''
+	if listname == 'ARD':
+		page = HTTP.Request(epg_url, cacheTime=1, timeout=float(1)).content # ohne xpath, Cache max. 1 sec
+		# Log(page)		# nur bei Bedarf		
+		
+		s = stringextract('mod modA modProgramm', '<div class=\"modSocialbar\">', page)		
+		#Log(s)			# nur bei Bedarf				
+		if s.find('<span class=\"date\">'):
+			epg_date = stringextract('<span class=\"date\">', '</span>', s)
+			#epg_date = epg_date.replace('\t', '').replace('\n', '').replace('\r', '')
+			epg_date = mystrip(epg_date)
+		if s.find('<span class=\"titel\">'):
+			epg_title = stringextract('<span class=\"titel\">', '</span', s)
+			#epg_title = epg_title.strip(' \t\n\r')
+			epg_title = mystrip(epg_title)
+			epg_title = unescape(epg_title)				# HTML-Escapezeichen  im Titel	
+				
+		if s.find('<p class=\"teasertext\">'):			# kann fehlen
+			epg_text = stringextract('<p class=\"teasertext\">', '</p', s)
+			epg_text = epg_text.replace('\t', '').replace('\n', '').replace('\r', '')
+			epg_text = unescape(epg_text)				# HTML-Escapezeichen  im Teasertext	
+					
+	Log(epg_date); Log(epg_title); Log(epg_text[0:80]); 	# bei Bedarf
+	return epg_date, epg_title, epg_text
 ###################################################################################################
 @route(PREFIX + '/SenderLiveResolution')	# Auswahl der Auflösungstufen des Livesenders
 	#	Die URL der gewählten Auflösung führt zu weiterer m3u8-Datei (*.m3u8), die Links zu den 
@@ -1285,7 +1321,7 @@ def RadioLiveListe(path, title):
 	#Log(playlist)					
 	
 	doc = HTML.ElementFromString(playlist)		# unterschlägt </link>	
-	liste = doc.xpath('//item')					# z.Z. nur 1 Channel (ARD). Bei Bedarf Schleife ereweitern
+	liste = doc.xpath('//item')					# z.Z. nur 1 Channel (ARD). Bei Bedarf Schleife erweitern
 	Log(liste)
 	
 	# Unterschied zur TV-Playlist livesenderTV.xml: Liste nur Stationen, nicht einzelne Sender.
@@ -1860,7 +1896,7 @@ def stringextract(mFirstChar, mSecondChar, mString):  # extrahiert Zeichenkette 
 	pos2 = mString.find(mSecondChar, pos1 + ind+1)
 	rString = ''
 
-	if pos1 and pos2:
+	if pos1 >= 0 and pos2 >= 0:
 		rString = mString[pos1+ind:pos2]	# extrahieren 
 		
 	#Log(mString); Log(mFirstChar); Log(mSecondChar); 
@@ -1900,17 +1936,27 @@ def transl_umlaute(line):	# Umlaute übersetzen, wenn decode nicht funktioniert
 def repl_char(cut_char, line):	# problematische Zeichen in Text entfernen, wenn replace nicht funktioniert
 	line_ret = line	
 	pos = line_ret.find(cut_char)
-	while pos > 0:
+	while pos >= 0:
 		line_l = line_ret[0:pos]
 		line_r = line_ret[pos+len(cut_char):]
 		line_ret = line_l + line_r
 		pos = line_ret.find(cut_char)
-		#Log(cut_char); Log(pos); Log(line_l); Log(line_r); Log(line_ret)		
+		#Log(cut_char); Log(pos); Log(line_l); Log(line_r); Log(line_ret)	# bei Bedarf	
 	return line_ret
-
-
-
-
+#----------------------------------------------------------------  	
+def unescape(line):	# HTML-Escapezeichen in Text entfernen, bei Bedarf erweitern
+	# s. http://stackoverflow.com/questions/2077283/escape-special-html-characters-in-python (2)
+	line_ret = (line.replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">")
+		.replace("&#39;", "'").replace("&quot;", '"'))
+	# Log(line_ret)		# bei Bedarf
+	return line_ret
+#----------------------------------------------------------------  	
+def mystrip(line):	# Ersatz für unzuverlässige strip-Funktion
+	line_ret = line	
+	line_ret = line.replace('\t', '').replace('\n', '').replace('\r', '')
+	line_ret = line_ret.strip()	
+	# Log(line_ret)		# bei Bedarf
+	return line_ret
 
 
 

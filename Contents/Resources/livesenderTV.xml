@@ -4,8 +4,8 @@
   <genre>TV</genre>
   <description>Livestreams</description>
   <thumbnail>http://community-links.googlecode.com/svn/icons/news-icon.png</thumbnail>
-  <fanart>http://community-links.googlecode.com/svn/icons/news-fanart.jpg</fanart>
-  <date>27.03.2016</date>
+  <fanart></fanart>
+  <date>11.06.2016 rols1</date>
   <credits>Gammel</credits>
  </channels_info>
  
@@ -20,9 +20,9 @@
 		<thumbnail>das-erste.png</thumbnail>
 		<genre>TV</genre>
 		<info>daserste</info>
-		<date>10.05.2014</date>
-		<epg></epg>
-		<fanart>http://www.daserste.de/specials/das-erste-logo-100~_v-facebook1200_d7e296.jpg</fanart>
+		<date>11.06.2016</date>
+		<epg_url>http://www.ardmediathek.de/tv/Das-Erste/live?kanal=208</epg_url>
+		<fanart></fanart>
 	</item>
 	<item>
 		<title>Tagesschau</title>
@@ -30,9 +30,9 @@
 		<thumbnail>tagesschau.png</thumbnail>
 		<genre>TV</genre>
 		<info>tagesschau</info>
-		<date>08.05.2014</date>
-		<epg></epg>
-		<fanart>https://upload.wikimedia.org/wikipedia/commons/4/44/Tagesschau_kulissen.JPG</fanart>
+		<date>11.06.2016</date>
+		<epg_url>http://www.ardmediathek.de/tv/tagesschau24/live?kanal=5878</epg_url>
+		<fanart></fanart>
 	</item>
 	<item>
 		<title>WDR</title>
@@ -40,8 +40,8 @@
 		<thumbnail>wdr.png</thumbnail>
 		<genre>TV</genre>
 		<info>WDR</info>
-		<date>11.08.2013</date>
-		<epg></epg>
+		<date>11.06.2016</date>
+		<epg_url>http://www.ardmediathek.de/tv/WDR-Fernsehen/live?kanal=5902</epg_url>
 		<fanart></fanart>
 	</item>
 	<item>
@@ -50,9 +50,9 @@
 		<thumbnail>ndr-hamburg.png</thumbnail>
 		<genre>TV</genre>
 		<info>ndr_hh</info>
-		<date>08.05.2014</date>
-		<epg></epg>
-		<fanart>https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/13-02-19-landtag-h-vorab-N3S_1766.NEF.jpg/1280px-13-02-19-landtag-h-vorab-N3S_1766.NEF.jpg</fanart>
+		<date>11.06.2016</date>
+		<epg_url>http://www.ardmediathek.de/tv/NDR-Hamburg/live?kanal=21518348</epg_url>
+		<fanart></fanart>
 	</item>
 	<item>
 		<title>NDR Fernsehen Mecklenburg-Vorpommern</title>
@@ -60,9 +60,9 @@
 		<thumbnail>ndr-mecklenburg-vorpommern.png</thumbnail>
 		<genre>TV</genre>
 		<info>ndr_mv</info>
-		<date>08.05.2014</date>
-		<epg></epg>
-		<fanart>https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/13-02-19-landtag-h-vorab-N3S_1766.NEF.jpg/1280px-13-02-19-landtag-h-vorab-N3S_1766.NEF.jpg</fanart>
+		<date>11.06.2016</date>
+		<epg_url>http://www.ardmediathek.de/tv/NDR-Mecklenburg-Vorpommern/live?kanal=21518350</epg_url>
+		<fanart></fanart>
 	</item>
 	<item>
 		<title>NDR Fernsehen Niedersachsen</title>
@@ -70,9 +70,9 @@
 		<thumbnail>ndr-niedersachsen.png</thumbnail>
 		<genre>TV</genre>
 		<info>ndr_ns</info>
-		<date>08.05.2014</date>
-		<epg></epg>
-		<fanart>https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/13-02-19-landtag-h-vorab-N3S_1766.NEF.jpg/1280px-13-02-19-landtag-h-vorab-N3S_1766.NEF.jpg</fanart>
+		<date>11.06.2016</date>
+		<epg_url>http://www.ardmediathek.de/tv/NDR-Niedersachsen/live?kanal=21518352</epg_url>
+		<fanart>http://www.ardmediathek.de/tv/NDR-Niedersachsen/live?kanal=21518352</fanart>
 	</item>
 	<item>
 		<title>NDR Fernsehen Schleswig-Holstein</title>
@@ -80,9 +80,9 @@
 		<thumbnail>ndr-schleswig-holstein.png</thumbnail>
 		<genre>TV</genre>
 		<info>ndr_sh</info>
-		<date>08.05.2014</date>
-		<epg></epg>
-		<fanart>https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/13-02-19-landtag-h-vorab-N3S_1766.NEF.jpg/1280px-13-02-19-landtag-h-vorab-N3S_1766.NEF.jpg</fanart>
+		<date>11.06.2016</date>
+		<epg_url>http://www.ardmediathek.de/tv/NDR-Schleswig-Holstein/live?kanal=21518354</epg_url>
+		<fanart></fanart>
 	</item>
 	<item>
 		<title>rbb Berlin</title>
@@ -90,9 +90,9 @@
 		<thumbnail>rbb-berlin.png</thumbnail>
 		<genre>TV</genre>
 		<info>rbb_ber</info>
-		<date>21.12.2013</date>
-		<epg></epg>
-		<fanart>https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/RBB_Babelsberg.JPG/100px-RBB_Babelsberg.JPG</fanart>
+		<date>11.06.2016</date>
+		<epg_url>http://www.ardmediathek.de/tv/rbb-Fernsehen-Berlin/live?kanal=21518358</epg_url>
+		<fanart></fanart>
 	</item>
 	<item>
 		<title>rbb Brandenburg</title>
@@ -100,9 +100,9 @@
 		<thumbnail>rbb-brandenburg.png</thumbnail>
 		<genre>TV</genre>
 		<info>rbb_br</info>
-		<date>21.12.2013</date>
-		<epg></epg>
-		<fanart>https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/RBB_Babelsberg.JPG/100px-RBB_Babelsberg.JPG</fanart>
+		<date>11.06.2016</date>
+		<epg_url>http://www.ardmediathek.de/tv/rbb-Fernsehen-Brandenburg/live?kanal=21518356</epg_url>
+		<fanart></fanart>
 	</item>
 	<item>
 		<title>MDR Sachsen-Anhalt</title>
@@ -110,9 +110,9 @@
 		<thumbnail>mdr-sachsen-anhalt.png</thumbnail>
 		<genre>TV</genre>
 		<info>mdr_sa</info>
-		<date>08.05.2014</date>
-		<epg></epg>
-		<fanart>https://upload.wikimedia.org/wikipedia/commons/thumb/d/da/131008-MDR-Leipzig-Studio.JPG/1280px-131008-MDR-Leipzig-Studio.JPG</fanart>
+		<date>11.06.2016</date>
+		<epg_url>http://www.ardmediathek.de/tv/MDR-SACHSEN-ANHALT/live?kanal=1386898</epg_url>
+		<fanart></fanart>
 	</item>
 	<item>
 		<title>MDR Sachsen</title>
@@ -120,9 +120,9 @@
 		<thumbnail>mdr-sachsen.png</thumbnail>
 		<genre>TV</genre>
 		<info>mdr_s</info>
-		<date>08.05.2014</date>
-		<epg></epg>
-		<fanart>https://upload.wikimedia.org/wikipedia/commons/thumb/d/da/131008-MDR-Leipzig-Studio.JPG/100px-131008-MDR-Leipzig-Studio.JPG</fanart>
+		<date>11.06.2016</date>
+		<epg_url>http://www.ardmediathek.de/tv/MDR-SACHSEN/live?kanal=1386804</epg_url>
+		<fanart></fanart>
 	</item>
 	<item>
 		<title>MDR Thüringen</title>
@@ -130,9 +130,9 @@
 		<thumbnail>mdr-thueringen.png</thumbnail>
 		<genre>TV</genre>
 		<info>mdr_th</info>
-		<date>08.05.2014</date>
-		<epg></epg>
-		<fanart>https://upload.wikimedia.org/wikipedia/commons/thumb/d/da/131008-MDR-Leipzig-Studio.JPG/100px-131008-MDR-Leipzig-Studio.JPG</fanart>
+		<date>11.06.2016</date>
+		<epg_url>http://www.ardmediathek.de/tv/MDR-TH%C3%9CRINGEN/live?kanal=1386988</epg_url>
+		<fanart></fanart>
 	</item>
 	<item>
 		<title>Saarländischer Rundfunk</title>
@@ -140,9 +140,9 @@
 		<thumbnail>sr.png</thumbnail>
 		<genre>TV</genre>
 		<info>sr</info>
-		<date>24.07.2014</date>
-		<epg></epg>
-		<fanart>http://upload.wikimedia.org/wikipedia/commons/3/37/Bundesarchiv_B_145_Bild-P094175%2C_Saarbr%C3%BCcken%2C_Saarl%C3%A4ndischer_Rundfunk.jpg</fanart>
+		<date>11.06.2016</date>
+		<epg_url>http://www.ardmediathek.de/tv/SR-Fernsehen/live?kanal=5870</epg_url>
+		<fanart></fanart>
 	</item>
 	<item>
 		<title>Bayerischer Rundfunk</title>
@@ -150,9 +150,9 @@
 		<thumbnail>br.png</thumbnail>
 		<genre>TV</genre>
 		<info>br</info>
-		<date>07.09.2014</date>
-		<epg></epg>
-		<fanart>http://upload.wikimedia.org/wikipedia/commons/4/47/Entrance_Bayerischer_Rundfunk_Fernsehstudio_Unterf%C3%B6hring_DE_2010-06-09.jpg</fanart>
+		<date>11.06.2016</date>
+		<epg_url>http://www.ardmediathek.de/tv/BR-Fernsehen-Nord/live?kanal=21537244</epg_url>
+		<fanart></fanart>
 	</item>
 	<item>
 		<title>Südwestrundfunk</title>
@@ -160,9 +160,9 @@
 		<thumbnail>swr.png</thumbnail>
 		<genre>TV</genre>
 		<info>swr</info>
-		<date>08.09.2014</date>
-		<epg></epg>
-		<fanart>http://upload.wikimedia.org/wikipedia/commons/a/a3/SWR_Funkhaus_Stuttgart.jpg</fanart>
+		<date>11.06.2016</date>
+		<epg_url>http://www.ardmediathek.de/tv/SWR-Rheinland-Pfalz/live?kanal=5872</epg_url>
+		<fanart></fanart>
 	</item>
 	<item>
 		<title>KiKA</title>
@@ -170,9 +170,9 @@
 		<thumbnail>kika.png</thumbnail>
 		<genre>TV</genre>
 		<info>kinderkanal</info>
-		<date>31.12.2015</date>
-		<epg></epg>
-		<fanart>http://www.ardmediathek.de/image/00/29/02/60/50/555337067/16x9/960</fanart>
+		<date>11.06.2016</date>
+		<epg_url>http://www.ardmediathek.de/tv/KiKA/live?kanal=5886</epg_url>
+		<fanart></fanart>
 	</item>
 	<item>
 		<title>Phoenix</title>
@@ -180,9 +180,9 @@
 		<thumbnail>phoenix.png</thumbnail>
 		<genre>TV</genre>
 		<info>phoenix</info>
-		<date>31.12.2015</date>
-		<epg></epg>
-		<fanart>https://upload.wikimedia.org/wikipedia/commons/3/3a/Phoenix.JPG</fanart>
+		<date>11.06.2016</date>
+		<epg_url>http://www.ardmediathek.de/tv/Phoenix/live?kanal=5888</epg_url>
+		<fanart></fanart>
 	</item>
 	<item>
 		<title>HR</title>
@@ -190,9 +190,9 @@
 		<thumbnail>hr.png</thumbnail>
 		<genre>TV</genre>
 		<info>hr</info>
-		<date>10.03.2016</date>
-		<epg></epg>
-		<fanart>https://upload.wikimedia.org/wikipedia/commons/1/13/Hessischer-rundfunk-ffm001.jpg</fanart>
+		<date>11.06.2016</date>
+		<epg_url>http://www.ardmediathek.de/tv/hr-fernsehen/live?kanal=5884</epg_url>
+		<fanart></fanart>
 	</item>
 	<item>
 		<title>ARD-Alpha</title>
@@ -200,8 +200,8 @@
 		<thumbnail>alpha.png</thumbnail>
 		<genre>TV</genre>
 		<info>ardalpha</info>
-		<date>10.03.2016</date>
-		<epg></epg>
+		<date>11.06.2016</date>
+		<epg_url>http://www.ardmediathek.de/tv/ARD-alpha/live?kanal=5868</epg_url>
 		<fanart></fanart>
 	</item>
 	<item>
@@ -210,8 +210,8 @@
 		<thumbnail>deutsche-welle.png</thumbnail>
 		<genre>TV</genre>
 		<info>Deutsche_Welle</info>
-		<date>02.05.2016</date>
-		<epg></epg>
+		<date>11.06.2016</date>
+		<epg_url>http://www.ardmediathek.de/tv/Deutsche-Welle/live?kanal=5876</epg_url>
 		<fanart></fanart>
 	</item>
 	<item>
@@ -221,9 +221,9 @@
 		<1link>http://www.arte.tv/arte_vp/index.php?json_url=https://api.arte.tv/api/player/v1/livestream/de?autostart=1&lang=de_DE&config=arte_tvguide_live</1link>
 		<genre>TV</genre>
 		<info>arte</info>
-		<date>31.07.2014</date>
-		<epg></epg>
-		<fanart>http://upload.wikimedia.org/wikipedia/commons/thumb/4/47/2011_Arte_Strasbourg.JPG/1280px-2011_Arte_Strasbourg.JPG</fanart>
+		<date>11.06.2016</date>
+		<epg_url>http://www.ardmediathek.de/tv/ARTE/live?kanal=5880</epg_url>
+		<fanart></fanart>
 	</item>
 	<item>
 		<title>3sat</title>
@@ -231,9 +231,9 @@
 		<thumbnail>3sat.png</thumbnail>
 		<genre>TV</genre>
 		<info>3sat</info>
-		<date>13.03.2015</date>
-		<epg></epg>
-		<fanart>http://upload.wikimedia.org/wikipedia/commons/7/78/ZDF_Sendezentrum_2.jpg</fanart>
+		<date>11.06.2016</date>
+		<epg_url>http://www.ardmediathek.de/tv/3sat/live?kanal=5900</epg_url>
+		<fanart></fanart>
 	</item>
 </items>
 </channel>
@@ -249,9 +249,9 @@
 		<thumbnail>zdf.png</thumbnail>
 		<genre>TV</genre>
 		<info>zdf</info>
-		<date>10.05.2014</date>
+		<date>11.06.2016</date>
 		<epg></epg>
-		<fanart>http://th09.deviantart.net/fs71/PRE/f/2012/239/f/4/xbmc_addon_wallpaper_zdf_by_marco126-d5ckqk2.jpg</fanart>
+		<fanart></fanart>
 	</item>
 	<item>
 		<title>ZDFneo</title>
@@ -259,7 +259,7 @@
 		<thumbnail>zdf-neo.png</thumbnail>
 		<genre>TV</genre>
 		<info>zdf_neo</info>
-		<date>10.05.2014</date>
+		<date>11.06.2016</date>
 		<epg></epg>
 		<fanart></fanart>
 	</item>
@@ -269,7 +269,7 @@
 		<thumbnail>zdf-kultur.png</thumbnail>
 		<genre>TV</genre>
 		<info>zdf_kultur</info>
-		<date>10.05.2014</date>
+		<date>11.06.2016</date>
 		<epg></epg>
 		<fanart></fanart>
 	</item>
@@ -279,7 +279,7 @@
 		<thumbnail>zdf-info.png</thumbnail>
 		<genre>TV</genre>
 		<info>zdf_info</info>
-		<date>10.05.2014</date>
+		<date>11.06.2016</date>
 		<epg></epg>
 		<fanart></fanart>
 	</item>
@@ -310,7 +310,7 @@
 		<info>joiz</info>
 		<date>08.10.2014</date>
 		<epg></epg>
-		<fanart>http://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Joiz_studio.jpg/1280px-Joiz_studio.jpg</fanart>
+		<fanart></fanart>
 	</item>
 	<item>
 		<title>DAF</title>
@@ -321,7 +321,7 @@
 		<info>DAF</info>
 		<date>25.02.2015</date>
 		<epg></epg>
-		<fanart>http://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/Deutsche-boerse-parkett-ffm001.jpg/1280px-Deutsche-boerse-parkett-ffm001.jpg</fanart>
+		<fanart></fanart>
 	</item>
 	<item>
 		<title>N24</title>
