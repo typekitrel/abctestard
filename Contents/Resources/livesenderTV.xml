@@ -12,6 +12,7 @@
 <channel>
 <name>ARD</name>
 <thumbnail>ard.png</thumbnail>
+<epg></epg>
 <fanart></fanart>
 <items>
 	<item>
@@ -172,6 +173,7 @@
 		<info>kinderkanal</info>
 		<date>11.06.2016</date>
 		<epg_url>http://www.ardmediathek.de/tv/KiKA/live?kanal=5886</epg_url>
+		<epg_url2>http://www.zdf.de/ZDFmediathek#/beitrag/kikalive/999999</epg_url2>
 		<fanart></fanart>
 	</item>
 	<item>
@@ -182,6 +184,7 @@
 		<info>phoenix</info>
 		<date>11.06.2016</date>
 		<epg_url>http://www.ardmediathek.de/tv/Phoenix/live?kanal=5888</epg_url>
+		<epg_url2>http://www.zdf.de/ZDFmediathek#/beitrag/livevideo/2492878</epg_url2>
 		<fanart></fanart>
 	</item>
 	<item>
@@ -241,6 +244,8 @@
 <channel>
 <name>ZDF</name>
 <thumbnail>zdf.png</thumbnail>
+<epg>http://www.zdf.de/epg/programm-4100.html</epg>
+<epgnamen>zdf, zdf_neo, zdf_kultur, zdf_info</epgnamen>
 <fanart></fanart>
 <items>
 	<item>

@@ -15,21 +15,12 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.2.6'		
-VDATE = '12.06.2016'
+VERSION =  '2.2.7'		
+VDATE = '15.06.2016'
 
 
-# (c) 2016 by Roland Scholz, rols1@gmx.de Version
-#     Testing Enviroment: 
-#		PC: Fujitsu Esprimo E900 8 GB RAM, 3,4 GHz
-#		Linux openSUSE 42.1 und Plex-Server 0.9.16.4
-#		Tablet Nexus 7, Android 5.1.1,
-#		Web-Player: Google-Chrome (alles OK), Firefox (alles OK, Flash-Plugin erforderlich)
-#		Videoplayer-Apps: VLC-Player, MXPlayer
-#		Streaming-Apps: BubbleUPnP (alle Funktionen OK), AllConnect (keine m3u8-Videos)
-# 		Media Player at TV: WD TV Live HD, WDAAP0000NBK, 2012 (nicht alle Auflösungsstufen unterstützt,
-#																Vor- und Rückspulen nicht nutzbar)
-#
+# (c) 2016 by Roland Scholz, rols1@gmx.de 
+#     Testing Enviroment -> README.md
 # 
 # Licensed under the GPL, Version 3.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -44,17 +35,17 @@ VDATE = '12.06.2016'
 # limitations under the License.
 
 # Artwork (folder 'Resources'): (c) ARD
-# TV-Logos : upload.wikimedia.org
 
 ####################################################################################################
 
 NAME = 'ARD Mediathek 2016'
-PREFIX = "/video/ardmediathek2016"			# Liste der Stationen. Einzelne Sender und Links werden 
-											#	vom Plugin ermittelt
-PLAYLIST = 'livesenderTV.xml'				# basiert auf der Channeldatei von gammel, Download:
-# http://dl.gmlblog.de/deutschesender.xml. Veröffentlicht: https://gmlblog.de/2013/08/xbmc-tv-livestreams/
-# Sender-Logos erstellt von: Arauco (Plex-Forum). 
-PLAYLIST_Radio = 'livesenderRadio.xml'		# 
+PREFIX = "/video/ardmediathek2016"			
+												
+PLAYLIST = 'livesenderTV.xml'				# basiert auf http://dl.gmlblog.de/deutschesender.xml
+											# Sender-Logos erstellt von: Arauco (Plex-Forum). 
+
+PLAYLIST_Radio = 'livesenderRadio.xml'		# Liste der RadioAnstalten. Einzelne Sender und Links werden 
+											# 	vom Plugin ermittelt
 
 ART = 'art.png'								# ARD 
 ICON = 'icon.png'							# ARD
@@ -671,6 +662,7 @@ def SinglePage(title, path, next_cbKey, offset=0):	# path komplett
 	for i in range(len(send_path)):	
 		path = send_path[i]
 		headline = send_headline[i]
+		headline = unescape(headline)				# HTML-Escapezeichen  im Titel	
 		subtitel = send_subtitel[i]
 		img_src = send_img_src[i]
 		img_alt = send_img_alt[i]
@@ -1070,6 +1062,12 @@ def SenderLiveListe(title, listname, offset=0):	#
 		name = stringextract('<name>', '</name>', element_str)
 		if name == listname:			# Listenauswahl gefunden
 			break
+
+	if listname == 'ZDF':				 # EPG-Daten ARD holen, Sender komplett. Variabler bei Bedarf
+		epg_url = stringextract('<epg>', '</epg>', element_str)
+		epgnamen  = stringextract('<epgnamen>', '</epgnamen>', element_str)	# Bsp.: zdf, zdf_neo, zdf_kultur, zdf_info
+		Log(epg_url); Log(epgnamen);		
+		epg_date_list, epg_title_list, epg_text_list = get_epg_ZDF(epg_url, epgnamen) 
 	
 	liste = element.xpath('./items/item')
 	Log(liste); # Log(element_str)  # 1 Channel  der Playlist - nur bei Bedarf
@@ -1078,18 +1076,17 @@ def SenderLiveListe(title, listname, offset=0):	#
 	#	*.m3u8 geholt. Nach Anwahl eines Live-Senders erfolgt in SenderLiveResolution die Listung
 	#	der Auflösungsstufen.
 	#
-	i = 0		# Debug-Zähler
+	i = 0		# Listen-Zähler
 	for element in liste:
 		#title = element.xpath("./title/text()")	# xpath arbeitet fehlerhaft bei Sonderzeichen (z.B. in URL)
 		element_str = HTML.StringFromElement(element)
 		Log(element_str)
 		link = stringextract('<link>', '<thumbnail>', element_str) 	# HTML.StringFromElement unterschlägt </link>
 		link = link.strip()							# \r + Leerz. am Ende entfernen
-		#link = link.replace('amp;', len(link))		# replace verweigert solche Strings, daher -> 	repl_char
-		link = repl_char('amp;',link)				# amp; entfernen! Herkunft: HTML.ElementFromString bei &-Zeichen
-		Log(link)
+		link = unescape(link)						# amp; entfernen! Herkunft: HTML.ElementFromString bei &-Zeichen
+		Log(link); Log(i)
 		
-		# Bei link in lokaler Datei (Resources) reagieren SenderLiveResolution und ParsePlayList entsprechend:
+		# Bei link zu lokaler m3u8-Datei (Resources) reagieren SenderLiveResolution und ParsePlayList entsprechend:
 		#	der erste Eintrag (automatisch) entfällt, da für die lokale Reource kein HTTP-Request durchge-
 		#	führt werden kann. In ParsePlayList werden die enthaltenen Einträge wie üblich aufbereitet
 		#	 
@@ -1097,61 +1094,125 @@ def SenderLiveListe(title, listname, offset=0):	#
 		title = stringextract('<title>', '</title>', element_str)
 		title = title.decode(encoding="utf-8", errors="ignore")	
 		
-		summary=''; tagline=''   
-		epg_url = stringextract('<epg_url>', '</epg_url>', element_str)	# Link auf Seite mit Info zur Sendung
-		Log(epg_url); Log(len(epg_url));
+		if listname == 'Sonstige':					# noch keine EPG-Daten 
+			epg_url = ''
 		
-		if epg_url:
-			epg_date, epg_title, epg_text = get_epg(epg_url, listname)	# EPG-Daten holen		
-			if epg_date and epg_title:
-				summary = epg_date + ' | ' + epg_title
-			if epg_text:								# kann fehlen
-				tagline = epg_text
-			summary = summary.decode(encoding="utf-8", errors="ignore")			
-			tagline = tagline.decode(encoding="utf-8", errors="ignore")			
-					
+		epg_date=''; epg_title=''; epg_text=''; summary=''; tagline=''   
+		
+		if listname == 'ARD':						# EPG-Daten ARD holen, Sender einzeln	
+			epg_url = stringextract('<epg_url>', '</epg_url>', element_str)	# Link auf Seite mit Info zur Sendung
+			epg_date, epg_title, epg_text = get_epg_ARD(epg_url, listname)			
+				
+		if listname == 'ZDF':						# EPG-Daten bereits geholt, Sender gesamt, s.o.	
+			try:
+				epg_date = epg_date_list[i]; epg_title = epg_title_list[i]; epg_text = epg_text_list[i];
+			except:
+				Log('except:' + str(i))
+						
+		Log(epg_url); Log(epg_date); 			
+		if epg_date and epg_title:
+			summary = epg_date + ' | ' + epg_title
+		if epg_text:								# kann fehlen
+			tagline = epg_text
+			
+		summary = summary.decode(encoding="utf-8", errors="ignore")			
+		tagline = tagline.decode(encoding="utf-8", errors="ignore")	
+						
 		img = stringextract('<thumbnail>', '</thumbnail>', element_str) 
 		if img.find('://') == -1:	# Logo lokal? -> wird aus Resources geladen, Unterverz. leider n.m.
 			img = R(img)
 			
 		Log(title); Log(link); Log(img); Log(i); Log(summary);  Log(tagline[0:80]);
 		Resolution = ""; Codecs = ""; duration = ""
-		i = i +1	
+		i = i +1		
+	
 		#if link.find('rtmp') == 0:				# rtmp-Streaming s. CreateVideoStreamObject
-
-        # Link zu master.m3u8 erst auf Folgeseite? - SenderLiveResolution reicht an  Parseplaylist durch  
+		# Link zu master.m3u8 erst auf Folgeseite? - SenderLiveResolution reicht an  Parseplaylist durch  
 		oc.add(DirectoryObject(key=Callback(SenderLiveResolution, path=link, title=title, thumb=img),
 			title=title, summary=summary,  tagline=tagline, thumb=img))
 
 	Log(len(oc))
 	return oc
 #----------------------
-def get_epg(epg_url, listname):					# EPG-Daten ermitteln für SenderLiveListe
-	Log('get_epg: ' + listname)
+def get_epg_ARD(epg_url, listname):					# EPG-Daten ermitteln für SenderLiveListe, ARD
+	Log('get_epg_ARD: ' + listname)
 	epg_date = ''; epg_title=''; epg_text=''
-	if listname == 'ARD':
-		page = HTTP.Request(epg_url, cacheTime=1, timeout=float(1)).content # ohne xpath, Cache max. 1 sec
-		# Log(page)		# nur bei Bedarf		
-		
-		s = stringextract('mod modA modProgramm', '<div class=\"modSocialbar\">', page)		
-		#Log(s)			# nur bei Bedarf				
-		if s.find('<span class=\"date\">'):
-			epg_date = stringextract('<span class=\"date\">', '</span>', s)
-			#epg_date = epg_date.replace('\t', '').replace('\n', '').replace('\r', '')
-			epg_date = mystrip(epg_date)
-		if s.find('<span class=\"titel\">'):
-			epg_title = stringextract('<span class=\"titel\">', '</span', s)
-			#epg_title = epg_title.strip(' \t\n\r')
-			epg_title = mystrip(epg_title)
-			epg_title = unescape(epg_title)				# HTML-Escapezeichen  im Titel	
-				
-		if s.find('<p class=\"teasertext\">'):			# kann fehlen
-			epg_text = stringextract('<p class=\"teasertext\">', '</p', s)
-			epg_text = epg_text.replace('\t', '').replace('\n', '').replace('\r', '')
-			epg_text = unescape(epg_text)				# HTML-Escapezeichen  im Teasertext	
-					
-	Log(epg_date); Log(epg_title); Log(epg_text[0:80]); 	# bei Bedarf
+
+	page = HTTP.Request(epg_url, cacheTime=1, timeout=float(1)).content # ohne xpath, Cache max. 1 sec
+	# Log(page)		# nur bei Bedarf		
+	
+	s = stringextract('mod modA modProgramm', '<div class=\"modSocialbar\">', page)		
+	#Log(s)			# nur bei Bedarf				
+	if s.find('<span class=\"date\">'):
+		epg_date = stringextract('<span class=\"date\">', '</span>', s)
+		#epg_date = epg_date.replace('\t', '').replace('\n', '').replace('\r', '')
+		epg_date = mystrip(epg_date)
+	if s.find('<span class=\"titel\">'):
+		epg_title = stringextract('<span class=\"titel\">', '</span', s)
+		#epg_title = epg_title.strip(' \t\n\r')
+		epg_title = mystrip(epg_title)
+		epg_title = unescape(epg_title)				# HTML-Escapezeichen  im Titel	
+			
+	if s.find('<p class=\"teasertext\">'):			# kann fehlen
+		epg_text = stringextract('<p class=\"teasertext\">', '</p', s)
+		epg_text = epg_text.replace('\t', '').replace('\n', '').replace('\r', '')
+		epg_text = unescape(epg_text)				# HTML-Escapezeichen  im Teasertext	
+										
+	Log(epg_date); Log(epg_title); Log(epg_text[0:80]); 	
 	return epg_date, epg_title, epg_text
+#----------------------
+def get_epg_ZDF(epg_url, epgnamen):					# EPG-Daten ermitteln für SenderLiveListe, ZDF
+	Log('get_epg_ZDF: ' + epgnamen)		
+	epg_date=[]; epg_title=[]; epg_text=[]
+	epgnamen = epgnamen.split(',')
+	#Log(epgnamen)
+
+	page = HTML.ElementFromURL(epg_url, cacheTime=1, timeout=float(0.5))	# EPG-Daten laden, Cache max. o,5 sec
+	#page = HTTP.Request(epg_url, cacheTime=1, timeout=float(1)).content # ohne xpath, Cache max. 1 sec
+	for name in epgnamen:							# Schleife über die Namen -> Schleife über Datensätze
+		name = name.strip()
+		x = ('{0} broadcasts'.format(name))			# xpath Bsp.: <td class="zdf_kultur broadcasts">
+		xdef = (('//*[@class="{0}"]').format(x))
+		Log(xdef)
+		liste = page.xpath(xdef)
+		Log(name); # Log(liste)						# bei Bedarf
+
+		for element in liste:								# xpath nach class="col_l" + class="col_r" nicht   
+			element_str = HTML.StringFromElement(element)	# konsistent, daher Stringsuche
+			# Log(element); Log(element_str)		# bei Bedarf
+			edate = ''; etitle = ''; etext = '';
+			f_ind = element_str.find('Jetzt')			# Zeit vor Fundstelle, titel + Beschreib. dahinter
+			if f_ind >= 0:
+				# hier Datensatz  zwischen class="col_l" (rfind) und '<img src=' (Sendungs-img nicht benötigt)
+				#  	Beschreib.: h3, (h5), (p, p). h3= titel, h5= Untertitel, p=Herkunft/Jahr 
+				Log(f_ind); #Log(rpos)
+				s = element_str[f_ind-100:]		# - 200 ausreichend vor col_l (Abstand von Jetzt fix) - nicht sicher!
+				#Log(s)							# bei Bedarf
+				edate = stringextract('<p class=\"time\">', '</p>', s)
+				etitle = stringextract('<h3>', '</h3>', s)		# h5, h3 immmer vorhanden, h3 manchmal leer
+				etext = stringextract('<h5>', '</h5>', s)
+				lpos = s.find('col_r');							
+				Log(edate); Log(etitle); Log(etext); Log(lpos); 
+				s = s[lpos:]							# div class="col_r"> abschneiden
+				#Log(s)							# bei Bedarf					
+				if s.find('<p>'):
+					etext2 = etext + ' | ' + stringextract('<p>', '</p>', s)	# Text? -  an UT anhängen 
+					lpos = s.find('/p')
+					etext3 = ''
+					#Log(lpos)					# bei Bedarf
+					if s.find('<p>', lpos + 2) >0 :						# noch weiterer Text?
+						s = s[lpos +  2:]
+						#Log(s)						
+						etext3 = stringextract('<p>', '</p>', s)	
+					etext = 	etext2 + ' | ' + 	etext3	
+						
+				epg_date.append(edate)
+				epg_title.append(etitle)
+				epg_text.append(etext)
+	
+	Log(epg_date); Log(epg_title); Log(epg_text[0:80]);  
+	return epg_date, epg_title, epg_text
+
 ###################################################################################################
 @route(PREFIX + '/SenderLiveResolution')	# Auswahl der Auflösungstufen des Livesenders
 	#	Die URL der gewählten Auflösung führt zu weiterer m3u8-Datei (*.m3u8), die Links zu den 
@@ -1890,25 +1951,24 @@ def CalculateDuration(timecode):
 	milliseconds += seconds * 1000
 	return milliseconds
 #----------------------------------------------------------------  
-def stringextract(mFirstChar, mSecondChar, mString):  # extrahiert Zeichenkette zwischen 1. + 2. Zeichenkette
-	pos1 = mString.find(mFirstChar)
+def stringextract(mFirstChar, mSecondChar, mString):  	# extrahiert Zeichenkette zwischen 1. + 2. Zeichenkette
+	pos1 = mString.find(mFirstChar)						# return '' bei Fehlschlag
 	ind = len(mFirstChar)
-	pos2 = mString.find(mSecondChar, pos1 + ind+1)
+	#pos2 = mString.find(mSecondChar, pos1 + ind+1)		
+	pos2 = mString.find(mSecondChar, pos1 + ind)		# ind+1 beginnt bei Leerstring um 1 Pos. zu weit
 	rString = ''
 
 	if pos1 >= 0 and pos2 >= 0:
 		rString = mString[pos1+ind:pos2]	# extrahieren 
 		
-	#Log(mString); Log(mFirstChar); Log(mSecondChar); 
+	#Log(mString); Log(mFirstChar); Log(mSecondChar); 	# bei Bedarf
 	#Log(pos1); Log(ind); Log(pos2);  Log(rString); 
 	return rString
 #----------------------------------------------------------------  
-def teilstring(zeile, startmarker, endmarker):  # in init ändern!
+def teilstring(zeile, startmarker, endmarker):  		# return '' bei Fehlschlag
   # die übergebenen Marker bleiben Bestandteile der Rückgabe (werden nicht abgeschnitten)
-  # content = XML.StringFromElement(page)  - entfällt
   pos2 = zeile.find(endmarker, 0)
   pos1 = zeile.rfind(startmarker, 0, pos2)
-  #print pos2; print pos1
   if pos1 & pos2:
     teils = zeile[pos1:pos2+len(endmarker)]	# Versatz +5 schneidet die begrenzenden Suchstellen ab 
   else:
@@ -1934,7 +1994,7 @@ def transl_umlaute(line):	# Umlaute übersetzen, wenn decode nicht funktioniert
 	return line_ret
 #----------------------------------------------------------------  
 def repl_char(cut_char, line):	# problematische Zeichen in Text entfernen, wenn replace nicht funktioniert
-	line_ret = line	
+	line_ret = line				# return line bei Fehlschlag
 	pos = line_ret.find(cut_char)
 	while pos >= 0:
 		line_l = line_ret[0:pos]
@@ -1945,7 +2005,6 @@ def repl_char(cut_char, line):	# problematische Zeichen in Text entfernen, wenn 
 	return line_ret
 #----------------------------------------------------------------  	
 def unescape(line):	# HTML-Escapezeichen in Text entfernen, bei Bedarf erweitern
-	# s. http://stackoverflow.com/questions/2077283/escape-special-html-characters-in-python (2)
 	line_ret = (line.replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">")
 		.replace("&#39;", "'").replace("&quot;", '"'))
 	# Log(line_ret)		# bei Bedarf
