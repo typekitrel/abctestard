@@ -15,11 +15,13 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.2.7'		
-VDATE = '15.06.2016'
+VERSION =  '2.3.1'		
+VDATE = '21.06.2016'
 
 
-# (c) 2016 by Roland Scholz, rols1@gmx.de 
+# (c) 2016 by Roland Scholz, rols1@gmx.de
+#	GUI by Arauco (Plex-Forum)
+# 
 #     Testing Enviroment -> README.md
 # 
 # Licensed under the GPL, Version 3.0 (the "License");
@@ -41,35 +43,41 @@ VDATE = '15.06.2016'
 NAME = 'ARD Mediathek 2016'
 PREFIX = "/video/ardmediathek2016"			
 												
-PLAYLIST = 'livesenderTV.xml'				# basiert auf http://dl.gmlblog.de/deutschesender.xml
-											# Sender-Logos erstellt von: Arauco (Plex-Forum). 
-
+PLAYLIST = 'livesenderTV.xml'				# TV-Sender-Logos erstellt von: Arauco (Plex-Forum). 											
 PLAYLIST_Radio = 'livesenderRadio.xml'		# Liste der RadioAnstalten. Einzelne Sender und Links werden 
 											# 	vom Plugin ermittelt
+											# Radio-Sender-Logos erstellt von: Arauco (Plex-Forum). 
 
 ART = 'art.png'								# ARD 
 ICON = 'icon.png'							# ARD
-ICON_SEARCH = 'icon-search.png'				# gtk themes / Adwaita system-search-symbolic.symbolic.png
+ICON_SEARCH = 'ard-suche.png'						
 
-ICON_AZ = 'icon-AZ.png'
-ICON_CAL = 'icon-calendar.png'				# gnome / Tango x-office-calendar.png
-ICON_EINSLIKE = 'icon-Einslike.png'
-ICON_SENDER = 'icon-Sender.png' 
-ICON_RUBRIKEN = 'icon-Rubriken.png'
-ICON_ThemenZDF = 'icon-ThemenZDF.png'
-ICON_MEIST = 'icon-meist.png'
-
-ICON_ThemenARD = 'icon-ThemenARD.png'		# Artwork LibreOffice
-ICON_FilmeARD = 'icon-FilmeARD.png'
-ICON_FilmeAllARD = 'icon-FilmeAllARD.png'
-ICON_DokusARD = 'icon-DokusARD.png'			# Clipart LibreOffice
-ICON_DokusAllARD = 'icon-DokusAllARD.png'	# Clipart LibreOffice
-ICON_SerienARD = 'icon-SerienARD.png'		# Artwork LibreOffice
-ICON_ARDRadio = 'Icon-ARDRadio.png'		# gimp-Bastelei
+ICON_MAIN_ARD = 'ard-mediathek.png'			
+ICON_MAIN_ZDF = 'zdf-mediathek.png'			
+ICON_MAIN_TVLIVE = 'tv-livestreams.png'		
+ICON_MAIN_RADIOLIVE = 'radio-livestreams.png' 	
+ICON_MAIN_UPDATER = 'plugin-update.png'		
+ICON_UPDATER_NEW = 'plugin-update-new.png'
 
 
-ICON_UPDATER = "icon-updater.png"
-ICON_UPDATE_NEW = "icon-update-new.png"
+ICON_ARD_AZ = 'ard-sendungen-az.png' 			
+ICON_ARD_VERP = 'ard-sendung-verpasst.png'			
+ICON_ARD_EINSLIKE = 'ard-einslike.png' 			
+ICON_ARD_RUBRIKEN = 'ard-rubriken.png' 			
+ICON_ARD_Themen = 'ard-themen.png'	 			
+ICON_ARD_Filme = 'ard-ausgewaehlte-filme.png' 	
+ICON_ARD_FilmeAll = 'ard-alle-filme.png' 		
+ICON_ARD_Dokus = 'ard-ausgewaehlte-dokus.png'			
+ICON_ARD_DokusAll = 'ard-alle-dokus.png'		
+ICON_ARD_Serien = 'ard-serien.png'				
+
+ICON_ZDF_AZ = 'zdf-sendungen-az.png' 		
+ICON_ZDF_VERP = 'zdf-sendung-verpasst.png'	
+ICON_ZDF_RUBRIKEN = 'zdf-rubriken.png' 		
+ICON_ZDF_Themen = 'zdf-themen.png'			
+ICON_ZDF_MEIST = 'zdf-meist-gesehen.png' 	
+
+
 ICON_OK = "icon-ok.png"
 ICON_WARNING = "icon-warning.png"
 ICON_NEXT = "icon-next.png"
@@ -80,7 +88,7 @@ THUMBNAIL = [									# Vorgaben für THUMBNAILS in ZDF_BEITRAG_DETAILS
   '644x363',
   '672x378',
 ]
-ICON_RUBRIKEN
+
 SENDUNGENAZ = [									# ZDF A-Z
   ['ABC', 'A', 'C'],
   ['DEF', 'D', 'F'],
@@ -160,11 +168,13 @@ def Start():
 	#Log.Debug()  	# definiert in Info.plist
 	Plugin.AddViewGroup("InfoList", viewMode="InfoList", mediaType="items")
 	Plugin.AddViewGroup("List", viewMode="List", mediaType="items")
+	#Plugin.AddViewGroup("Details", viewMode="Details", mediaType="items")
+	#Plugin.AddViewGroup("Images", viewMode="Pictures", mediaType="items")
 
 	#ObjectContainer.art        = R(ART)
 	ObjectContainer.art        = R(ICON)  # gefällt mir als Hintergrund besser
 	ObjectContainer.title1     = NAME
-	ObjectContainer.view_group = "InfoList"
+	#ObjectContainer.view_group = "InfoList"
 
 	HTTP.CacheTime = CACHE_1HOUR # Debugging: falls Logdaten ausbleiben, Browserdaten löschen
 
@@ -173,24 +183,31 @@ def Start():
 @handler(PREFIX, NAME, art = ART, thumb = ICON)
 def Main():
 	Log('Funktion Main'); Log(PREFIX); Log(VERSION); Log(VDATE)
-	oc = ObjectContainer(view_group="InfoList", art=ObjectContainer.art)	
-
+	oc = ObjectContainer(view_group="InfoList", art=ObjectContainer.art)	# Plex akzeptiert nur InfoList + List, keine
+																			# Auswirkung auf Wiedergabe im Webplayer
 	# folgendes DirectoryObject ist Deko für das nicht sichtbare InputDirectoryObject dahinter:
 	oc.add(DirectoryObject(key=Callback(Main_ARD, name="ARD Mediathek"), title="ARD Mediathek",
-		summary='', tagline='TV', thumb=R('ard.png')))
+		summary='', tagline='TV', thumb=R(ICON_MAIN_ARD)))
 	oc.add(DirectoryObject(key=Callback(Main_ZDF, name="ZDF Mediathek"), title="ZDF Mediathek", 
-		summary='', tagline='TV', thumb=R('zdf.png')))
-	oc.add(DirectoryObject(key=Callback(SenderLiveListePre, title='Live-Sender-Vorauswahl'), title='Live-Sender-Vorauswahl',
-		summary='', tagline='TV', thumb=R(ICON_SENDER)))
-	oc.add(DirectoryObject(key=Callback(RadioLiveListe, path=ARD_RadioAll, title='ARD Radio-Live-Streams'), 
-		title='ARD Radio-Live-Streams', summary='', tagline='Radio', thumb=R(ICON_ARDRadio)))
+		summary='', tagline='TV', thumb=R(ICON_MAIN_ZDF)))
+	oc.add(DirectoryObject(key=Callback(SenderLiveListePre, title='TV-Livestreams'), title='TV-Livestreams',
+		summary='', tagline='TV', thumb=R(ICON_MAIN_TVLIVE)))
+	oc.add(DirectoryObject(key=Callback(RadioLiveListe, path=ARD_RadioAll, title='Radio-Livestreams'), 
+		title='Radio-Livestreams', summary='', tagline='Radio', thumb=R(ICON_MAIN_RADIOLIVE)))
 
 	repo_url = 'https://github.com/{0}/releases/'.format(GITHUB_REPOSITORY)
 	oc.add(DirectoryObject(key=Callback(SearchUpdate, title='Plugin-Update'), 
 		title='Plugin-Update | akt. Version: ' + VERSION + ' vom ' + VDATE,
-		summary='Suche nach neuen Updates starten', tagline='Bezugsquelle: ' + repo_url, thumb=R(ICON_UPDATER)))
+		summary='Suche nach neuen Updates starten', tagline='Bezugsquelle: ' + repo_url, thumb=R(ICON_MAIN_UPDATER)))
 		
 	return oc	
+#----------------------------------------------------------------
+def home(cont):															# Home-Button, Aufruf: oc = home(cont=oc)			
+	title = 'Zurück zum Hauptmenü'.decode(encoding="utf-8", errors="ignore")
+	summary = 'Zurück zum Hauptmenü'.decode(encoding="utf-8", errors="ignore")
+	cont.add(DirectoryObject(key=Callback(Main),title=title, summary=summary, tagline=NAME, thumb=R('home.png')))
+
+	return cont
 #---------------------------------------------------------------- 
 @route(PREFIX + '/Main_ARD')
 def Main_ARD(name):
@@ -198,32 +215,34 @@ def Main_ARD(name):
 	oc = ObjectContainer(view_group="InfoList", art=ObjectContainer.art)	
 	
 	# folgendes DirectoryObject ist Deko für das nicht sichtbare InputDirectoryObject dahinter:
-	oc.add(DirectoryObject(key=Callback(Main),title='Suche: im Suchfeld eingeben', summary='', tagline='TV'))
+	oc.add(DirectoryObject(key=Callback(Main_ARD, name=name),title='Suche: im Suchfeld eingeben', 
+		summary='', tagline='TV', thumb=R(ICON_SEARCH)))
 	oc.add(InputDirectoryObject(key=Callback(Search, s_type='video', title=u'%s' % L('Search Video')),
 		title=u'%s' % L('Search'), prompt=u'%s' % L('Search Video'), thumb=R(ICON_SEARCH)))
+		
 	oc.add(DirectoryObject(key=Callback(VerpasstWoche, name=name), title=" Sendung Verpasst (1 Woche)",
-		summary='', tagline='TV', thumb=R(ICON_CAL)))
+		summary='', tagline='TV', thumb=R(ICON_ARD_VERP)))
 	oc.add(DirectoryObject(key=Callback(SendungenAZ, name='Sendungen 0-9 | A-Z'), title='Sendungen A-Z',
-		summary='', tagline='TV', thumb=R(ICON_AZ)))
+		summary='', tagline='TV', thumb=R(ICON_ARD_AZ)))
 	oc.add(DirectoryObject(key=Callback(Einslike, title='Einslike'), title='Einslike',
-		summary='', tagline='TV', thumb=R(ICON_EINSLIKE)))
+		summary='', tagline='TV', thumb=R(ICON_ARD_EINSLIKE)))
 
 	title = 'Ausgewählte Filme'.decode(encoding="utf-8", errors="ignore")
 	oc.add(DirectoryObject(key=Callback(ARDMore, title=title), title=title,
-		summary='', tagline='TV', thumb=R(ICON_FilmeARD)))
+		summary='', tagline='TV', thumb=R(ICON_ARD_Filme)))
 	oc.add(DirectoryObject(key=Callback(ARDMore, title='Alle Filme'), title='Alle Filme',
-		summary='', tagline='TV', thumb=R(ICON_FilmeAllARD)))
+		summary='', tagline='TV', thumb=R(ICON_ARD_FilmeAll)))
 	title = 'Ausgewählte Dokus'.decode(encoding="utf-8", errors="ignore")
 	oc.add(DirectoryObject(key=Callback(ARDMore, title=title), title=title,
-		summary='', tagline='TV', thumb=R(ICON_DokusARD)))
+		summary='', tagline='TV', thumb=R(ICON_ARD_Dokus)))
 	oc.add(DirectoryObject(key=Callback(ARDMore, title='Alle Dokus'), title='Alle Dokus',
-		summary='', tagline='TV', thumb=R(ICON_DokusAllARD)))
+		summary='', tagline='TV', thumb=R(ICON_ARD_DokusAll)))
 	oc.add(DirectoryObject(key=Callback(ARDThemenRubrikenSerien, title='Serien'), title='Serien',
-		summary='', tagline='TV', thumb=R(ICON_SerienARD)))
+		summary='', tagline='TV', thumb=R(ICON_ARD_Serien)))
 	oc.add(DirectoryObject(key=Callback(ARDThemenRubrikenSerien, title='Themen'), title='Themen',
-		summary='', tagline='TV', thumb=R(ICON_ThemenARD)))
+		summary='', tagline='TV', thumb=R(ICON_ARD_Themen)))
 	oc.add(DirectoryObject(key=Callback(ARDThemenRubrikenSerien, title='Rubriken'), title='Rubriken',
-		summary='', tagline='TV', thumb=R(ICON_RUBRIKEN)))
+		summary='', tagline='TV', thumb=R(ICON_ARD_RUBRIKEN)))
 		
 	return oc	
 #---------------------------------------------------------------- 
@@ -232,14 +251,14 @@ def Main_ZDF(name):
 	Log('Funktion Main_ZDF'); Log(PREFIX); Log(VERSION); Log(VDATE)
 	oc = ObjectContainer(view_group="InfoList", art=ObjectContainer.art, title1=name)	
 	oc.add(DirectoryObject(key=Callback(VerpasstWoche, name=name), title="Sendung Verpasst (1 Woche)",
-		thumb=R(ICON_CAL)))
+		thumb=R(ICON_ZDF_VERP)))
 	oc.add(DirectoryObject(key=Callback(ZDFSendungenAZ, name="Sendungen A-Z"), title="Sendungen A-Z",
-		thumb=R(ICON_AZ)))
+		thumb=R(ICON_ZDF_AZ)))
 	oc.add(DirectoryObject(key=Callback(RubrikenThemen, auswahl="Rubriken"), title="Rubriken", 
-		thumb=R(ICON_RUBRIKEN)))
-	oc.add(DirectoryObject(key=Callback(RubrikenThemen, auswahl="Themen"), title="Themen", thumb=R(ICON_ThemenZDF)))
+		thumb=R(ICON_ZDF_RUBRIKEN)))
+	oc.add(DirectoryObject(key=Callback(RubrikenThemen, auswahl="Themen"), title="Themen", thumb=R(ICON_ZDF_Themen)))
 	oc.add(DirectoryObject(key=Callback(Sendung, title="Meist Gesehen", assetId="MEISTGESEHEN"), title="Meist Gesehen",
-		thumb=R(ICON_MEIST)))
+		thumb=R(ICON_ZDF_MEIST)))
  
 	return oc	
 ####################################################################################################
@@ -263,13 +282,13 @@ def SearchUpdate(title):		#
 			title = 'Update vorhanden - jetzt installieren',
 			summary = 'Plugin aktuell: ' + VERSION + ', neu auf Github: ' + latest_version,
 			tagline = summ,
-			thumb = R(ICON_UPDATE_NEW)))
+			thumb = R(ICON_UPDATER_NEW)))
 			
 		oc.add(DirectoryObject(
 			key = Callback(Main), 
 			title = 'Update abbrechen',
 			summary = 'weiter im aktuellen Plugin',
-			thumb = R(ICON_UPDATE_NEW)))
+			thumb = R(ICON_UPDATER_NEW)))
 	else:	
 		oc.add(DirectoryObject(
 			#key = Callback(updater.menu, title='Update Plugin'), 
@@ -286,6 +305,7 @@ def SearchUpdate(title):		#
 def SendungenAZ(name):		# Auflistung 0-9 (1 Eintrag), A-Z (einzeln) 
 	Log('SendungenAZ: ' + name)
 	oc = ObjectContainer(view_group="InfoList", title1=NAME, title2=name, art = ObjectContainer.art)
+	oc = home(cont=oc)								# Home-Button
 	azlist = list(string.ascii_uppercase)
 	azlist.append('0-9')
 	#next_cbKey = 'SinglePage'	# 
@@ -319,10 +339,10 @@ def SendungenAZ(name):		# Auflistung 0-9 (1 Eintrag), A-Z (einzeln)
 		if inactive_char.find(button) >= 0:		# inaktiver Buchstabe?
 			title = "Sendungen mit " + button + ': keine gefunden'
 			oc.add(DirectoryObject(key=Callback(SendungenAZ, name = 'zuletzt: ' + button), 
-					title=title, thumb=ICON))
+					title=title, thumb=R(ICON_WARNING)))
 		else:
 			oc.add(DirectoryObject(key=Callback(SinglePage, title=title, path=azPath, next_cbKey=next_cbKey), 
-					title=title,  thumb=R('ard.png')))
+					title=title,  thumb=R(ICON_ARD_AZ)))
 	return oc
    
 ####################################################################################################
@@ -372,6 +392,8 @@ def Search(query=None, title=L('Search'), s_type='video', offset=0, **kwargs):
 def VerpasstWoche(name):	# Wochenliste zeigen
 	Log('VerpasstWoche: ' + name)
 	oc = ObjectContainer(view_group="InfoList", title1=NAME, title2=name, art = ObjectContainer.art)
+	oc = home(cont=oc)							# Home-Button	
+		
 	wlist = range(0,6)
 	now = datetime.datetime.now()
 
@@ -393,10 +415,10 @@ def VerpasstWoche(name):	# Wochenliste zeigen
 		cbKey = 'SinglePage'	# cbKey = Callback für Container in PageControl
 		if name.find('ARD') == 0 :
 			oc.add(DirectoryObject(key=Callback(PageControl, title=title, path=iPath, cbKey='SinglePage'), 
-				title=title, thumb=ICON))
+				title=title, thumb=R(ICON_ARD_VERP)))				
 		else:
 			oc.add(DirectoryObject(key=Callback(Sendung, title=title, assetId="VERPASST_"+zdfDate),	  
-				title=title, thumb=R('zdf.png')))
+				title=title, thumb=R(ICON_ZDF_VERP)))
 	return oc
 #------------
 def transl_wtag(tag):	# Wochentage engl./deutsch wg. Problemen mit locale-Setting 
@@ -422,9 +444,10 @@ def transl_wtag(tag):	# Wochentage engl./deutsch wg. Problemen mit locale-Settin
 	# Ablauf: 	
 	#			hier: Rubrik-Liste zusammenstellen mit Links zu den "mehr"-Seiten, 
 	#			weiter wie Verpasst Woche (->PageControl -> SinglePage -> Parseplaylist -> CreateVideoClipObject
-def Einslike(title):	# Wochenliste zeigen
+def Einslike(title):	
 	title2='Einslike - Videos fuer Musik und Lifestyle in der ARD Mediathek'
 	oc = ObjectContainer(view_group="InfoList", title1=NAME, title2=title2, art = ObjectContainer.art)
+	oc = home(cont=oc)								# Home-Button
 	page = HTML.ElementFromURL(BASE_URL + ARD_Einslike)
 	list = page.xpath("//*[@class='more']")
 	Log(page); Log(list)
@@ -436,10 +459,10 @@ def Einslike(title):	# Wochenliste zeigen
 		path = element.xpath("./@href")[0]
 		path = BASE_URL + path
 		rubrik = element.xpath("./span/text()")[0]	
-		rubrik = title + '| ' + rubrik
+		rubrik = title + ' | ' + rubrik
 		Log(path); Log(rubrik)
 		oc.add(DirectoryObject(key=Callback(PageControl, path=path, title=rubrik, cbKey=""), title=rubrik, 
-			tagline=title2, summary='', thumb='', art=ICON))
+			tagline=title2, summary='', thumb=R(ICON_ARD_EINSLIKE), art=R(ICON_ARD_EINSLIKE)))
 		#oc.add(DirectoryObject(key=Callback(SinglePage, path=path, title=rubrik, next_cbKey=next_cbKey), title=rubrik, 
 		#	tagline=title2, summary='', thumb='', art=ICON))
 		
@@ -461,6 +484,7 @@ def ARDThemenRubrikenSerien(title):			# leider nicht kompatibel mit PageControl
 	
 	next_cbKey = 'SinglePage'			# mehrere Beiträge  pro Satz
 	oc = ObjectContainer(view_group="InfoList", title1=NAME, title2=title2, art = ObjectContainer.art)
+	oc = home(cont=oc)								# Home-Button
 	page = HTML.ElementFromURL(morepath)
 	doc_txt = HTML.StringFromElement(page)
 			
@@ -495,6 +519,7 @@ def ARDMore(title):	#
 	Log('ARDMore');
 	title2=title.decode(encoding="utf-8", errors="ignore")
 	oc = ObjectContainer(view_group="InfoList", title1=NAME, title2=title2, art = ObjectContainer.art)
+	oc = home(cont=oc)								# Home-Button
 	next_cbKey = 'SingleSendung'	#
 	
 	if title.find('Ausgewählte Filme') >= 0:
@@ -543,6 +568,8 @@ def PageControl(cbKey, title, path, offset=0):  #
 	title1='Folgeseiten: ' + title.decode(encoding="utf-8", errors="ignore")
 
 	oc = ObjectContainer(view_group="InfoList", title1=title1, title2=title1, art = ObjectContainer.art)
+	oc = home(cont=oc)								# Home-Button
+	
 	page = HTML.ElementFromURL(path)
 	path_page1 = path							# Pfad der ersten Seite sichern, sonst gehts mit Seite 2 weiter
 	
@@ -639,9 +666,11 @@ def PageControl(cbKey, title, path, offset=0):  #
 @route(PREFIX + '/SinglePage')	# Liste der Sendungen eines Tages / einer Suche 
 								# durchgehend angezeigt (im Original collapsed)
 def SinglePage(title, path, next_cbKey, offset=0):	# path komplett
+	Log('Funktion SinglePage: ' + path)
 	title = title.decode(encoding="utf-8", errors="ignore")
 	oc = ObjectContainer(view_group="InfoList", title1=title, art=ICON)
-	Log('Funktion SinglePage: ' + path)
+	oc = home(cont=oc)								# Home-Button
+	
 	func_path = path								# für Vergleich sichern
 					
 	page = HTML.ElementFromURL(path) 	
@@ -720,6 +749,7 @@ def SingleSendung(path, title, thumb, duration, offset=0):	# -> CreateVideoClipO
 
 	Log('SingleSendung path: ' + path)					# z.B. http://www.ardmediathek.de/play/media/11177770
 	oc = ObjectContainer(view_group="InfoList", title1=title, art=ICON)
+	oc = home(cont=oc)								# Home-Button
 	# Log(path)
 	page = HTTP.Request(path).content  # als Text, nicht als HTML-Element
 
@@ -1019,12 +1049,14 @@ def CreateVideoClipObject(url, title, summary, meta, thumb, duration, resolution
 	
 #####################################################################################################
 @route(PREFIX + '/SenderLiveListePre')	# LiveListe Vorauswahl - verwendet lokale Playlist
-def SenderLiveListePre(title, offset=0):	# Vorauswahl: ARD, ZDF, Sonstige
+def SenderLiveListePre(title, offset=0):	# Vorauswahl: Überregional, Regional, Privat
 	Log.Debug('SenderLiveListePre')
 	playlist = Resource.Load(PLAYLIST)	# lokale XML-Datei (Pluginverz./Resources)
 	#Log(playlist)		# nur bei Bedarf
 
-	oc = ObjectContainer(view_group="InfoList", title1='Live-Sender-Vorauswahl', title2=title, art = ICON)
+	oc = ObjectContainer(view_group="InfoList", title1='TV-Livestreams', title2=title, art = ICON)	
+	oc = home(cont=oc)							# Home-Button	
+		
 	doc = HTML.ElementFromString(playlist)		# unterschlägt </link>	
 	liste = doc.xpath('//channels/channel')
 	Log(liste)
@@ -1032,6 +1064,7 @@ def SenderLiveListePre(title, offset=0):	# Vorauswahl: ARD, ZDF, Sonstige
 	for element in liste:
 		element_str = HTML.StringFromElement(element)
 		name = stringextract('<name>', '</name>', element_str)
+		name = name.decode(encoding="utf-8", errors="ignore")	
 		img = stringextract('<thumbnail>', '</thumbnail>', element_str) # channel-thumbnail in playlist
 		if img.find('://') == -1:	# Logo lokal? -> wird aus Resources geladen, Unterverz. leider n.m.
 			img = R(img)
@@ -1045,11 +1078,17 @@ def SenderLiveListePre(title, offset=0):	# Vorauswahl: ARD, ZDF, Sonstige
 #-----------------------------------------------------------------------------------------------------
 @route(PREFIX + '/SenderLiveListe')	# LiveListe - verwendet lokale Playlist
 def SenderLiveListe(title, listname, offset=0):	# 
+# hier Umstellung für ARD auf http://programm.ard.de/TV/kika?datum= (auch für Phoenix) - verm. wesentl. schneller
+
 	# SenderLiveListe -> SenderLiveResolution (reicht nur durch) -> Parseplaylist (Ausw. m3u8)
 	#	-> CreateVideoStreamObject 
 	Log.Debug('SenderLiveListe')
 
-	oc = ObjectContainer(view_group="InfoList", title1='Live-Sender', title2='Live-Sender ' + title, art = ICON)
+	title2 = 'Live-Sender ' + title
+	title2 = title2.decode(encoding="utf-8", errors="ignore")	
+	oc = ObjectContainer(view_group="InfoList", title1='Live-Sender', title2=title2, art = ICON)
+	oc = home(cont=oc)								# Home-Button
+			
 	playlist = Resource.Load(PLAYLIST)	# muss neu geladen werden, das 'listelement' ist hier sonst nutzlos und die
 	#Log(playlist)						# Übergabe als String kann zu groß  werden (max. URL-Länge beim MIE 2083)
 	
@@ -1062,29 +1101,23 @@ def SenderLiveListe(title, listname, offset=0):	#
 		name = stringextract('<name>', '</name>', element_str)
 		if name == listname:			# Listenauswahl gefunden
 			break
-
-	if listname == 'ZDF':				 # EPG-Daten ARD holen, Sender komplett. Variabler bei Bedarf
-		epg_url = stringextract('<epg>', '</epg>', element_str)
-		epgnamen  = stringextract('<epgnamen>', '</epgnamen>', element_str)	# Bsp.: zdf, zdf_neo, zdf_kultur, zdf_info
-		Log(epg_url); Log(epgnamen);		
-		epg_date_list, epg_title_list, epg_text_list = get_epg_ZDF(epg_url, epgnamen) 
 	
 	liste = element.xpath('./items/item')
-	Log(liste); # Log(element_str)  # 1 Channel  der Playlist - nur bei Bedarf
+	Log(name); Log(liste); # Log(element_str)  # 1 Channel  der Playlist - nur bei Bedarf
 
 	# Besonderheit: die Senderliste wird lokal geladen (s.o.). Über den link wird die URL zur  
 	#	*.m3u8 geholt. Nach Anwahl eines Live-Senders erfolgt in SenderLiveResolution die Listung
 	#	der Auflösungsstufen.
 	#
-	i = 0		# Listen-Zähler
-	for element in liste:
+
+	for element in liste:							# EPG-Daten für einzelnen Sender holen 	
 		#title = element.xpath("./title/text()")	# xpath arbeitet fehlerhaft bei Sonderzeichen (z.B. in URL)
 		element_str = HTML.StringFromElement(element)
-		Log(element_str)
+		#Log(element_str)		# bei Bedarf			
 		link = stringextract('<link>', '<thumbnail>', element_str) 	# HTML.StringFromElement unterschlägt </link>
 		link = link.strip()							# \r + Leerz. am Ende entfernen
 		link = unescape(link)						# amp; entfernen! Herkunft: HTML.ElementFromString bei &-Zeichen
-		Log(link); Log(i)
+		Log(link);
 		
 		# Bei link zu lokaler m3u8-Datei (Resources) reagieren SenderLiveResolution und ParsePlayList entsprechend:
 		#	der erste Eintrag (automatisch) entfällt, da für die lokale Reource kein HTTP-Request durchge-
@@ -1092,29 +1125,38 @@ def SenderLiveListe(title, listname, offset=0):	#
 		#	 
 									
 		title = stringextract('<title>', '</title>', element_str)
-		title = title.decode(encoding="utf-8", errors="ignore")	
 		
-		if listname == 'Sonstige':					# noch keine EPG-Daten 
-			epg_url = ''
-		
+		epg_schema = stringextract('<epg_schema>', '</epg_schema>', element_str)	# bisher nur ARD, ZDF
+		epg_url = stringextract('<epg_url>', '</epg_url>', element_str)				# Link auf Seite mit Info zur Sendung		
 		epg_date=''; epg_title=''; epg_text=''; summary=''; tagline=''   
 		
-		if listname == 'ARD':						# EPG-Daten ARD holen, Sender einzeln	
-			epg_url = stringextract('<epg_url>', '</epg_url>', element_str)	# Link auf Seite mit Info zur Sendung
+		if epg_schema == 'ARD':						# EPG-Daten ARD holen 
 			epg_date, epg_title, epg_text = get_epg_ARD(epg_url, listname)			
 				
-		if listname == 'ZDF':						# EPG-Daten bereits geholt, Sender gesamt, s.o.	
-			try:
-				epg_date = epg_date_list[i]; epg_title = epg_title_list[i]; epg_text = epg_text_list[i];
-			except:
-				Log('except:' + str(i))
-						
-		Log(epg_url); Log(epg_date); 			
+		if epg_schema == 'ZDF':						# EPG-Daten  ZDF holen	
+			epgname = stringextract('<epgname>', '</epgname>', element_str)		
+			epg_date, epg_title, epg_text = get_epg_ZDF(epg_url, epgname)	
+								
+		if epg_schema == 'KiKA':					# EPG-Daten  KiKA holen	
+			epgname = stringextract('<epgname>', '</epgname>', element_str)		
+			epg_date, epg_title, epg_text = get_epg_KiKA(epg_url, epgname)	
+								
+		if epg_schema == 'Phoenix':					# EPG-Daten  Phoenix holen	
+			epgname = stringextract('<epgname>', '</epgname>', element_str)		
+			epg_date, epg_title, epg_text = get_epg_Phoenix(epg_url, epgname)	
+								
+		if epg_schema == 'DW':					# EPG-Daten  Deutsche Welle holen	
+			epgname = stringextract('<epgname>', '</epgname>', element_str)		
+			epg_date, epg_title, epg_text = get_epg_DW(epg_url, epgname)	
+								
+		Log(epg_schema); Log(epg_url); 
+		Log(epg_title); Log(epg_date); Log(epg_text[0:40]);		
 		if epg_date and epg_title:
 			summary = epg_date + ' | ' + epg_title
 		if epg_text:								# kann fehlen
 			tagline = epg_text
 			
+		title = title.decode(encoding="utf-8", errors="ignore")	
 		summary = summary.decode(encoding="utf-8", errors="ignore")			
 		tagline = tagline.decode(encoding="utf-8", errors="ignore")	
 						
@@ -1122,9 +1164,8 @@ def SenderLiveListe(title, listname, offset=0):	#
 		if img.find('://') == -1:	# Logo lokal? -> wird aus Resources geladen, Unterverz. leider n.m.
 			img = R(img)
 			
-		Log(title); Log(link); Log(img); Log(i); Log(summary);  Log(tagline[0:80]);
+		Log(link); Log(img); Log(summary); Log(tagline[0:80]);
 		Resolution = ""; Codecs = ""; duration = ""
-		i = i +1		
 	
 		#if link.find('rtmp') == 0:				# rtmp-Streaming s. CreateVideoStreamObject
 		# Link zu master.m3u8 erst auf Folgeseite? - SenderLiveResolution reicht an  Parseplaylist durch  
@@ -1161,58 +1202,194 @@ def get_epg_ARD(epg_url, listname):					# EPG-Daten ermitteln für SenderLiveLis
 	Log(epg_date); Log(epg_title); Log(epg_text[0:80]); 	
 	return epg_date, epg_title, epg_text
 #----------------------
-def get_epg_ZDF(epg_url, epgnamen):					# EPG-Daten ermitteln für SenderLiveListe, ZDF
-	Log('get_epg_ZDF: ' + epgnamen)		
-	epg_date=[]; epg_title=[]; epg_text=[]
-	epgnamen = epgnamen.split(',')
-	#Log(epgnamen)
+def get_epg_ZDF(epg_url, epgname):					# EPG-Daten ermitteln für SenderLiveListe, ZDF
+	Log('get_epg_ZDF: ' + epgname)		
+	#Log(epgname)
 
-	page = HTML.ElementFromURL(epg_url, cacheTime=1, timeout=float(0.5))	# EPG-Daten laden, Cache max. o,5 sec
+	page = HTML.ElementFromURL(epg_url, cacheTime=1, timeout=float(1))	# EPG-Daten laden, Cache max. 1 sec
 	#page = HTTP.Request(epg_url, cacheTime=1, timeout=float(1)).content # ohne xpath, Cache max. 1 sec
-	for name in epgnamen:							# Schleife über die Namen -> Schleife über Datensätze
-		name = name.strip()
-		x = ('{0} broadcasts'.format(name))			# xpath Bsp.: <td class="zdf_kultur broadcasts">
-		xdef = (('//*[@class="{0}"]').format(x))
-		Log(xdef)
-		liste = page.xpath(xdef)
-		Log(name); # Log(liste)						# bei Bedarf
-
-		for element in liste:								# xpath nach class="col_l" + class="col_r" nicht   
-			element_str = HTML.StringFromElement(element)	# konsistent, daher Stringsuche
-			# Log(element); Log(element_str)		# bei Bedarf
-			edate = ''; etitle = ''; etext = '';
-			f_ind = element_str.find('Jetzt')			# Zeit vor Fundstelle, titel + Beschreib. dahinter
-			if f_ind >= 0:
-				# hier Datensatz  zwischen class="col_l" (rfind) und '<img src=' (Sendungs-img nicht benötigt)
-				#  	Beschreib.: h3, (h5), (p, p). h3= titel, h5= Untertitel, p=Herkunft/Jahr 
-				Log(f_ind); #Log(rpos)
-				s = element_str[f_ind-100:]		# - 200 ausreichend vor col_l (Abstand von Jetzt fix) - nicht sicher!
-				#Log(s)							# bei Bedarf
-				edate = stringextract('<p class=\"time\">', '</p>', s)
-				etitle = stringextract('<h3>', '</h3>', s)		# h5, h3 immmer vorhanden, h3 manchmal leer
-				etext = stringextract('<h5>', '</h5>', s)
-				lpos = s.find('col_r');							
-				Log(edate); Log(etitle); Log(etext); Log(lpos); 
-				s = s[lpos:]							# div class="col_r"> abschneiden
-				#Log(s)							# bei Bedarf					
-				if s.find('<p>'):
-					etext2 = etext + ' | ' + stringextract('<p>', '</p>', s)	# Text? -  an UT anhängen 
-					lpos = s.find('/p')
-					etext3 = ''
-					#Log(lpos)					# bei Bedarf
-					if s.find('<p>', lpos + 2) >0 :						# noch weiterer Text?
-						s = s[lpos +  2:]
-						#Log(s)						
-						etext3 = stringextract('<p>', '</p>', s)	
-					etext = 	etext2 + ' | ' + 	etext3	
-						
-				epg_date.append(edate)
-				epg_title.append(etitle)
-				epg_text.append(etext)
+	x = ('{0} broadcasts'.format(epgname))			# xpath Bsp.: <td class="zdf_kultur broadcasts">
+	xdef = (('//*[@class="{0}"]').format(x))
+	Log(xdef)
+	liste = page.xpath(xdef)					# EPG-Daten für ganzen Tag
+	Log(epgname); # Log(liste)						# bei Bedarf
 	
+	now = datetime.datetime.now()
+	nowtime = now.strftime("%H:%M")		# ZDF: <p class="time">23:10</p>
+	epg_date = ''; epg_title = ''; epg_text = '';
+
+	#for element in liste:								# xpath nach class="col_l" + class="col_r" nicht 
+	for i in range (len(liste)):
+		element = liste[i]		  
+		element_str = HTML.StringFromElement(element)	# konsistent, daher Stringsuche
+		starttime = stringextract('<p class=\"time\">', '</p>', element_str)	# aktuelle Sendezeit
+		
+		try:
+			element_next = liste[i+1]	# nächste Sendezeit			  
+			element_next_str = HTML.StringFromElement(element_next)	# konsistent, daher Stringsuche
+			endtime = stringextract('<p class=\"time\">', '</p>', element_next_str)	# nächste Sendezeit	
+		except:
+			endtime = '23:59'			# Listenende
+		
+		#Log(element); # Log(element_str)		# bei Bedarf
+		#Log('starttime ' + starttime); Log('endtime ' + endtime); Log('nowtime ' + nowtime);	# bei Bedarf
+		
+		if nowtime >= starttime and nowtime < endtime:
+			#  	Beschreib.: h3, (h5), (p, p). h3= titel, h5= Untertitel, p=Herkunft/Jahr 
+			epg_date = starttime
+			pos = element_str.find(starttime)			# auf Seite wiederfinden + ausschneiden, enthält col_r
+			pos2 = element_str.find('zdf_info broadcasts', pos +1) 
+			try:
+				col_r =  element_str[pos:pos2]
+			except:
+				col_r =  element_str[pos:]			
+			
+			epg_title = stringextract('<h3>', '</h3>', col_r)	# h5, h3 immmer vorhanden, h3 manchmal leer			
+			etext = stringextract('<h5>', '</h5>', col_r)
+			Log(epg_date); Log(epg_title); Log(etext); 
+			if col_r.find('<p>'):
+				etext2 = stringextract('<p>', '</p>', col_r)			# Text?
+				lpos = col_r.find('/p')
+				#Log(lpos)					# bei Bedarf
+				etext3 = ''
+				if col_r.find('<p>', lpos + 2) >0 :						# noch weiterer Text?
+					col_r = col_r[lpos +  2:]
+					#Log(col_r)						
+					etext3 = stringextract('<p>', '</p>', col_r)	
+			if etext:
+				if etext2: 
+					etext = etext + ' | ' + etext2
+					if etext3: 
+						etext = etext2 + ' | ' + etext3
+			epg_text = etext
+			epg_text = unescape(epg_text)		
+			
+			break												# fertig mit 'Jetzt'
+						
 	Log(epg_date); Log(epg_title); Log(epg_text[0:80]);  
 	return epg_date, epg_title, epg_text
+#----------------------
+def get_epg_KiKA(epg_url, epgname):					# EPG-Daten ermitteln für SenderLiveListe, KiKA
+	Log('get_epg_KiKA: ' + epgname)		
 
+	#page = HTML.ElementFromURL(epg_url, cacheTime=1, timeout=float(1))	# EPG-Daten laden, Cache max. 1 sec
+	page = HTTP.Request(epg_url, cacheTime=1, timeout=float(1)).content # für KIKA ohne xpath - hier nur Stringsuche
+	
+	now = datetime.datetime.now()
+	nowtime = now.strftime("%Y-%m-%dT%H:%M:%S")		# im kika-format
+
+	epg_date = ''; 	epg_title = ''; epg_text = ''
+	# Suchzeile: data-ctrl-livestreamprogress= ... ,'start':'2016-06-19T07:50:00+02:00','end':'2016-06-19T08:20:00+02:00'}"
+	while len(page) >= 0:
+		data_line = stringextract('data-ctrl-livestreamprogress=', '}\"', page)
+		pos = page.find('data-ctrl-livestreamprogress=')
+		next_pos = pos + len(data_line)	
+		page_segment =  page[next_pos:] 						# Teilstück auschneiden
+		pos2 = page_segment.find('data-ctrl-livestreamprogress=')
+		page_segment =  page_segment[:pos2]  							
+
+		# Log(data_line); Log(next_pos);  Log(pos2); Log(page_segment) # bei Bedarf
+		if data_line == '':
+			break
+
+		if data_line.find('start'):
+			starttime = stringextract('\'start\':\'', '\',', data_line)
+			endtime = stringextract('\'end\':\'', '\'', data_line)
+			Log(data_line); Log(starttime); Log(endtime)
+			
+			starttime.split('+')[0]; endtime.split('+')[0];		# +02:00 abschneiden
+			if nowtime >= starttime and nowtime < endtime:
+				epg_date = starttime[11:16] + ' - ' + endtime[11:16]
+				epg_title = stringextract('<h4 class=\"headline\">', '</h4>', page_segment) # Titel fehlt manchmal
+				epg_text = epg_title 														# epg_text fehlt hier
+				epg_title = unescape(epg_title)				# HTML-Escapezeichen  im Titel	
+				epg_text = unescape(epg_text)				# HTML-Escapezeichen  im Titel	
+				break											# fertig
+		page = page[next_pos:]		# ab hier weitersuchen		
+				
+	if epg_date == '' and epg_title == "":			# ab ca. 21 Uhr Sendeschluss
+		epg_date = nowtime = now.strftime("jetzt: %H:%M")	
+		epg_title= 'keine Sendung gefunden'; epg_text = 'vermutlich Sendeschluss'
+	Log(epg_date); Log(epg_title); Log(epg_text[0:40]);  
+	return epg_date, epg_title, epg_text
+#----------------------
+def get_epg_Phoenix(epg_url, epgname):					# EPG-Daten ermitteln für SenderLiveListe, Phoenix
+	Log('get_epg_Phoenix: ' + epgname)		
+	#Log(epgname)
+
+	#page = HTML.ElementFromURL(epg_url, cacheTime=1, timeout=float(0.5))	# EPG-Daten laden, Cache max. 1 sec
+	page = HTML.ElementFromURL(epg_url, cacheTime=1)
+	#page = HTTP.Request(epg_url, cacheTime=1, timeout=float(1)).content # ohne xpath, Cache max. 1 sec
+	
+	liste = page.xpath("//div[@class='sendung aktiv']")	# Phoenix zeigt  EPG-Daten eindeutig für die aktuelle Sendung
+		
+	Log(liste);
+	epg_date = ''; epg_title = ''; epg_text = '';
+	try:			# manchmal ohne Kennung 'sendung aktiv'
+		element = liste[0]	# Phoenix zeigt  EPG-Daten eindeutig für die aktuelle Sendung
+	except:
+		Log('get_epg_Phoenix: Kennung >sendung aktiv< fehlt');
+		now = datetime.datetime.now()
+		epg_date = now.strftime("%H:%M")			# akt. Zeit als Fehlerhinweis
+		epg_title = 'Programmhinweis >sendung aktiv< fehlt auf ' + epg_url
+		return epg_date, epg_title, epg_text
+	
+	
+	s = HTML.StringFromElement(element)
+	Log(s[0:40])					# bei Bedarf
+	
+	epg_date =  stringextract('\"uz\">', '<', s)	# Formate: class="uz">21.45<br/>, class="uz">22.30</span>
+	epg_date =  epg_date[0:5]						# vorsichtshalber begrenzen				
+	epg_title_h1 = stringextract('<h1>', '</h1>', s)
+	epg_title_h1 = epg_title_h1.split('title=')[1]
+	epg_title = stringextract('>', '<', epg_title_h1)
+	
+	epg_text = stringextract('<em>', '</em>', s)
+	epg_text = unescape(epg_text)				# HTML-Escapezeichen  im Teasertext	
+	
+ 	Log(epg_date); Log(epg_title); Log(epg_text[0:40]);  
+	return epg_date, epg_title, epg_text
+ 
+#----------------------
+def get_epg_DW(epg_url, epgname):					# EPG-Daten ermitteln für SenderLiveListe, Deutsche Welle
+	Log('get_epg_DW: ' + epgname)	
+	#page = HTML.ElementFromURL(epg_url, cacheTime=1)
+	page = HTTP.Request(epg_url, cacheTime=1, timeout=float(1)).content #  nur Stringsuche
+	
+	# xpath nach id="currentDate" nicht nötig, da die Daten des akt. Tages führen, die restlichen 6 Tage folgen
+	liste =  re.findall("td class=\"time\">(.*?)</td>\s+?", page)	# xpath n.m., da <td class="time"> auch ohne Zeitangabe vorh.
+	#Log(liste);	# bei Bedarf
+	
+	now = datetime.datetime.now()
+	nowtime = now.strftime("%H:%M")		# DW: <td class="time">00:15</td>
+	#for time_str in liste:
+	for i in range (len(liste)):
+		starttime = liste[i]			# aktuelle Sendezeit
+		try:
+			endtime = liste[i+1]		# nächste Sendezeit		
+		except:
+			endtime = '23:59'			# Listenende
+			
+		#Log('starttime ' + starttime); # Log('endtime ' + endtime); Log('nowtime ' + nowtime);	# bei Bedarf
+		if nowtime >= starttime and nowtime < endtime:
+			epg_date = starttime
+			pos = page.find(starttime)			# auf Seite wiederfinden + ausschneiden
+			pos2 = page.find(endtime, pos +1)
+			try:
+				page_segment =  page[pos:pos2]
+			except:
+				page_segment =  page[pos:]
+			epg_title = stringextract('<h2>', '</h2>', page_segment)
+			epg_text = stringextract('nofollow\">', '</a', page_segment)
+			label = stringextract('label\">', '</span', page_segment)		# Sprachlabel
+			epg_text = label + ' | ' + epg_text
+			epg_text = unescape(epg_text)				# HTML-Escapezeichen  im Teasertext	
+			Log(page_segment[0:40])
+			break
+	
+ 	Log(epg_date); Log(epg_title); Log(epg_text[0:80]);  
+	return epg_date, epg_title, epg_text
+		
 ###################################################################################################
 @route(PREFIX + '/SenderLiveResolution')	# Auswahl der Auflösungstufen des Livesenders
 	#	Die URL der gewählten Auflösung führt zu weiterer m3u8-Datei (*.m3u8), die Links zu den 
@@ -1223,6 +1400,8 @@ def SenderLiveResolution(path, title, thumb, include_container=False):
 	Log(title); Log(url_m3u8);
 
 	oc = ObjectContainer(view_group="InfoList", title1=title + ' Live', art=ICON)
+	oc = home(cont=oc)								# Home-Button
+	
 	Codecs = ''										
 	if title.find('Arte') >= 0:
 		Log('Arte-Stream gefunden')			
@@ -1376,6 +1555,8 @@ def PlayVideo(url, resolution):		# resolution übergeben, falls im  videoclip_ob
 def RadioLiveListe(path, title):
 	Log('RadioLiveListe');
 	oc = ObjectContainer(view_group="InfoList", title1=title, art=ICON)
+	oc = home(cont=oc)								# Home-Button
+	
 	#page = HTML.ElementFromURL(path)
 	#Log(page)
 	playlist = Resource.Load(PLAYLIST_Radio) 
@@ -1385,15 +1566,18 @@ def RadioLiveListe(path, title):
 	liste = doc.xpath('//item')					# z.Z. nur 1 Channel (ARD). Bei Bedarf Schleife erweitern
 	Log(liste)
 	
-	# Unterschied zur TV-Playlist livesenderTV.xml: Liste nur Stationen, nicht einzelne Sender.
+	# Unterschied zur TV-Playlist livesenderTV.xml: Liste  der Radioanstalten mit Links zu den Webseiten.
+	#	Die Liste der Sender im Feld <sender> muss exakt den Benennungen in den jew. Webseiten entsprechen.
 	#	Nach Auswahl durch den Nutzer werden in RadioAnstalten die einzelnen Sender der Station
-	#	ermittelt.
+	#	ermittelt. Die Icons werden durch Zuordnung Name in Webseite -> Feld <sender> -> Feld <thumblist>
+	#		 ermittelt (Index identisch).
 	#	Nach Auswahl einer Station wird in RadioLiveSender der Audiostream-Link ermittelt und
 	#	in CreateAudioStreamObject endverarbeitet.
 	#
+
 	for element in liste:
 		s = HTML.StringFromElement(element) 		# Ergebnis wie XMML.StringFromElement
-		Log(s)				
+		# Log(s)					# bei Bedarf
 		title = stringextract('<title>', '</title>', s)
 		title = title.decode(encoding="utf-8", errors="ignore")
 		link = stringextract('<link>', '<thumbnail>', s) 	# HTML.StringFromElement unterschlägt </link>
@@ -1404,16 +1588,22 @@ def RadioLiveListe(path, title):
 			img = R(img)
 		else:
 			img = img
+			
+		sender = stringextract('<sender>', '</sender>', s)			# Auswertung sender + thumbs in RadioAnstalten
+		thumbs = stringextract('<thumblist>', '</thumblist>', s)	
+			
 		Log(title); Log(link); Log(img); 												
-		oc.add(DirectoryObject(key=Callback(RadioAnstalten, path=link, title=title), title=title,
-			summary='weitere Sender', tagline='Radio', thumb=img))
+		oc.add(DirectoryObject(key=Callback(RadioAnstalten, path=link, title=title, sender=sender, thumbs=thumbs), 
+			title=title, summary='weitere Sender', tagline='Radio', thumb=img))
 	return oc
 #-----------------------------
 @route(PREFIX + '/RadioAnstalten')  
-def RadioAnstalten(path, title):
+def RadioAnstalten(path, title,sender,thumbs):
 	Log('RadioAnstalten');
 	entry_path = path	# sichern
 	oc = ObjectContainer(view_group="InfoList", title1='Radiosender von ' + title, art=ICON)
+	oc = home(cont=oc)								# Home-Button
+			
 	page = HTML.ElementFromURL(path) 
 	entries = page.xpath("//*[@class='teaser']")
 	
@@ -1422,31 +1612,48 @@ def RadioAnstalten(path, title):
 
 	for element in entries:
 		s = XML.StringFromElement(element)	# XML.StringFromElement Plex-Framework
-		Log(s)								#  nur bei Bedarf)						
+		Log(s[0:80])						#  nur bei Bedarf)						
 		
 		img_src = ""
 		if s.find('urlScheme') >= 0:					# Bildaddresse versteckt im img-Knoten
 			img_src = img_urlScheme(s,320)				# ausgelagert - s.u.
 			
 		headline = ''; subtitel = ''		# nicht immer beide enthalten
-		if s.find('headline') >= 0:
+		if s.find('headline') >= 0:			# h4 class="headline" enthält den Sendernamen
 			headline = stringextract('\"headline\">', '</h4>', s)
 			headline = headline .decode('utf-8')		# tagline-Attribute verlangt Unicode
 		if s.find('subtitle') >= 0:	
 			subtitel = stringextract('\"subtitle\">', '</p>', s)
-		Log(headline); Log(subtitel);
+		Log(headline); Log(subtitel);					
 			
 		href = element.xpath("./div/div/a/@href")[0]
 		sid = href.split('documentId=')[1]
 		
 		path = BASE_URL + '/play/media/' + sid + '?devicetype=pc&features=flash'	# -> Textdatei mit Streamlink
 		path_content = HTTP.Request(path).content
-		Log(path_content)				# enthält nochmal Bildquelle + Auflistung Streams (_quality)
+		Log(path_content[0:80])			# enthält nochmal Bildquelle + Auflistung Streams (_quality)
 										# Streamlinks mit .m3u-Ext. führen zu weiterer Textdatei - Auswert. folgt 
 		#slink = stringextract('_stream\":\"', '\"}', path_content) 		# nur 1 Streamlink? nicht mehr aktuell
 		link_path,link_img, m3u8_master = parseLinks_Mp4_Rtmp(path_content)	# mehrere Streamlinks auswerten	
-		Log(link_path); Log(link_img); Log(m3u8_master);  
 		
+		if sender and thumbs:				# Zuordnung zu lokalen Icons, Quelle livesenderRadio.xml
+			senderlist = sender.split('|')
+			thumblist = thumbs.split('|')
+			Log(senderlist); Log(thumblist); 	# bei Bedarf
+			for i in range (len(senderlist)):
+				sname = ''; img = ''
+				try:								# try gegen Schreibfehler in  livesenderRadio.xml
+					sname =  mystrip(senderlist[i]) # mystrip wg. Zeilenumbrüchen in livesenderRadio.xml
+					img = mystrip(thumblist[i])
+				except:
+					break					# dann bleibt es bei img_src (Fallback)
+				if sname == headline:
+					if img:
+						img_src = img
+					Log(img_src); 			# bei Bedarf
+					break
+
+		Log(link_path); Log(link_img); Log(img_src);Log(m3u8_master);  		
 		for i in range(len(link_path)):
 			s = link_path[i]
 			Log(s)
@@ -1463,11 +1670,16 @@ def RadioAnstalten(path, title):
 				except:
 					slink = ""
 			
-			Log(img_src); Log(headline); Log(subtitel); Log(sid); Log(slink);		
+			Log(img_src); Log(headline); Log(subtitel); Log(sid); Log(slink);	# Bildquelle: z.Z. verwenden wir nur img_src	
 			if slink:						# normaler Link oder Link über .m3u ermittelt
-				msg = ', Stream ' + str(i + 1) + ': OK'
-				oc.add(CreateAudioStreamObject(url=slink, title=headline + msg, summary=subtitel,
-					 thumb=img_src, fmt='mp3'))				# funktioniert hier auch mit aac
+				# msg = ', Stream ' + str(i + 1) + ': OK'		# Log in parseLinks_Mp4_Rtmp ausreichend
+				msg = ''
+				if img_src.find('http') >= 0:	# Bildquelle Web
+					oc.add(CreateAudioStreamObject(url=slink, title=headline + msg, summary=subtitel,
+						 thumb=img_src, fmt='mp3'))				# funktioniert hier auch mit aac
+				else:
+					oc.add(CreateAudioStreamObject(url=slink, title=headline + msg, summary=subtitel,
+						 thumb=R(img_src), fmt='mp3'))				# funktioniert hier auch mit aac
 					 	
 			else:
 				msg = ' Stream ' + str(i + 1) + ': nicht verfügbar'	# einzelnen nicht zeigen - verwirrt nur
@@ -1537,10 +1749,11 @@ def PlayAudio(url):
 def ZDFSendungenAZ(name):
 	Log('ZDFSendungenAZ')
 	oc = ObjectContainer(title2=name, view_group="List")
+	oc = home(cont=oc)								# Home-Button
 
 	# A to Z
 	for page in SENDUNGENAZ:
-		oc.add(DirectoryObject(key=Callback(SendungenAZList, char=page[0]), title=page[0], thumb=R('zdf.png')))
+		oc.add(DirectoryObject(key=Callback(SendungenAZList, char=page[0]), title=page[0], thumb=R(ICON_ZDF_AZ)))
 	return oc
 
 ####################################################################################################
@@ -1549,6 +1762,8 @@ def RubrikenThemen(auswahl):
 	#auswahl = 'Rubriken'
 	Log.Debug('RubrikenThemen: ' + auswahl)
 	oc = ObjectContainer(title2='ZDF: ' + auswahl, view_group="List")
+	oc = home(cont=oc)								# Home-Button
+
 	if(auswahl == 'Rubriken'):
 		content = XML.ElementFromURL(ZDF_RUBRIKEN, cacheTime=CACHE_1HOUR)
 		#content = XML.ElementFromURL(ZDF_RUBRIKEN, cacheTime=0)	# Debug
@@ -1590,6 +1805,8 @@ def RubrikenThemen(auswahl):
 def SendungenAZList(char):
 	Log('SendungenAZList')
 	oc = ObjectContainer(title2=char, view_group="List")
+	oc = home(cont=oc)								# Home-Button
+
 	for page in SENDUNGENAZ:
 		if page[0] != char:
 			continue
@@ -1618,6 +1835,8 @@ def SendungenAZList(char):
 def Sendung(title, assetId, offset=0):
 	Log('Sendung: ' + title); Log(assetId); Log(offset);
 	oc = ObjectContainer(title2=title.decode(encoding="utf-8", errors="ignore"), view_group="InfoList")
+	oc = home(cont=oc)								# Home-Button
+
 	if(assetId == 'MEISTGESEHEN'):
 		maxLength = 25	# vormals 10
 		content = XML.ElementFromURL(ZDF_MEISTGESEHEN % (offset), cacheTime=CACHE_1HOUR)
@@ -1731,6 +1950,8 @@ def Sendung(title, assetId, offset=0):
 def VideoParameterAuswahl(videoURL, title, tassetId, duration, thumb, summary):
 	Log('VideoParameterAuswahl:' + videoURL); 
 	oc = ObjectContainer(title2=title.decode(encoding="utf-8", errors="ignore"), view_group="InfoList")
+	oc = home(cont=oc)								# Home-Button
+
 	oc.add(CreateVideoStreamObject(videoURL, title=title, 	# master.m3u8 high
 		#summary='automatische Auflösung | funktioniert nicht mit allen Playern', meta='', 
 		summary='automatische Auflösung | Auswahl durch den Player', meta='', 
@@ -1755,6 +1976,8 @@ def OtherSources(videoURL, tassetId, title, duration, thumb, summary):
 	#oc = ObjectContainer(title2=title.decode(encoding="utf-8", errors="ignore"), view_group="InfoList")
 	#oc = ObjectContainer(title2='weitere Videos - teilweise in Plex nicht lauffaehig', view_group="InfoList")
 	oc = ObjectContainer(title2='weitere Videos - nicht alle getestet', view_group="InfoList")
+	oc = home(cont=oc)								# Home-Button
+
 	#details = XML.ElementFromURL(ZDF_BEITRAG_DETAILS % tassetId, cacheTime=0)	# Debug 
 	details = XML.ElementFromURL(ZDF_BEITRAG_DETAILS % tassetId, cacheTime=CACHE_1HOUR)
 	
@@ -2004,11 +2227,11 @@ def repl_char(cut_char, line):	# problematische Zeichen in Text entfernen, wenn 
 		#Log(cut_char); Log(pos); Log(line_l); Log(line_r); Log(line_ret)	# bei Bedarf	
 	return line_ret
 #----------------------------------------------------------------  	
-def unescape(line):	# HTML-Escapezeichen in Text entfernen, bei Bedarf erweitern
+def unescape(line):	# HTML-Escapezeichen in Text entfernen, bei Bedarf erweitern. ARD auch &#039; statt richtig &#39;
 	line_ret = (line.replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">")
-		.replace("&#39;", "'").replace("&quot;", '"'))
+		.replace("&#39;", "'").replace("&#039;", "'").replace("&quot;", '"'))
 	# Log(line_ret)		# bei Bedarf
-	return line_ret
+	return line_ret	
 #----------------------------------------------------------------  	
 def mystrip(line):	# Ersatz für unzuverlässige strip-Funktion
 	line_ret = line	
