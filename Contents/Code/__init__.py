@@ -1198,7 +1198,8 @@ def get_epg_ARD(epg_url, listname):					# EPG-Daten ermitteln für SenderLiveLis
 		epg_text = stringextract('<p class=\"teasertext\">', '</p', s)
 		epg_text = epg_text.replace('\t', '').replace('\n', '').replace('\r', '')
 		epg_text = unescape(epg_text)				# HTML-Escapezeichen  im Teasertext	
-										
+			
+	epg_text = epg_text.decode(encoding="utf-8", errors="ignore") # möglich: UnicodeDecodeError: 'utf8' codec can't decode byte 0xc3 ...
 	Log(epg_date); Log(epg_title); Log(epg_text[0:80]); 	
 	return epg_date, epg_title, epg_text
 #----------------------
@@ -1266,7 +1267,8 @@ def get_epg_ZDF(epg_url, epgname):					# EPG-Daten ermitteln für SenderLiveList
 			
 			break												# fertig mit 'Jetzt'
 						
-	Log(epg_date); Log(epg_title); Log(epg_text[0:80]);  
+	epg_text = epg_text.decode(encoding="utf-8", errors="ignore")	
+	Log(epg_date); Log(epg_title); Log(epg_text[0:40]);  
 	return epg_date, epg_title, epg_text
 #----------------------
 def get_epg_KiKA(epg_url, epgname):					# EPG-Daten ermitteln für SenderLiveListe, KiKA
@@ -1310,6 +1312,7 @@ def get_epg_KiKA(epg_url, epgname):					# EPG-Daten ermitteln für SenderLiveLis
 	if epg_date == '' and epg_title == "":			# ab ca. 21 Uhr Sendeschluss
 		epg_date = nowtime = now.strftime("jetzt: %H:%M")	
 		epg_title= 'keine Sendung gefunden'; epg_text = 'vermutlich Sendeschluss'
+	epg_text = epg_text.decode(encoding="utf-8", errors="ignore")	
 	Log(epg_date); Log(epg_title); Log(epg_text[0:40]);  
 	return epg_date, epg_title, epg_text
 #----------------------
@@ -1347,6 +1350,7 @@ def get_epg_Phoenix(epg_url, epgname):					# EPG-Daten ermitteln für SenderLive
 	epg_text = stringextract('<em>', '</em>', s)
 	epg_text = unescape(epg_text)				# HTML-Escapezeichen  im Teasertext	
 	
+	epg_text = epg_text.decode(encoding="utf-8", errors="ignore")	
  	Log(epg_date); Log(epg_title); Log(epg_text[0:40]);  
 	return epg_date, epg_title, epg_text
  
