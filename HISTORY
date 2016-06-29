@@ -2,6 +2,16 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------			gelöschte Releases: älter als  1.3		
 
+
+29.06.2016 2.3.2 Update/Korrek.	Einstellungsoptionen integriert (Funktion Main_Options + Hilfsfunktionen): 
+				- EPG-Daten für Live-TV-Sender verwenden / Umsetzung in SenderLiveListe
+				- TV-Livestreams: alle verfügbaren Bandbreiten anzeigen, nur die erste anzeigen
+				EGP-Daten: get_epg_ZDF - leere Listenelemente bereinigt
+				EPG-Daten (epg_text): Log-Ausgabe erfolgt jetzt utf8-kodiert (sonst UnicodeDecodeError
+				möglich)
+				SinglePage: störendes | bei leerer dachzeile entfernt
+				Log: Client.Platform eingefügt, um Clientspezifische Fehler zu erkennen 	
+
 21.06.2016 2.3.1 Update		Home-Button (Rücksprung zum Hauptmenü) in den allen Programm-Ebenen, außer 
 				Videoclip-, Videostream- und Audiostreamobjekt.
 				EPG-Daten für Kika hinzugefügt (Funktion: get_epg_KiKA)

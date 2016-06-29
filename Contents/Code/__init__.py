@@ -8,6 +8,7 @@ import datetime
 import locale
 
 import updater
+from DumbTools import DumbPrefs
 
 # locale.setlocale(locale.LC_ALL, 'de_DE.UTF-8')	# crasht (Debug-Auszug von Otto Kerner)
 # 	locale-Setting erfolgt im Enviroment des Plex-Servers: Bsp. Environment=LANG=en_US.UTF-8 in
@@ -15,8 +16,8 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.3.1'		
-VDATE = '21.06.2016'
+VERSION =  '2.3.2'		
+VDATE = '29.06.2016'
 
 
 # (c) 2016 by Roland Scholz, rols1@gmx.de
@@ -58,6 +59,8 @@ ICON_MAIN_TVLIVE = 'tv-livestreams.png'
 ICON_MAIN_RADIOLIVE = 'radio-livestreams.png' 	
 ICON_MAIN_UPDATER = 'plugin-update.png'		
 ICON_UPDATER_NEW = 'plugin-update-new.png'
+ICON_PREFS = 'plugin-preferences.png'
+
 
 
 ICON_ARD_AZ = 'ard-sendungen-az.png' 			
@@ -132,6 +135,7 @@ ZDF_BEITRAG_DETAILS = 'http://www.zdf.de/ZDFmediathek/xmlservice/web/beitragsDet
 
 REPO_NAME = 'Plex-Plugin-ARDMediathek2016'
 GITHUB_REPOSITORY = 'rols1/' + REPO_NAME
+myhost = 'http://127.0.0.1:32400'
 
 
 ''' 
@@ -166,6 +170,8 @@ Einzelsendungen:  SinglePage -> get_sendungen -> Parseplaylist:
 
 def Start():
 	#Log.Debug()  	# definiert in Info.plist
+	# Problem Voreinstellung Plakate/Details/Liste:
+	#	https://forums.plex.tv/discussion/211755/how-do-i-make-my-objectcontainer-display-as-a-gallery-of-thumbnails
 	Plugin.AddViewGroup("InfoList", viewMode="InfoList", mediaType="items")
 	Plugin.AddViewGroup("List", viewMode="List", mediaType="items")
 	#Plugin.AddViewGroup("Details", viewMode="Details", mediaType="items")
@@ -178,11 +184,13 @@ def Start():
 
 	HTTP.CacheTime = CACHE_1HOUR # Debugging: falls Logdaten ausbleiben, Browserdaten löschen
 
+#----------------------------------------------------------------
 # handler bindet an das bundle
 @route(PREFIX)
 @handler(PREFIX, NAME, art = ART, thumb = ICON)
 def Main():
 	Log('Funktion Main'); Log(PREFIX); Log(VERSION); Log(VDATE)
+	Log('Client: ' + Client.Platform)
 	oc = ObjectContainer(view_group="InfoList", art=ObjectContainer.art)	# Plex akzeptiert nur InfoList + List, keine
 																			# Auswirkung auf Wiedergabe im Webplayer
 	# folgendes DirectoryObject ist Deko für das nicht sichtbare InputDirectoryObject dahinter:
@@ -200,19 +208,17 @@ def Main():
 		title='Plugin-Update | akt. Version: ' + VERSION + ' vom ' + VDATE,
 		summary='Suche nach neuen Updates starten', tagline='Bezugsquelle: ' + repo_url, thumb=R(ICON_MAIN_UPDATER)))
 		
-	return oc	
-#----------------------------------------------------------------
-def home(cont):															# Home-Button, Aufruf: oc = home(cont=oc)			
-	title = 'Zurück zum Hauptmenü'.decode(encoding="utf-8", errors="ignore")
-	summary = 'Zurück zum Hauptmenü'.decode(encoding="utf-8", errors="ignore")
-	cont.add(DirectoryObject(key=Callback(Main),title=title, summary=summary, tagline=NAME, thumb=R('home.png')))
+	oc.add(DirectoryObject(key = Callback(Main_Options, title='Einstellungen'), title = 'Einstellungen', 
+		summary = 'Videos automatisch abspielen, bevorzugtes Video-Format, bevorzugte Bandbreite, bevorzugte Qualitaet', 
+		thumb = R(ICON_PREFS)))
 
-	return cont
-#---------------------------------------------------------------- 
+	return oc
+#----------------------------------------------------------------
 @route(PREFIX + '/Main_ARD')
 def Main_ARD(name):
-	Log('Funktion Main_ARD'); Log(PREFIX); Log(VERSION); Log(VDATE)
+	Log('Funktion Main_ARD'); Log(PREFIX); Log(VERSION); Log(VDATE)	
 	oc = ObjectContainer(view_group="InfoList", art=ObjectContainer.art)	
+	oc = home(cont=oc)							# Home-Button	
 	
 	# folgendes DirectoryObject ist Deko für das nicht sichtbare InputDirectoryObject dahinter:
 	oc.add(DirectoryObject(key=Callback(Main_ARD, name=name),title='Suche: im Suchfeld eingeben', 
@@ -250,6 +256,7 @@ def Main_ARD(name):
 def Main_ZDF(name):
 	Log('Funktion Main_ZDF'); Log(PREFIX); Log(VERSION); Log(VDATE)
 	oc = ObjectContainer(view_group="InfoList", art=ObjectContainer.art, title1=name)	
+	oc = home(cont=oc)							# Home-Button	
 	oc.add(DirectoryObject(key=Callback(VerpasstWoche, name=name), title="Sendung Verpasst (1 Woche)",
 		thumb=R(ICON_ZDF_VERP)))
 	oc.add(DirectoryObject(key=Callback(ZDFSendungenAZ, name="Sendungen A-Z"), title="Sendungen A-Z",
@@ -261,6 +268,138 @@ def Main_ZDF(name):
 		thumb=R(ICON_ZDF_MEIST)))
  
 	return oc	
+#----------------------------------------------------------------
+def home(cont):															# Home-Button, Aufruf: oc = home(cont=oc)			
+	title = 'Zurück zum Hauptmenü'.decode(encoding="utf-8", errors="ignore")
+	summary = 'Zurück zum Hauptmenü'.decode(encoding="utf-8", errors="ignore")
+	cont.add(DirectoryObject(key=Callback(Main),title=title, summary=summary, tagline=NAME, thumb=R('home.png')))
+
+	return cont
+	
+####################################################################################################
+@route(PREFIX + '/Main_Options')
+# DumbTools (https://github.com/coder-alpha/DumbTools-for-Plex) getestet, aber nicht verwendet - wiederholte 
+#	Aussetzer bei Aufrufen nach längeren Pausen (mit + ohne secure-Funktion)
+#	Framework: code/preferences.py
+
+def Main_Options(title):
+	Log('Funktion Main_Options')	
+	Log(Prefs['pref_use_epg']); Log(Prefs['pref_tvlive_allbandwith']);
+	
+	# hier zeigt Plex die Einstellungen (Entwicklervorgabe in DefaultPrefs.json):
+	# 	http://127.0.0.1:32400/:/plugins/com.plexapp.plugins.ardmediathek2016/prefs
+	#	geänderte Daten legt Plex persistent ab (nicht in DefaultPrefs.json) - Löschen nur 
+	#	möglich mit Löschen des Caches (Entfernen ../Caches/com.plexapp.plugins.ardmediathek2016)
+	myplugin = Plugin.Identifier
+	data = HTTP.Request("%s/:/plugins/%s/prefs" % (myhost, myplugin), # als Text, nicht als HTML-Element
+						immediate=True).content 
+	
+	# Zeilenaufbau
+	#	1. Zeile "<?xml version='1.0' encoding='utf-8'?>"
+	#	2. Zeile (..identifier="com.plexapp.plugins.ardmediathek2016"..) 
+	#   ab 3.Zeile Daten
+	# Log(data)
+	myprefs = data.splitlines() 
+	Log(myprefs)
+	myprefs = myprefs[2:-1]		# letzte Zeile + Zeilen 1-2 entfernen 
+		
+	oc = ObjectContainer(no_cache=True, view_group="InfoList", title1='Einstellungen')
+	oc = home(cont=oc)				# Home-Button - in den Untermenüs Rücksprung hierher zu Einstellungen 
+	for i in range (len(myprefs)):
+		do = DirectoryObject()
+		element = myprefs[i]		# Muster: <Setting secure="false" default="true" value="true" label=...
+		Log(element)
+		secure = stringextract('secure=\"', '\"', element)		# nicht verwendet
+		default = stringextract('default=\"', '\"', element)	# Vorgabe
+		id = stringextract('id=\"', '\"', element)
+		value = stringextract('value=\"', '\"', element)		# akt. Wert (hier nach dem Setzen nicht mehr aktuell)
+		pref_value = Prefs[id]									# akt. Wert via Prefs - OK
+		label = stringextract('label=\"', '\"', element)
+		values = stringextract('values=\"', '\"', element)
+		mytype = stringextract('type=\"', '\"', element)
+		Log(secure);Log(default);Log(label);Log(values);Log(mytype); Log(id);
+		Log(pref_value);
+		if mytype == 'bool':										# lesbare Anzeige (statt bool, true, false)
+			#oc_type = '| JA / NEIN | aktuell: '
+			if str(pref_value).lower() == 'true':
+				oc_wert = 'JA'
+				oc_type = '| für NEIN  klicken | aktuell: '
+			else:
+				oc_wert = 'NEIN'
+				oc_type = '| für JA  klicken | aktuell: '
+		if mytype == 'enum':
+			#oc_type = '|  Aufzählung | aktuell: '
+			oc_type = '|  für Liste klicken | aktuell: '
+			oc_wert = pref_value
+		if mytype == 'text':
+			oc_type = '| Texteingabe | aktuell: '
+			oc_wert = pref_value
+		title = u'%s  %s  %s' % (label, oc_type, oc_wert)
+		title = title.decode(encoding="utf-8", errors="ignore")
+		Log(title); Log(mytype)
+
+		if mytype == 'bool':
+			Log('mytype == bool')	
+			do.key = Callback(Set, key=id, value=not Prefs[id], oc_wert=not Prefs[id]) 	# Wert direkt setzen (groß/klein egal)		
+		if mytype == 'enum':
+			do.key = Callback(ListEnum, id=id, label=label, values=values)			# Werte auflisten
+		elif mytype == 'text':														# Eingabefeld für neuen Wert (Player-abhängig)
+			oc = home(cont=oc)							# Home-Button	
+			oc.add(InputDirectoryObject(key=Callback(SetText, id=id), title=title))
+			continue
+			
+		do.title = title
+		oc.add(do)			
+		
+	return oc
+#------------
+@route(PREFIX + '/ListEnum')
+def ListEnum(id, label, values):
+	Log(ListEnum); Log(id); 
+	label = label.decode(encoding="utf-8", errors="ignore")
+	oc = ObjectContainer(no_cache=True, view_group="InfoList", title1=label)	
+	title = 'zurück zu den Einstellungen'.decode(encoding="utf-8", errors="ignore")		# statt Home-Button	
+	oc.add(DirectoryObject(key = Callback(Main_Options, title=title), title = title, 
+		summary = title, 
+		thumb = R(ICON_PREFS)))
+	values = values.split('|') 
+	Log(values);
+	for i in range(len(values)):
+		pref = values[i]
+		oc_wert = pref
+		Log('value: ' + str(i) + ' Wert: ' + oc_wert)
+		oc.add(DirectoryObject(key=Callback(Set, key=id, value=i, oc_wert=oc_wert), title = u'%s' % (pref)))				
+	return oc
+#------------
+@route(PREFIX + '/SetText')
+def SetText(query, id):
+	return Set(key=id, value=query, oc_wert=oc_wert)
+#------------
+@route(PREFIX + '/Set')
+def Set(key, value, oc_wert):
+	Log('Set: key, value ' + key + ', ' + value); 
+	#oc_wert = value
+	if str(value).lower() == 'true':
+		oc_wert = 'JA'
+	if str(value).lower() == 'false':
+		oc_wert = 'NEIN'
+
+	oc = ObjectContainer(no_cache=True, view_group="InfoList", title1='eingestellt auf: ' + oc_wert)	
+	title = 'zurück zu den Einstellungen'.decode(encoding="utf-8", errors="ignore")		# statt Home-Button	
+	oc.add(DirectoryObject(key = Callback(Main_Options, title=title), title = title, 
+		summary = title, 
+		thumb = R(ICON_PREFS)))
+	
+	# Bsp.: http://127.0.0.1:32400/:/plugins/com.plexapp.plugins.ardmediathek2016/prefs/set?pref_use_epg=True
+	HTTP.Request("%s/:/plugins/%s/prefs/set?%s=%s" % (myhost, Plugin.Identifier, key, value), immediate=True)
+	#return ObjectContainer()
+	return oc
+#--------------------------------
+def ValidatePrefs():
+	Log('ValidatePrefs')
+	#Dict.Save()	# n.b. - Plex speichert in Funktion Set, benötigt trotzdem Funktion ValidatePrefs im Plugin
+	return
+	
 ####################################################################################################
 @route(PREFIX + '/SearchUpdate')
 def SearchUpdate(title):		#
@@ -706,7 +845,9 @@ def SinglePage(title, path, next_cbKey, offset=0):	# path komplett
 			summary = dachzeile 
 		if  subtitel != "":
 			subtitel = subtitel.decode(encoding="utf-8", errors="ignore")
-			summary = dachzeile + ' | ' + subtitel
+			summary = subtitel
+			if  dachzeile != "":
+				summary = dachzeile + ' | ' + subtitel
 		summary = summary.decode(encoding="utf-8", errors="ignore")
 		
 		Log('path: ' + path); Log(title); Log(headline); Log(img_src); Log(millsec_duration);
@@ -768,8 +909,7 @@ def SingleSendung(path, title, thumb, duration, offset=0):	# -> CreateVideoClipO
 		Codecs = ''
 		oc.add(CreateVideoStreamObject(url=m3u8_master, title=title, rtmp_live='nein',
 			summary='automatische Auflösung | Auswahl durch den Player', meta=Codecs, thumb=thumb, 
-			resolution=''))
-
+			resolution=''))			
 		cont = Parseplaylist(oc, m3u8_master, thumb)	# Liste der zusätzlichen einzelnen Auflösungen 
 		#del link_path[0]								# master.m3u8 entfernen, Rest bei m3u8_master: mp4-Links
 		Log(cont)  										
@@ -784,7 +924,7 @@ def SingleSendung(path, title, thumb, duration, offset=0):	# -> CreateVideoClipO
 		if s[0:4] == "auto":	# m3u8_master bereits entfernt. Bsp. hier: 	
 			# http://tagesschau-lh.akamaihd.net/z/tagesschau_1@119231/manifest.f4m?b=608,1152,1992,3776 
 			#	Platzhalter für künftige Sendungen, z.B. Tagesschau (Meldung in Original-Mediathek:
-			# 	'ieser Livestream ist noch nicht verfügbar!'
+			# 	'dieser Livestream ist noch nicht verfügbar!'
 			href_quality_Auto = s[2:]	
 			title = 'Qualität AUTO'
 			url = href_quality_Auto
@@ -824,7 +964,7 @@ def SingleSendung(path, title, thumb, duration, offset=0):	# -> CreateVideoClipO
 				summary='Video-Format: MP4'	# 3. mp4-Links:	
 				oc.add(CreateVideoClipObject(url=url, title=title, 
 					summary=summary, meta=path, thumb=thumb, duration=duration, resolution=''))
-		
+						
 	return oc
 #--------------------------			 		
 def parseLinks_Mp4_Rtmp(page):		# extrahiert aus Textseite .mp4- und rtmp-Links (Aufrufer SingleSendung)
@@ -1078,7 +1218,6 @@ def SenderLiveListePre(title, offset=0):	# Vorauswahl: Überregional, Regional, 
 #-----------------------------------------------------------------------------------------------------
 @route(PREFIX + '/SenderLiveListe')	# LiveListe - verwendet lokale Playlist
 def SenderLiveListe(title, listname, offset=0):	# 
-# hier Umstellung für ARD auf http://programm.ard.de/TV/kika?datum= (auch für Phoenix) - verm. wesentl. schneller
 
 	# SenderLiveListe -> SenderLiveResolution (reicht nur durch) -> Parseplaylist (Ausw. m3u8)
 	#	-> CreateVideoStreamObject 
@@ -1125,29 +1264,31 @@ def SenderLiveListe(title, listname, offset=0):	#
 		#	 
 									
 		title = stringextract('<title>', '</title>', element_str)
-		
-		epg_schema = stringextract('<epg_schema>', '</epg_schema>', element_str)	# bisher nur ARD, ZDF
-		epg_url = stringextract('<epg_url>', '</epg_url>', element_str)				# Link auf Seite mit Info zur Sendung		
-		epg_date=''; epg_title=''; epg_text=''; summary=''; tagline=''   
-		
-		if epg_schema == 'ARD':						# EPG-Daten ARD holen 
-			epg_date, epg_title, epg_text = get_epg_ARD(epg_url, listname)			
-				
-		if epg_schema == 'ZDF':						# EPG-Daten  ZDF holen	
-			epgname = stringextract('<epgname>', '</epgname>', element_str)		
-			epg_date, epg_title, epg_text = get_epg_ZDF(epg_url, epgname)	
-								
-		if epg_schema == 'KiKA':					# EPG-Daten  KiKA holen	
-			epgname = stringextract('<epgname>', '</epgname>', element_str)		
-			epg_date, epg_title, epg_text = get_epg_KiKA(epg_url, epgname)	
-								
-		if epg_schema == 'Phoenix':					# EPG-Daten  Phoenix holen	
-			epgname = stringextract('<epgname>', '</epgname>', element_str)		
-			epg_date, epg_title, epg_text = get_epg_Phoenix(epg_url, epgname)	
-								
-		if epg_schema == 'DW':					# EPG-Daten  Deutsche Welle holen	
-			epgname = stringextract('<epgname>', '</epgname>', element_str)		
-			epg_date, epg_title, epg_text = get_epg_DW(epg_url, epgname)	
+		epg_schema=''; epg_url=''
+		epg_date=''; epg_title=''; epg_text=''; summary=''; tagline='' 
+		Log(Prefs['pref_use_epg']) 					# Voreinstellung: EPG nutzen? - nur mit Schema nutzbar 
+		if Prefs['pref_use_epg'] == True:
+			epg_schema = stringextract('<epg_schema>', '</epg_schema>', element_str)	# bisher nur ARD, ZDF
+			epg_url = stringextract('<epg_url>', '</epg_url>', element_str)				# Link auf Seite mit Info zur Sendung		
+			
+			if epg_schema == 'ARD':						# EPG-Daten ARD holen 
+				epg_date, epg_title, epg_text = get_epg_ARD(epg_url, listname)			
+					
+			if epg_schema == 'ZDF':						# EPG-Daten  ZDF holen	
+				epgname = stringextract('<epgname>', '</epgname>', element_str)		
+				epg_date, epg_title, epg_text = get_epg_ZDF(epg_url, epgname)	
+									
+			if epg_schema == 'KiKA':					# EPG-Daten  KiKA holen	
+				epgname = stringextract('<epgname>', '</epgname>', element_str)		
+				epg_date, epg_title, epg_text = get_epg_KiKA(epg_url, epgname)	
+									
+			if epg_schema == 'Phoenix':					# EPG-Daten  Phoenix holen	
+				epgname = stringextract('<epgname>', '</epgname>', element_str)		
+				epg_date, epg_title, epg_text = get_epg_Phoenix(epg_url, epgname)	
+									
+			if epg_schema == 'DW':					# EPG-Daten  Deutsche Welle holen	
+				epgname = stringextract('<epgname>', '</epgname>', element_str)		
+				epg_date, epg_title, epg_text = get_epg_DW(epg_url, epgname)	
 								
 		Log(epg_schema); Log(epg_url); 
 		Log(epg_title); Log(epg_date); Log(epg_text[0:40]);		
@@ -1212,34 +1353,40 @@ def get_epg_ZDF(epg_url, epgname):					# EPG-Daten ermitteln für SenderLiveList
 	x = ('{0} broadcasts'.format(epgname))			# xpath Bsp.: <td class="zdf_kultur broadcasts">
 	xdef = (('//*[@class="{0}"]').format(x))
 	Log(xdef)
-	liste = page.xpath(xdef)					# EPG-Daten für ganzen Tag
+	xpath_liste = page.xpath(xdef)					# EPG-Daten für ganzen Tag
 	Log(epgname); # Log(liste)						# bei Bedarf
 	
 	now = datetime.datetime.now()
 	nowtime = now.strftime("%H:%M")		# ZDF: <p class="time">23:10</p>
 	epg_date = ''; epg_title = ''; epg_text = '';
+	
+	liste = []
+	for i in range (len(xpath_liste)):		# bereinigen - häufig sowas: <td class="zdf broadcasts"></td>
+		element = xpath_liste[i]		  
+		element_str = HTML.StringFromElement(element)
+		element_str = mystrip(element_str)
+		if len(element_str) > 50:
+			liste.append(element_str)	
 
-	#for element in liste:								# xpath nach class="col_l" + class="col_r" nicht 
 	for i in range (len(liste)):
-		element = liste[i]		  
-		element_str = HTML.StringFromElement(element)	# konsistent, daher Stringsuche
+		element_str = liste[i]		  
 		starttime = stringextract('<p class=\"time\">', '</p>', element_str)	# aktuelle Sendezeit
 		
 		try:
-			element_next = liste[i+1]	# nächste Sendezeit			  
-			element_next_str = HTML.StringFromElement(element_next)	# konsistent, daher Stringsuche
+			element_next_str = liste[i+1]	# nächste Sendezeit			  
 			endtime = stringextract('<p class=\"time\">', '</p>', element_next_str)	# nächste Sendezeit	
 		except:
 			endtime = '23:59'			# Listenende
-		
-		#Log(element); # Log(element_str)		# bei Bedarf
-		#Log('starttime ' + starttime); Log('endtime ' + endtime); Log('nowtime ' + nowtime);	# bei Bedarf
+					
+		#Log(element_str); 				# bei Bedarf
+		#Log(element_next_str)			# bei Bedarf
+		Log('starttime ' + starttime); Log('endtime ' + endtime); Log('nowtime ' + nowtime);	# bei Bedarf
 		
 		if nowtime >= starttime and nowtime < endtime:
 			#  	Beschreib.: h3, (h5), (p, p). h3= titel, h5= Untertitel, p=Herkunft/Jahr 
 			epg_date = starttime
 			pos = element_str.find(starttime)			# auf Seite wiederfinden + ausschneiden, enthält col_r
-			pos2 = element_str.find('zdf_info broadcasts', pos +1) 
+			pos2 = element_str.find('broadcasts\">', pos +1) 
 			try:
 				col_r =  element_str[pos:pos2]
 			except:
@@ -1420,13 +1567,16 @@ def SenderLiveResolution(path, title, thumb, include_container=False):
 		
 	# alle übrigen (i.d.R. http-Links)
 	if url_m3u8.find('.m3u8') >= 0:					# häufigstes Format
-		if url_m3u8.find('http://') == 0:			# URL oder lokale Datei? (loakl entfällt Eintrag "autom.")
+		if url_m3u8.find('http://') == 0:			# URL oder lokale Datei? (lokal entfällt Eintrag "autom.")			
 			oc.add(CreateVideoStreamObject(url=url_m3u8, title=title + ' | Bandbreite und Auflösung automatisch', 
 				summary='automatische Auflösung | Auswahl durch den Player', meta=Codecs, thumb=thumb, 
 				rtmp_live='nein', resolution=''))
-		
+			if Prefs['pref_tvlive_allbandwith'] == False:	# nur 1. Eintrag zeigen
+				Log(Prefs['pref_tvlive_allbandwith'])		# Plex-Forum plex-plugin-ardmediathek2016/p5
+				return oc
+		# hier weiter mit Auswertung der m3u8-Datei (lokal oder extern, Berücksichtigung pref_tvlive_allbandwith)
 		oc = Parseplaylist(oc, url_m3u8, thumb)	# Auswertung *.m3u8-Datei, Auffüllung Container mit Auflösungen
-		return oc								# (-> CreateVideoStreamObject pro Auflösungstufe)
+		return oc							# (-> CreateVideoStreamObject pro Auflösungstufe)
 	else:	# keine oder unbekannte Extension - Format unbekannt
 		return ObjectContainer(header='SenderLiveResolution: ', message='unbekanntes Format in ' + url_m3u8)
 				
@@ -1497,6 +1647,7 @@ def CreateVideoStreamObject(url, title, summary, meta, thumb, rtmp_live, resolut
   #				nicht zum Abbruch des Streams.
   
 	Log('CreateVideoStreamObject: ' + url); Log('rtmp_live: ' + rtmp_live) 
+	Log('include_container: '  + str(include_container))
 
 	if url.find('rtmp:') >= 0:	# rtmp = Protokoll für flash, Quellen: rtmpdump, shark, Chrome/Entw.-Tools
 		if rtmp_live == 'ja':
@@ -1537,7 +1688,8 @@ def CreateVideoStreamObject(url, title, summary, meta, thumb, rtmp_live, resolut
 	videoclip_obj.add(mo)
 
 	Log(url); Log(title); Log(summary); 
-	Log(meta); Log(thumb); Log(rating_key);  
+	Log(meta); Log(thumb); Log(rating_key); 
+	
 	if include_container:
 		return ObjectContainer(objects=[videoclip_obj])
 	else:
@@ -1547,13 +1699,14 @@ def CreateVideoStreamObject(url, title, summary, meta, thumb, rtmp_live, resolut
 #-----------------------------
 # PlayVideo: .m3u8 wurde in Route als fehlend bemängelt, wird aber als Attribut der Funktion nicht 
 #	akzeptiert - Ursache nicht gefunden. 
-#	Routine ab 03.04.2016 entbehrlich - s.o.
+#	Routine ab 03.04.2016 entbehrlich - s.o. (ohne Redirect)
+# 
 @route(PREFIX + '/PlayVideo')  
-def PlayVideo(url, resolution):		# resolution übergeben, falls im  videoclip_obj verwendet
+def PlayVideo(url, resolution, **kwargs):	# resolution übergeben, falls im  videoclip_obj verwendet
 	Log('PlayVideo: ' + url); Log('PlayVideo: ' + resolution)	 		
 	HTTP.Request(url).content
 	return Redirect(url)
-	
+
 ####################################################################################################
 @route(PREFIX + '/RadioLiveListe')  
 def RadioLiveListe(path, title):
@@ -2082,7 +2235,7 @@ def Parseplaylist(container, url_m3u8, thumb):		# master.m3u8 auswerten, Url mus
 #  2. Besonderheit: fast identische URL's zu einer Auflösung (...av-p.m3u8, ...av-b.m3u8) Unterschied n.b.
 #  3. Besonderheit: für manche Sendungen nur 1 Qual.-Stufe verfügbar (Bsp. Abendschau RBB)
 
-  Log (url_m3u8)
+  Log ('Parseplaylist: ' + url_m3u8)
   if url_m3u8.find('http://') == 0:			# URL oder lokale Datei?
 	playlist = HTTP.Request(url_m3u8).content  # als Text, nicht als HTML-Element
   else:
@@ -2096,7 +2249,7 @@ def Parseplaylist(container, url_m3u8, thumb):		# master.m3u8 auswerten, Url mus
   #for line in lines[1::2]:	# Start 1. Element, step 2
   for line in lines:	
  	line = lines[i].strip()
- 	Log(line)
+ 	# Log(line)				bei Bedarf
 	if line.startswith('#EXT-X-STREAM-INF'):# tatsächlich m3u8-Datei?
 		url = lines[i + 1].strip()	# URL in nächster Zeile
 		Log(url)
@@ -2124,6 +2277,11 @@ def Parseplaylist(container, url_m3u8, thumb):		# master.m3u8 auswerten, Url mus
 				summary= Resolution, meta=Codecs, thumb=thumb, 			# AllConnect trotzdem nur letzten Eintrag
 				rtmp_live='nein', resolution=''))
 			BandwithOld = Bandwith
+			
+		if url_m3u8.find('http://') < 0:		# lokale Datei
+			if Prefs['pref_tvlive_allbandwith'] == False:	# nur 1. Eintrag
+				return container
+
 				
   	i = i + 1	# Index für URL
   #Log (len(container))	# Anzahl Elemente
