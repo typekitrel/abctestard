@@ -190,7 +190,7 @@ def Start():
 @handler(PREFIX, NAME, art = ART, thumb = ICON)
 def Main():
 	Log('Funktion Main'); Log(PREFIX); Log(VERSION); Log(VDATE)
-	Log('Client: ' + Client.Platform)
+	Log('Client: '); Log(Client.Platform)
 	oc = ObjectContainer(view_group="InfoList", art=ObjectContainer.art)	# Plex akzeptiert nur InfoList + List, keine
 																			# Auswirkung auf Wiedergabe im Webplayer
 	# folgendes DirectoryObject ist Deko für das nicht sichtbare InputDirectoryObject dahinter:
