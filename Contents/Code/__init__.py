@@ -16,8 +16,8 @@ from DumbTools import DumbPrefs
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.3.2'		
-VDATE = '29.06.2016'
+VERSION =  '2.3.3'		
+VDATE = '03.07.2016'
 
 
 # (c) 2016 by Roland Scholz, rols1@gmx.de
@@ -249,8 +249,16 @@ def Main_ARD(name):
 		summary='', tagline='TV', thumb=R(ICON_ARD_Themen)))
 	oc.add(DirectoryObject(key=Callback(ARDThemenRubrikenSerien, title='Rubriken'), title='Rubriken',
 		summary='', tagline='TV', thumb=R(ICON_ARD_RUBRIKEN)))
-		
+#todo: Aufruf Plugin		
+	oc.add(DirectoryObject(key=Callback(CallPlugin, title='CallPlugin'), title='CallPlugin',
+		summary='', tagline='TV', thumb=R(ICON_ARD_RUBRIKEN)))
 	return oc	
+	
+def CallPlugin(title):
+	#@route('/video/streamtest/Start()')
+	#Main()
+	#/video/streamtest/Start()
+	return 
 #---------------------------------------------------------------- 
 @route(PREFIX + '/Main_ZDF')
 def Main_ZDF(name):
@@ -345,7 +353,7 @@ def Main_Options(title):
 			do.key = Callback(ListEnum, id=id, label=label, values=values)			# Werte auflisten
 		elif mytype == 'text':														# Eingabefeld für neuen Wert (Player-abhängig)
 			oc = home(cont=oc)							# Home-Button	
-			oc.add(InputDirectoryObject(key=Callback(SetText, id=id), title=title))
+			oc.add(InputDirectoryObject(key=Callback(SetText, id=id), title=title), title=title)
 			continue
 			
 		do.title = title
@@ -1159,7 +1167,8 @@ def CreateVideoClipObject(url, title, summary, meta, thumb, duration, resolution
 	#title = title.encode("utf-8")		# ev. für alle ausgelesenen Details erforderlich
 	Log('CreateVideoClipObject')
 	Log(url); Log(duration); 
-	resolution = ''						# leer - Clients skalieren besser selbst
+	# resolution = ''					# leer - Clients skalieren besser selbst
+	resolution=[720, 540, 480]			# wie VideoClipObject: Vorgabe für Webplayer entbehrlich, für PHT erforderlich
 
  
 	videoclip_obj = VideoClipObject(
@@ -1172,14 +1181,15 @@ def CreateVideoClipObject(url, title, summary, meta, thumb, duration, resolution
 		items = [
 			MediaObject(
 				parts = [
-					PartObject(key=url)
+					# PartObject(key=url)						# reicht für Webplayer
 					#PartObject(key=Callback(PlayVideo, url=url, resolution=resolution)) # s.u., verzichtbar
+					PartObject(key=Callback(PlayVideo, url=url)) 
 				],
 				container = Container.MP4,  	# weitere Video-Details für Chrome nicht erf., aber Firefox 
 				video_codec = VideoCodec.H264,	# benötigt VideoCodec + AudioCodec zur Audiowiedergabe
 				audio_codec = AudioCodec.AAC,	# 
 				
-			)  									# for resolution in [720, 540, 480, 240] # (in PlayVideo übergeben)
+			)  									# for resolution in [720, 540, 480, 240] # (in PlayVideo übergeben), s.o.
 	])
 
 	if include_container:						# Abfrage anscheinend verzichtbar, schadet aber auch nicht 
@@ -1675,11 +1685,13 @@ def CreateVideoStreamObject(url, title, summary, meta, thumb, rtmp_live, resolut
 	else:
 		# Auslösungsstufen weglassen? (bei relativen Pfaden nutzlos) 
 		# Auflösungsstufen - s. SenderLiveResolution -> Parseplaylist
+		resolution=[720, 540, 480]		# wie VideoClipObject: Vorgabe für Webplayer entbehrlich, für PHT erforderlich
+		meta=url						# leer (None) im Webplayer OK, mit PHT:  Server: Had trouble breaking meta
 		mo = MediaObject(parts=[PartObject(key=HTTPLiveStreamURL(url=url))]) 
 		rating_key = title
-		videoclip_obj = VideoClipObject(
+		videoclip_obj = VideoClipObject(					# Parameter wie MovieObject
 			key = Callback(CreateVideoStreamObject, url=url, title=title, summary=summary,
-			meta=meta, thumb=thumb, rtmp_live='nein', resolution='', include_container=True), 
+			meta=meta, thumb=thumb, rtmp_live='nein', resolution=resolution, include_container=True), 
 			rating_key=title,
 			title=title,
 			summary=summary,
@@ -1702,8 +1714,9 @@ def CreateVideoStreamObject(url, title, summary, meta, thumb, rtmp_live, resolut
 #	Routine ab 03.04.2016 entbehrlich - s.o. (ohne Redirect)
 # 
 @route(PREFIX + '/PlayVideo')  
-def PlayVideo(url, resolution, **kwargs):	# resolution übergeben, falls im  videoclip_obj verwendet
-	Log('PlayVideo: ' + url); Log('PlayVideo: ' + resolution)	 		
+#def PlayVideo(url, resolution, **kwargs):	# resolution übergeben, falls im  videoclip_obj verwendet
+def PlayVideo(url, **kwargs):	# resolution übergeben, falls im  videoclip_obj verwendet
+	Log('PlayVideo: ' + url); # Log('PlayVideo: ' + resolution)	 		
 	HTTP.Request(url).content
 	return Redirect(url)
 
@@ -2077,7 +2090,7 @@ def Sendung(title, assetId, offset=0):
 					Log('vtype: ' + 'kein Video zum m3u8-Streaming gefunden')
 					break	# ohne Hinweis überspringen
 			else:
-				Log('PlayVideo: unkown Type ' + vtype)	
+				Log('Sendung: unkown Type ' + vtype)	
 				Log(" -> PICKED %s", videoURL)
 			
 			Log('videoURL ' +videoURL)		# OK: nrodl.zdf.de, rodl.zdf.de, geblockt: tvdl.zdf.de

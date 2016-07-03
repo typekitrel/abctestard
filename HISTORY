@@ -2,6 +2,12 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------			gelöschte Releases: älter als  1.3		
 
+  
+03.07.2016 2.3.3 Update/Korrek. Anpassung an den Player Plex Home Theater (PHT) - getestet mit PHT 1.4.1
+				und OpenPHT 1.6.2: 
+				Funktionen CreateVideoStreamObject und CreateVideoClipObject:
+				Parameter resolution und meta vorbelegt für MediaObject/PartObject
+				Funktion Main_Options (Einstellungen): Beschreibung in Bool-Button ergänzt 
 
 29.06.2016 2.3.2 Update/Korrek.	Einstellungsoptionen integriert (Funktion Main_Options + Hilfsfunktionen): 
 				- EPG-Daten für Live-TV-Sender verwenden / Umsetzung in SenderLiveListe
