@@ -2,9 +2,11 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------			gelöschte Releases: älter als  1.3		
 
+05.07.2016 2.3.5 Update		Radio-Live-Streams in PHT verwendbar gemacht: div. Anpassungen in den
+				Funktionen RadioAnstalten + CreateTrackObject
   
-05.07.2016 2.3.4 Korrek. 	weitere Anpassung an PHT: cbkey in Funktionen SendungenAZ + Einslike vorbelegt
-				(Error 'Had trouble breaking cbKey').
+04.07.2016 2.3.4 Korrek. 	weitere Anpassung an PHT: cbkey in Funktionen SendungenAZ + Einslike vorbelegt
+				(Error 'Had trouble breaking cbKey')
 				Funktion SinglePage: unescape für summary wegen HTML-Zeichen in Beschreibung
 				Test-Button ARD-Rubriken (doppelt vorhanden, führte zum Abbruch) wieder entfernt 
 				

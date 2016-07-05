@@ -12,8 +12,8 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.3.4'		
-VDATE = '04.07.2016'
+VERSION =  '2.3.5'		
+VDATE = '05.07.2016'
 
 
 # (c) 2016 by Roland Scholz, rols1@gmx.de
@@ -1761,8 +1761,8 @@ def RadioLiveListe(path, title):
 def RadioAnstalten(path, title,sender,thumbs):
 	Log('RadioAnstalten');
 	entry_path = path	# sichern
-	oc = ObjectContainer(view_group="InfoList", title1='Radiosender von ' + title, art=ICON)
-	oc = home(cont=oc)								# Home-Button
+	oc = ObjectContainer(view_group="InfoList",  title1='Radiosender von ' + title, art=ICON)
+	# oc = home(cont=oc)							# Home-Button macht bei PHT die Trackliste unbrauchbar 
 			
 	page = HTML.ElementFromURL(path) 
 	entries = page.xpath("//*[@class='teaser']")
@@ -1830,7 +1830,12 @@ def RadioAnstalten(path, title,sender,thumbs):
 				except:
 					slink = ""
 			
-			Log(img_src); Log(headline); Log(subtitel); Log(sid); Log(slink);	# Bildquelle: z.Z. verwenden wir nur img_src	
+			Log(img_src); Log(headline); Log(subtitel); Log(sid); Log(slink);	# Bildquelle: z.Z. verwenden wir nur img_src
+			if subtitel == '':		# OpenPHT parsing Error, wenn leer
+				subtitel = headline
+			headline = headline.decode(encoding="utf-8", errors="ignore")		
+			subtitel = subtitel.decode(encoding="utf-8", errors="ignore")	
+				
 			if slink:						# normaler Link oder Link über .m3u ermittelt
 				# msg = ', Stream ' + str(i + 1) + ': OK'		# Log in parseLinks_Mp4_Rtmp ausreichend
 				msg = ''
@@ -1838,41 +1843,53 @@ def RadioAnstalten(path, title,sender,thumbs):
 					oc.add(CreateTrackObject(url=slink, title=headline + msg, summary=subtitel,
 						 thumb=img_src, fmt='mp3'))				# funktioniert hier auch mit aac
 				else:							# Bildquelle lokal
-					oc.add(CreateTrackObject(url=slink, title=headline + msg, summary=subtitel,
-						 thumb=R(img_src), fmt='mp3'))				# funktioniert hier auch mit aac
-					 	
+					# OpenPHT scheitert, falls hier CreateTrackObject direkt angesteuert wird und sich in der
+					#	Liste andere als Trackobjekte befinden (z.B. Homebutton) Webplayer dagegen OK
+					oc.add(CreateTrackObject(url=slink, title=headline, summary=subtitel, thumb=R(img_src), fmt='mp3',))							 	
 			else:
 				msg = ' Stream ' + str(i + 1) + ': nicht verfügbar'	# einzelnen nicht zeigen - verwirrt nur
 				#oc.add(DirectoryObject(key=Callback(RadioAnstalten, path=entry_path, title=msg), 
-				#	title=headline + msg, summary='', tagline='', thumb=img_src))
-				
+				#	title=headline + msg, summary='', tagline='', thumb=img_src))				
 	
 	if len(oc) < 1:	      		# keine Radiostreams gefunden		
 		Log('oc = 0, keine Radiostreams gefunden') 		 
 		msgH = 'keine Radiostreams bei ' + title + ' gefunden/verfuegbar' 
 		msg =  'keine Radiostreams bei ' + title + ' gefunden/verfuegbar, ' + 'Seite: ' + path
-		return ObjectContainer(header=msgH, message=msg)	# bricht Auswertung für Anstalt komplett ab				
-			
-		
+		return ObjectContainer(header=msgH, message=msg)	# bricht Auswertung für Anstalt komplett ab							
+				
 	return oc
+	
+#-----------------------------
+# Umleitung, falls PHT in RadioAnstalten scheitert (1 Klick mehr erforderlich, keine Liste), z.Z. nicht benötigt
+@route(PREFIX + '/RadioEinzel')  
+def RadioEinzel(url, title, summary, fmt, thumb,):
+	oc = ObjectContainer(view_group="InfoList", title1=title, art=ICON)
+	oc.add(CreateTrackObject(url=url, title=title, summary=summary, fmt='mp3', thumb=thumb))	
+	return oc
+	
 #-----------------------------
 @route(PREFIX + '/CreateTrackObject')
 # @route('/music/ardmediathek2016/CreateTrackObject')  # funktioniert nicht, dto. in PlayAudio
-def CreateTrackObject(url, title, summary, fmt, thumb, include_container=False, **kwargs):
+def CreateTrackObject(url, title, summary, fmt, thumb, include_container=False):
 	Log('CreateTrackObject: ' + url); Log(include_container)
 
-	if fmt == 'mp3':				# z.Z. noch entbehrlich
+	if fmt == 'mp3':
 		container = Container.MP3
 		audio_codec = AudioCodec.MP3
 	elif fmt == 'aac':
 		container = Container.MP4
 		audio_codec = AudioCodec.AAC
+	elif fmt == 'hls':
+		protocol = 'hls'
+		container = 'mpegts'
+		audio_codec = AudioCodec.AAC	
 
 	track_object = TrackObject(
-		key = Callback(CreateTrackObject, url=url, title=title, summary=summary, fmt=fmt, thumb=thumb, include_container=True),
+		# key = Callback(CreateTrackObject, url=url, title=title, summary=summary, fmt=fmt, thumb=thumb, include_container=True),
+        key=Callback(CreateTrackObject, url=url, title=title, fmt=fmt, thumb=thumb, include_container=True),
 		rating_key = url,	
 		title = title,
-		summary = summary,
+		#summary = summary,
 		thumb=thumb,
 		items = [
 			MediaObject(
@@ -1881,7 +1898,7 @@ def CreateTrackObject(url, title, summary, fmt, thumb, include_container=False, 
 				],
 				container = container,
 				audio_codec = audio_codec,
-				bitrate = 128,			# bitrate entbehrlich
+				# bitrate = 128,		# bitrate entbehrlich
 				audio_channels = 2		# audio_channels entbehrlich
 			)
 		]
@@ -1894,7 +1911,6 @@ def CreateTrackObject(url, title, summary, fmt, thumb, include_container=False, 
 
 #-----------------------------
 @route(PREFIX + '/PlayAudio') 
-# @route('/music/ardmediathek2016/PlayAudio')  
 def PlayAudio(url):				# runtime- Aufruf PlayAudio.mp3
 	Log('PlayAudio: ' + url)	
 	return Redirect(url)
