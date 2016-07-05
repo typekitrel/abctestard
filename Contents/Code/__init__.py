@@ -8,16 +8,12 @@ import datetime
 import locale
 
 import updater
-from DumbTools import DumbPrefs
 
-# locale.setlocale(locale.LC_ALL, 'de_DE.UTF-8')	# crasht (Debug-Auszug von Otto Kerner)
-# 	locale-Setting erfolgt im Enviroment des Plex-Servers: Bsp. Environment=LANG=en_US.UTF-8 in
-# 	plexmediaserver.service (OpenSuse 42.1)
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.3.3'		
-VDATE = '03.07.2016'
+VERSION =  '2.3.4'		
+VDATE = '04.07.2016'
 
 
 # (c) 2016 by Roland Scholz, rols1@gmx.de
@@ -42,7 +38,7 @@ VDATE = '03.07.2016'
 ####################################################################################################
 
 NAME = 'ARD Mediathek 2016'
-PREFIX = "/video/ardmediathek2016"			
+PREFIX = '/video/ardmediathek2016'			
 												
 PLAYLIST = 'livesenderTV.xml'				# TV-Sender-Logos erstellt von: Arauco (Plex-Forum). 											
 PLAYLIST_Radio = 'livesenderRadio.xml'		# Liste der RadioAnstalten. Einzelne Sender und Links werden 
@@ -140,16 +136,18 @@ myhost = 'http://127.0.0.1:32400'
 
 ''' 
 ####################################################################################################
-Live-Sender der Mediathek: | ARD-Alpha | BR |Das Erste | HR | MDR | NDR | RBB | SR | SWR | 
+TV-Live-Sender der Mediathek: | ARD-Alpha | BR |Das Erste | HR | MDR | NDR | RBB | SR | SWR | 
 	WDR | tagesschau24 |  | KIKA | PHOENIX | Deutsche Welle
 	zusätzlich: Tagesschau | NDR Fernsehen Hamburg, Mecklenburg-Vorpommern, Niedersachsen, Schleswig-Holstein |
 	RBB Berlin, Brandenburg | MDR Sachsen-Anhalt, Sachsen, Thüringen
 
-Live-Sender des ZDF: ZDF | ZDFneo | ZDFkultur | ZDFinfo | 3Sat | ARTE
+TV-Live-Sender des ZDF: ZDF | ZDFneo | ZDFkultur | ZDFinfo | 3Sat | ARTE (Sonderbehandlung im Code für ARTE 
+	wegen relativer Links in den m3u8-Dateien)
 
-Live-Sender Sonsstige: NRW.TV | Joiz | DAF | N24 | n-tv
+TV-Live-Sender Sonstige: NRW.TV | Joiz | DAF | N24 | n-tv
 
-Sonderbehandlung im Code für ARTE wegen relativer Links in den m3u8-Dateien
+Radio-Live-Streams der ARD: alle Radiosender von Bayern, HR, mdr, NDR, Radio Bremen, RBB, SR, SWR, WDR, 
+	Deutschlandfunk. Insgesamt 10 Stationen, 63 Sender
 
 ####################################################################################################
 
@@ -249,16 +247,8 @@ def Main_ARD(name):
 		summary='', tagline='TV', thumb=R(ICON_ARD_Themen)))
 	oc.add(DirectoryObject(key=Callback(ARDThemenRubrikenSerien, title='Rubriken'), title='Rubriken',
 		summary='', tagline='TV', thumb=R(ICON_ARD_RUBRIKEN)))
-#todo: Aufruf Plugin		
-	oc.add(DirectoryObject(key=Callback(CallPlugin, title='CallPlugin'), title='CallPlugin',
-		summary='', tagline='TV', thumb=R(ICON_ARD_RUBRIKEN)))
 	return oc	
 	
-def CallPlugin(title):
-	#@route('/video/streamtest/Start()')
-	#Main()
-	#/video/streamtest/Start()
-	return 
 #---------------------------------------------------------------- 
 @route(PREFIX + '/Main_ZDF')
 def Main_ZDF(name):
@@ -608,7 +598,7 @@ def Einslike(title):
 		rubrik = element.xpath("./span/text()")[0]	
 		rubrik = title + ' | ' + rubrik
 		Log(path); Log(rubrik)
-		oc.add(DirectoryObject(key=Callback(PageControl, path=path, title=rubrik, cbKey=""), title=rubrik, 
+		oc.add(DirectoryObject(key=Callback(PageControl, path=path, title=rubrik, cbKey='SingleSendung'), title=rubrik, 
 			tagline=title2, summary='', thumb=R(ICON_ARD_EINSLIKE), art=R(ICON_ARD_EINSLIKE)))
 		#oc.add(DirectoryObject(key=Callback(SinglePage, path=path, title=rubrik, next_cbKey=next_cbKey), title=rubrik, 
 		#	tagline=title2, summary='', thumb='', art=ICON))
@@ -856,6 +846,7 @@ def SinglePage(title, path, next_cbKey, offset=0):	# path komplett
 			summary = subtitel
 			if  dachzeile != "":
 				summary = dachzeile + ' | ' + subtitel
+		summary = unescape(summary)
 		summary = summary.decode(encoding="utf-8", errors="ignore")
 		
 		Log('path: ' + path); Log(title); Log(headline); Log(img_src); Log(millsec_duration);
@@ -879,7 +870,7 @@ def SinglePage(title, path, next_cbKey, offset=0):	# path komplett
 		if next_cbKey == 'PageControl':		# Callback verweigert den Funktionsnamen als Variable
 			path = BASE_URL + path
 			Log('path: ' + path);
-			oc.add(DirectoryObject(key=Callback(PageControl, path=path, title=headline, cbKey=""), title=headline, 
+			oc.add(DirectoryObject(key=Callback(PageControl, path=path, title=headline, cbKey='SingleSendung'), title=headline, 
 				tagline=subtitel, summary=summary, thumb=img_src, art=ICON))
 					
 	Log(len(oc))	# Anzahl Einträge
@@ -1182,7 +1173,6 @@ def CreateVideoClipObject(url, title, summary, meta, thumb, duration, resolution
 			MediaObject(
 				parts = [
 					# PartObject(key=url)						# reicht für Webplayer
-					#PartObject(key=Callback(PlayVideo, url=url, resolution=resolution)) # s.u., verzichtbar
 					PartObject(key=Callback(PlayVideo, url=url)) 
 				],
 				container = Container.MP4,  	# weitere Video-Details für Chrome nicht erf., aber Firefox 
@@ -1742,7 +1732,7 @@ def RadioLiveListe(path, title):
 	#	ermittelt. Die Icons werden durch Zuordnung Name in Webseite -> Feld <sender> -> Feld <thumblist>
 	#		 ermittelt (Index identisch).
 	#	Nach Auswahl einer Station wird in RadioLiveSender der Audiostream-Link ermittelt und
-	#	in CreateAudioStreamObject endverarbeitet.
+	#	in CreateTrackObject endverarbeitet.
 	#
 
 	for element in liste:
@@ -1845,10 +1835,10 @@ def RadioAnstalten(path, title,sender,thumbs):
 				# msg = ', Stream ' + str(i + 1) + ': OK'		# Log in parseLinks_Mp4_Rtmp ausreichend
 				msg = ''
 				if img_src.find('http') >= 0:	# Bildquelle Web
-					oc.add(CreateAudioStreamObject(url=slink, title=headline + msg, summary=subtitel,
+					oc.add(CreateTrackObject(url=slink, title=headline + msg, summary=subtitel,
 						 thumb=img_src, fmt='mp3'))				# funktioniert hier auch mit aac
-				else:
-					oc.add(CreateAudioStreamObject(url=slink, title=headline + msg, summary=subtitel,
+				else:							# Bildquelle lokal
+					oc.add(CreateTrackObject(url=slink, title=headline + msg, summary=subtitel,
 						 thumb=R(img_src), fmt='mp3'))				# funktioniert hier auch mit aac
 					 	
 			else:
@@ -1866,9 +1856,10 @@ def RadioAnstalten(path, title,sender,thumbs):
 		
 	return oc
 #-----------------------------
-@route(PREFIX + '/CreateAudioStreamObject')
-def CreateAudioStreamObject(url, title, summary, fmt, thumb, include_container=False, **kwargs):
-	Log('CreateAudioStreamObject: ' + url)
+@route(PREFIX + '/CreateTrackObject')
+# @route('/music/ardmediathek2016/CreateTrackObject')  # funktioniert nicht, dto. in PlayAudio
+def CreateTrackObject(url, title, summary, fmt, thumb, include_container=False, **kwargs):
+	Log('CreateTrackObject: ' + url); Log(include_container)
 
 	if fmt == 'mp3':				# z.Z. noch entbehrlich
 		container = Container.MP3
@@ -1878,21 +1869,20 @@ def CreateAudioStreamObject(url, title, summary, fmt, thumb, include_container=F
 		audio_codec = AudioCodec.AAC
 
 	track_object = TrackObject(
-		key = Callback(CreateAudioStreamObject, url=url, title=title, summary=summary, fmt=fmt, 
-			thumb=thumb, include_container=True),
-		rating_key = url,
+		key = Callback(CreateTrackObject, url=url, title=title, summary=summary, fmt=fmt, thumb=thumb, include_container=True),
+		rating_key = url,	
 		title = title,
 		summary = summary,
 		thumb=thumb,
 		items = [
 			MediaObject(
 				parts = [
-					PartObject(key=Callback(PlayAudio, url=url)) # Parameter ext=fmt entbehrlich
+					PartObject(key=Callback(PlayAudio, url=url, ext=fmt)) # runtime- Aufruf PlayAudio.mp3
 				],
 				container = container,
 				audio_codec = audio_codec,
-				#bitrate = 128,			# bitrate entbehrlich
-				#audio_channels = 2		# audio_channels entbehrlich
+				bitrate = 128,			# bitrate entbehrlich
+				audio_channels = 2		# audio_channels entbehrlich
 			)
 		]
 	)
@@ -1902,15 +1892,12 @@ def CreateAudioStreamObject(url, title, summary, fmt, thumb, include_container=F
 	else:
 		return track_object
 
-#------------------------------
-@route(PREFIX + '/PlayAudio')  
-def PlayAudio(url):
-	Log('PlayAudio: ' + url)
-	
-	if url:
-		return Redirect(url)
-	else:
-		raise Ex.MediaNotAvailable
+#-----------------------------
+@route(PREFIX + '/PlayAudio') 
+# @route('/music/ardmediathek2016/PlayAudio')  
+def PlayAudio(url):				# runtime- Aufruf PlayAudio.mp3
+	Log('PlayAudio: ' + url)	
+	return Redirect(url)
 		
 ####################################################################################################
 #									ZDF-Funktionen

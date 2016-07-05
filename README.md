@@ -13,7 +13,7 @@ direkt: rols1@gmx.de
   
 Funktionen ab Version 2.2.0: 
 ===================
-- Sender Live (z.Z. 30 Sender, siehe Hinweise zu Sender Live)
+- TV-Sender Live (z.Z. 30 Sender)
 
 #### ARD Mediathek:  
 - Suche nach Sendungen
@@ -58,16 +58,6 @@ Meine Test- und Gebrauchsumgebung:
 - Streaming-Apps: BubbleUPnP (alles OK), AllConnect (keine m3u8-Videos)
 - Media Player at TV: WD TV Live HD, WDAAP0000NBK, 2012 (nicht alle Auflösungsstufen unterstützt)
 
-
-Hinweise zu Sender Live:
-===================  
-Das Plugin verwendet die mitgelieferte Playlist im Unterverzeichnis Contents/Resources/livesender.xml. Diese muss ev. erneuert werden, falls die Sender den Zugriff ändern. Aktuell enthält sie neben den Regional-Sendern der ARD auch ZDF, ZDF-neo, ZDFkultur und ZDFinfo, sowie N24, n-tv, NRW.TV, Joiz und DAF.
-
-ARTE ist inzwischen lauffähig, getrennte Behandlung im Programmcode: 4 Streams, deutsch/französisch, RTMP/HTTP.
- 
-RTMP-Streaming wird vom Plugin unterstützt, klappt aber nicht mit beliebigen neuen Sendern.
-
-Beliebige Sender können manuell der Playlist hinzugefügt werden. Nicht alle werden funktionieren, da die Zugänge zu den Streaming-Quellen sich technisch stark unterscheiden können. Für manche ist eine Sonderbehandlung im Programmcode de Plugins erforderlich (Beispiel ARTE).
 
 Credits:
 ===================  
