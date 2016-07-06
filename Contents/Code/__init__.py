@@ -1763,7 +1763,10 @@ def RadioAnstalten(path, title,sender,thumbs):
 	entry_path = path	# sichern
 	oc = ObjectContainer(view_group="InfoList",  title1='Radiosender von ' + title, art=ICON)
 	Log(Client.Platform)
-	if Client.Platform.find('Plex Home Theater'): 
+	client = Client.Platform
+	if client == None:
+		client = ''
+	if client.find ('Plex Home Theater'): 
 		oc = home(cont=oc)							# Home-Button macht bei PHT die Trackliste unbrauchbar 
 			
 	page = HTML.ElementFromURL(path) 
