@@ -1875,6 +1875,7 @@ def RadioEinzel(url, title, summary, fmt, thumb,):
 #-----------------------------
 @route(PREFIX + '/CreateTrackObject')
 # @route('/music/ardmediathek2016/CreateTrackObject')  # funktioniert nicht, dto. in PlayAudio
+#	 **kwargs als Parameter für PHT nicht geeignet
 def CreateTrackObject(url, title, summary, fmt, thumb, include_container=False):
 	Log('CreateTrackObject: ' + url); Log(include_container)
 
@@ -1890,11 +1891,11 @@ def CreateTrackObject(url, title, summary, fmt, thumb, include_container=False):
 		audio_codec = AudioCodec.AAC	
 
 	track_object = TrackObject(
-		# key = Callback(CreateTrackObject, url=url, title=title, summary=summary, fmt=fmt, thumb=thumb, include_container=True),
-        key=Callback(CreateTrackObject, url=url, title=title, fmt=fmt, thumb=thumb, include_container=True),
+		key = Callback(CreateTrackObject, url=url, title=title, summary=summary, fmt=fmt, thumb=thumb, include_container=True),
+        # key=Callback(CreateTrackObject, url=url, title=title, fmt=fmt, thumb=thumb, include_container=True),
 		rating_key = url,	
 		title = title,
-		#summary = summary,
+		summary = summary,
 		thumb=thumb,
 		items = [
 			MediaObject(
