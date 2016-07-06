@@ -12,8 +12,8 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.3.5'		
-VDATE = '05.07.2016'
+VERSION =  '2.3.6'		
+VDATE = '06.07.2016'
 
 
 # (c) 2016 by Roland Scholz, rols1@gmx.de
@@ -1762,7 +1762,9 @@ def RadioAnstalten(path, title,sender,thumbs):
 	Log('RadioAnstalten');
 	entry_path = path	# sichern
 	oc = ObjectContainer(view_group="InfoList",  title1='Radiosender von ' + title, art=ICON)
-	# oc = home(cont=oc)							# Home-Button macht bei PHT die Trackliste unbrauchbar 
+	Log(Client.Platform)
+	if Client.Platform.find('Plex Home Theater'): 
+		oc = home(cont=oc)							# Home-Button macht bei PHT die Trackliste unbrauchbar 
 			
 	page = HTML.ElementFromURL(path) 
 	entries = page.xpath("//*[@class='teaser']")
