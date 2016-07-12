@@ -47,21 +47,10 @@ Anleitung zum manuellen Installieren von Plex Software-Bundles (Channels, Agente
 ein Neustart von Plex oder ein vorheriges Beenden von Plex ist i.d.R. nicht erforderlich
 Beim Aktualisieren einfach den .bundle Ordner löschen und die neue Version an seine Stelle kopieren.
  
-   
-Meine Test- und Gebrauchsumgebung:
-===================  
-- PC: Fujitsu Esprimo E900 8 GB RAM, 3,4 GHz
-- Linux openSUSE 42.1 und Plex-Server 0.9.16.4
-- Tablet Nexus 7, Android 5.1.1,
-- Web-Player: Google-Chrome (alles OK), Firefox (alles OK, Flash-Plugin erforderlich)
-- Videoplayer-Apps: VLC-Player, MXPlayer
-- Streaming-Apps: BubbleUPnP (alles OK), AllConnect (keine m3u8-Videos)
-- Media Player at TV: WD TV Live HD, WDAAP0000NBK, 2012 (nicht alle Auflösungsstufen unterstützt)
-
 
 Credits:
 ===================  
 - Credits to [Gammel] (https://gmlblog.de/2013/08/xbmc-tv-livestreams/): Playlist http://dl.gmlblog.de/deutschesender.xml 
 - Credits to [coder-alpha] https://forums.plex.tv/discussion/166602/rel-ccloudtv-channel-iptv/p1): (Channel updater, based on Channel updater by sharkone/BitTorrent.bundle)
-- Credits to [Arauco] (https://forums.plex.tv/profile/Arauco): processing of Senderlogos
+- Credits to [Arauco] (https://forums.plex.tv/profile/Arauco): processing of Logos and Icons
 - Credits to [Sender1] (https://github.com/plexinc-plugins/ZDFMediathek.bundle): Plex-Plugin ZDFMediathek
