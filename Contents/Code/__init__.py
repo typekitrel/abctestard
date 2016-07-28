@@ -12,8 +12,8 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.3.6'		
-VDATE = '06.07.2016'
+VERSION =  '2.3.7'		
+VDATE = '28.07.2016'
 
 
 # (c) 2016 by Roland Scholz, rols1@gmx.de
