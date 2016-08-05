@@ -12,8 +12,8 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.3.7'		
-VDATE = '28.07.2016'
+VERSION =  '2.3.8'		
+VDATE = '05.08.2016'
 
 
 # (c) 2016 by Roland Scholz, rols1@gmx.de
@@ -1553,16 +1553,16 @@ def SenderLiveResolution(path, title, thumb, include_container=False):
 	oc = ObjectContainer(view_group="InfoList", title1=title + ' Live', art=ICON)
 	oc = home(cont=oc)								# Home-Button
 	
-	Codecs = ''										
+	Codecs = 'H.264'	# dummy-Vorgabe für PHT (darf nicht leer sein)										
 	if title.find('Arte') >= 0:
 		Log('Arte-Stream gefunden')			
 		oc = Arteplaylist(oc, url_m3u8, title, thumb)	# Auswertung Arte-Parameter rtmp- + hls-streaming
 		Log(len(oc))
 		return oc
 		
-	if url_m3u8.find('rtmp') == 0:		# hier noch flash-Infos auswerten
+	if url_m3u8.find('rtmp') == 0:		# rtmp, summary darf für PHT nicht leer sein
 		oc.add(CreateVideoStreamObject(url=url_m3u8, title=title, 
-			summary='', meta=Codecs, thumb=thumb, rtmp_live='ja', resolution=''))
+			summary='rtmp-Stream', meta=Codecs, thumb=thumb, rtmp_live='ja', resolution=''))
 		return oc
 		
 	# alle übrigen (i.d.R. http-Links)
