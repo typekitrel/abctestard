@@ -2,6 +2,7 @@
 #import lxml.html  	# hier für Konvertierungen - Funktionen von Plex nicht akzeptiert
 #import requests	# u.a. Einlesen HTML-Seite, Methode außerhalb Plex-Framework 
 import string
+import urllib		# urllib.quote()
 import os 			# u.a. Behandlung von Pfadnamen
 import re			# u.a. Reguläre Ausdrücke, z.B. in CalculateDuration
 import datetime
@@ -12,8 +13,8 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.3.8'		
-VDATE = '05.08.2016'
+VERSION =  '2.3.9'		
+VDATE = '08.09.2016'
 
 
 # (c) 2016 by Roland Scholz, rols1@gmx.de
@@ -48,6 +49,7 @@ PLAYLIST_Radio = 'livesenderRadio.xml'		# Liste der RadioAnstalten. Einzelne Sen
 ART = 'art.png'								# ARD 
 ICON = 'icon.png'							# ARD
 ICON_SEARCH = 'ard-suche.png'						
+ICON_ZDF_SEARCH = 'zdf-suche.png'						
 
 ICON_MAIN_ARD = 'ard-mediathek.png'			
 ICON_MAIN_ZDF = 'zdf-mediathek.png'			
@@ -56,7 +58,6 @@ ICON_MAIN_RADIOLIVE = 'radio-livestreams.png'
 ICON_MAIN_UPDATER = 'plugin-update.png'		
 ICON_UPDATER_NEW = 'plugin-update-new.png'
 ICON_PREFS = 'plugin-preferences.png'
-
 
 
 ICON_ARD_AZ = 'ard-sendungen-az.png' 			
@@ -81,11 +82,18 @@ ICON_OK = "icon-ok.png"
 ICON_WARNING = "icon-warning.png"
 ICON_NEXT = "icon-next.png"
 ICON_CANCEL = "icon-error.png"
+ICON_MEHR = "icon-mehr.png"
 
-THUMBNAIL = [									# Vorgaben für THUMBNAILS in ZDF_BEITRAG_DETAILS 
-  '946x532',
+
+THUMBNAIL = [									# Vorgaben für THUMBNAILS in ZDF_BEITRAG_DETAILS, Suchergebnissen
+  '946x532',									# 946x532 teilw. als Fallback gekennzeichnet
   '644x363',
   '672x378',
+  '644x363',
+  '485x273',
+  '476x268',
+  '404x227', 
+  '404x227',
 ]
 
 SENDUNGENAZ = [									# ZDF A-Z
@@ -116,17 +124,16 @@ ARD_Filme = 'http://www.ardmediathek.de/tv/Ausgew%C3%A4hlte-Filme/mehr?documentI
 ARD_FilmeAll = 'http://www.ardmediathek.de/tv/Alle-Filme/mehr?documentId=33594630'
 ARD_RadioAll = 'http://www.ardmediathek.de/radio/live?genre=Alle+Genres&kanal=Alle'
 
-ZDF					 = 'http://www.zdf.de/ZDFmediathek/hauptnavigation/startseite?flash=off'	# Mediathek ohne Flash
-ZDF_RUBRIKEN         = 'http://www.zdf.de/ZDFmediathek/xmlservice/web/rubriken'
-ZDF_THEMEN           = 'http://www.zdf.de/ZDFmediathek/xmlservice/web/themen'
-ZDF_MEISTGESEHEN     = 'http://www.zdf.de/ZDFmediathek/xmlservice/web/meistGesehen?id=_GLOBAL&maxLength=10&offset=%s'
-ZDF_SENDUNGEN_AZ     = 'http://www.zdf.de/ZDFmediathek/xmlservice/web/sendungenAbisZ?characterRangeStart=%s&characterRangeEnd=%s&detailLevel=2'
+ZDF					= 'http://www.zdf.de/ZDFmediathek/hauptnavigation/startseite?flash=off'	# Mediathek ohne Flash
+ZDF_RUBRIKEN      	= 'http://www.zdf.de/ZDFmediathek/xmlservice/web/rubriken'
+ZDF_THEMEN        	= 'http://www.zdf.de/ZDFmediathek/xmlservice/web/themen'
+ZDF_MEISTGESEHEN	= 'http://www.zdf.de/ZDFmediathek/xmlservice/web/meistGesehen?id=_GLOBAL&maxLength=10&offset=%s'
+ZDF_SENDUNGEN_AZ	= 'http://www.zdf.de/ZDFmediathek/xmlservice/web/sendungenAbisZ?characterRangeStart=%s&characterRangeEnd=%s&detailLevel=2'
 ZDF_SENDUNG_VERPASST = 'http://www.zdf.de/ZDFmediathek/xmlservice/web/sendungVerpasst?enddate=%s&maxLength=50&startdate=%s&offset=%s'
-# Bsp.: http://www.zdf.de/ZDFmediathek/xmlservice/web/sendungVerpasst?enddate=140516&maxLength=50&startdate=140516&offset=0
-ZDF_SENDUNG          = 'http://www.zdf.de/ZDFmediathek/xmlservice/web/aktuellste?id=%s&maxLength=25&offset=%s'
-ZDF_BEITRAG          = 'http://www.zdf.de/ZDFmediathek/beitrag/%s/%s'
+ZDF_SENDUNG         = 'http://www.zdf.de/ZDFmediathek/xmlservice/web/aktuellste?id=%s&maxLength=25&offset=%s'
+ZDF_BEITRAG        	= 'http://www.zdf.de/ZDFmediathek/beitrag/%s/%s'
 ZDF_BEITRAG_DETAILS = 'http://www.zdf.de/ZDFmediathek/xmlservice/web/beitragsDetails?id=%s'
-
+ZDF_Search_PATH		= 'https://www.zdf.de/ZDFmediathek/xmlservice/web/detailsSuche?searchString=%s&maxLength=%s&offset=%s'
 
 
 REPO_NAME = 'Plex-Plugin-ARDMediathek2016'
@@ -150,20 +157,6 @@ Radio-Live-Streams der ARD: alle Radiosender von Bayern, HR, mdr, NDR, Radio Bre
 	Deutschlandfunk. Insgesamt 10 Stationen, 63 Sender
 
 ####################################################################################################
-
-Programmpfade:
-1. VerpasstWoche -> Wochenliste -> PageControl -> SinglePage
-2. SendungenAZ -> AZ-Liste -> SinglePage (Steuerung via next_cbKey) -> PageControl
-3. SenderLiveListePre  -> SenderLiveListe -> SenderLiveResolution -> Parseplaylist 
-		-> CreateVideoStreamObject
-4. Search -> PageControl (Direktsprung mit Suchbegriff) -> SinglePage
-5. Einslike -> Rubrik-Liste ("mehr"-Seiten) -> PageControl -> SinglePage
-
-Einzelsendungen:  SinglePage -> get_sendungen -> Parseplaylist: 
-		a) für angebotene m3u8-Datei, Auflistung der angebotenen Auflösungen
-		b) Auflistung der angebotenen Quali.-Stufen |  a) und b) in gemeinsamer Liste
-		-> createVideoClipObject
-####################################################################################################
 '''
 
 def Start():
@@ -172,8 +165,6 @@ def Start():
 	#	https://forums.plex.tv/discussion/211755/how-do-i-make-my-objectcontainer-display-as-a-gallery-of-thumbnails
 	Plugin.AddViewGroup("InfoList", viewMode="InfoList", mediaType="items")
 	Plugin.AddViewGroup("List", viewMode="List", mediaType="items")
-	#Plugin.AddViewGroup("Details", viewMode="Details", mediaType="items")
-	#Plugin.AddViewGroup("Images", viewMode="Pictures", mediaType="items")
 
 	#ObjectContainer.art        = R(ART)
 	ObjectContainer.art        = R(ICON)  # gefällt mir als Hintergrund besser
@@ -221,7 +212,7 @@ def Main_ARD(name):
 	# folgendes DirectoryObject ist Deko für das nicht sichtbare InputDirectoryObject dahinter:
 	oc.add(DirectoryObject(key=Callback(Main_ARD, name=name),title='Suche: im Suchfeld eingeben', 
 		summary='', tagline='TV', thumb=R(ICON_SEARCH)))
-	oc.add(InputDirectoryObject(key=Callback(Search, s_type='video', title=u'%s' % L('Search Video')),
+	oc.add(InputDirectoryObject(key=Callback(Search,  channel='ARD', s_type='video', title=u'%s' % L('Search Video')),
 		title=u'%s' % L('Search'), prompt=u'%s' % L('Search Video'), thumb=R(ICON_SEARCH)))
 		
 	oc.add(DirectoryObject(key=Callback(VerpasstWoche, name=name), title=" Sendung Verpasst (1 Woche)",
@@ -255,6 +246,13 @@ def Main_ZDF(name):
 	Log('Funktion Main_ZDF'); Log(PREFIX); Log(VERSION); Log(VDATE)
 	oc = ObjectContainer(view_group="InfoList", art=ObjectContainer.art, title1=name)	
 	oc = home(cont=oc)							# Home-Button	
+	
+	# folgendes DirectoryObject ist Deko für das nicht sichtbare InputDirectoryObject dahinter:
+	oc.add(DirectoryObject(key=Callback(Main_ZDF, name=name),title='Suche: im Suchfeld eingeben', 
+		summary='', tagline='TV', thumb=R(ICON_ZDF_SEARCH)))
+	oc.add(InputDirectoryObject(key=Callback(ZDF_Search,  channel='ZDF', s_type='video', title=u'%s' % L('Search Video')),
+		title=u'%s' % L('Search'), prompt=u'%s' % L('Search Video'), thumb=R(ICON_ZDF_SEARCH)))
+		
 	oc.add(DirectoryObject(key=Callback(VerpasstWoche, name=name), title="Sendung Verpasst (1 Woche)",
 		thumb=R(ICON_ZDF_VERP)))
 	oc.add(DirectoryObject(key=Callback(ZDFSendungenAZ, name="Sendungen A-Z"), title="Sendungen A-Z",
@@ -485,12 +483,9 @@ def SendungenAZ(name):		# Auflistung 0-9 (1 Eintrag), A-Z (einzeln)
 ####################################################################################################
 @route(PREFIX + '/Search')	# Suche - Verarbeitung der Eingabe
 	# Hinweis zur Suche in der Mediathek: miserabler unscharfer Algorithmus - findet alles mögliche
-def Search(query=None, title=L('Search'), s_type='video', offset=0, **kwargs):
+def Search(channel, query=None, title=L('Search'), s_type='video', offset=0, **kwargs):
 	Log('Search'); Log(query)
 	
-	#if not query:				# leere Eingabe ohne Auswirkung
-	#     return NotFound()
-
 	name = 'Suchergebnis zu: ' + query
 	oc = ObjectContainer(view_group="InfoList", title1=NAME, title2=name, art = ObjectContainer.art)
 	next_cbKey = 'SinglePage'	# cbKey = Callback für Container in PageControl
@@ -499,24 +494,18 @@ def Search(query=None, title=L('Search'), s_type='video', offset=0, **kwargs):
 	s = XML.StringFromElement(page)
 	Log(page)
 	
-	i = s.find('<h3 class="headline">')
+	i = s.find('<strong>keine Treffer</strong')
 	Log(i)
-	if i >= 0:
-		return NotFound()
-	
-	oc = PageControl(title=name, path=path, cbKey=next_cbKey) 	# wir springen direkt
-	return oc
-	
-	err_txt = page.xpath("//h3[@class='headline']/text()")
-	Log(err_txt)
-   
-	try:				# Test auf keine Treffer
-		test = page.xpath("//div[@class='box']/h3/text()")
-		return NotFound()
-	except:					# Treffer
-		oc.add(DirectoryObject(key=Callback(PageControl, title=title, path=path, cbKey=next_cbKey), 
-				title=title, thumb=ICON))
- 
+	if i > 0:
+		msg_notfound = 'Leider kein Treffer.'
+		title = msg_notfound.decode(encoding="utf-8", errors="ignore")
+		summary = 'zurück zu ' + NAME.decode(encoding="utf-8", errors="ignore")		
+		oc.add(DirectoryObject(key=Callback(Main_ARD, name=NAME), title=msg_notfound, 
+			summary=summary, tagline='TV', thumb=R(ICON_MAIN_ARD)))
+		return oc
+	else:
+		oc = PageControl(title=name, path=path, cbKey=next_cbKey) 	# wir springen direkt
+	 
 	return oc
  
 ####################################################################################################
@@ -1924,6 +1913,92 @@ def PlayAudio(url):				# runtime- Aufruf PlayAudio.mp3
 ####################################################################################################
 #									ZDF-Funktionen
 #
+@route(PREFIX + '/ZDF_Search')	# Suche - Verarbeitung der Eingabe
+	# Hinweis zur Suche in der Mediathek: miserabler unscharfer Algorithmus - findet alles mögliche
+def ZDF_Search(channel, query=None, title=L('Search'), s_type='video', offset=0, **kwargs):
+	query = urllib.quote(query)
+	Log('ZDF_Search'); Log(query)
+	
+	maxLength = 50
+	Log(maxLength); Log(offset); 
+	
+	path = ZDF_Search_PATH % (query, maxLength, offset)
+	Log(maxLength);Log(path)	
+	content = XML.ElementFromURL(path)
+	
+	searchResult = content.xpath('//teaserlist/searchResult/batch/text()')[0]
+	Log(content);Log(searchResult)	
+	
+	NAME = 'ZDF Mediathek'
+	name = 'Suchergebnis zu: %s (Gesamt: %s, ab %s)'  		% (urllib.unquote(query), searchResult, max(1, offset))
+	name = name.decode(encoding="utf-8", errors="ignore")
+	oc = ObjectContainer(view_group="InfoList", title1=NAME, title2=name, art = ObjectContainer.art)
+	oc = home(cont=oc)								# Home-Button
+
+	if searchResult == '0':
+		msg_notfound = 'Leider kein Treffer.'
+		title = msg_notfound.decode(encoding="utf-8", errors="ignore")
+		summary = 'zurück zu ' + NAME.decode(encoding="utf-8", errors="ignore")		
+		oc.add(DirectoryObject(key=Callback(Main_ZDF, name=NAME), title=msg_notfound, 
+			summary=summary, tagline='TV', thumb=R(ICON_MAIN_ZDF)))
+		return oc
+	
+	teasers = content.xpath('//teaserlist/teasers/teaser')
+	# Log(teasers);
+	for teaser in teasers:
+		teaserimages = teaser.xpath('./teaserimages/teaserimage')
+		thumbfind = False
+		for image in teaserimages:
+			if thumbfind:
+				continue
+			s = XML.StringFromElement(image)
+			s = mystrip(s)
+			thumb = stringextract('http:', '</teaserimage>', s)
+			thumb = 'http:' + thumb
+			# Log(s); Log(thumb)
+			for res in THUMBNAIL:			# entweder Größe passend zur Liste oder letztes Image	
+				if thumb.find(res) > 0:
+					thumbfind = True
+					# Log(res); Log(thumb);
+					break
+
+		title = teaser.xpath('./information/title')[0].text
+		summary = teaser.xpath('./information/detail')[0].text
+		assetId = teaser.xpath('./details/assetId')[0].text
+		assetId = 'SEARCH_' + assetId
+		
+		typ = teaser.xpath('./type')[0].text
+		# hier ev. weitere geeignete Formate verwenden (Bilderserien, Themen usw.)
+		# 	getestet + nicht geeignet: einzelsendung, thema, sendung
+		if(typ !=  'video'):	
+			Log('ZDF_Search: Unsupported type ' + typ)
+			continue
+
+		airtime = teaser.xpath('./details/airtime')[0].text
+		date = Datetime.ParseDate(airtime)
+		# lengthSec = teaser.xpath('./details/lengthSec')[0].text   # nicht immer vorh. (z.B. Suche)
+		length = teaser.xpath('./details/length')[0].text
+		dauer = length		# ev. noch formatieren, Bsp.: 11 min, 00:02:27.000, oder zusätzl. <lengthSec>147</lengthSec>
+		if dauer.find('.000'):
+			dauer = dauer.split('.000')[0]
+		tagline = airtime + ' | ' + dauer
+
+		Log(assetId);Log(typ);Log(title);Log(thumb);Log(summary[0:40]);
+		summary = summary.decode(encoding="utf-8", errors="ignore")
+		tagline = tagline.decode(encoding="utf-8", errors="ignore")
+		# in Sendung wird die Suchanfrage wiederholt und der Treffer über die assetId ausgefiltert:
+		oc.add(DirectoryObject(key=Callback(Sendung, title=title, assetId=assetId, search_url=path), title=title, 
+			thumb=thumb, summary=summary, tagline=tagline))
+			
+	# auf mehr prüfen:
+	if int(offset) + int(maxLength) < int(searchResult):
+		offset = int(offset) + int(maxLength) + 1 
+		oc.add(DirectoryObject(key=Callback(ZDF_Search, channel=channel, query=query, offset=offset ), 
+			title=str("Weitere Beiträge").decode('utf-8', 'strict'), thumb=R(ICON_MEHR), summary=None))	
+ 
+	return oc
+ 
+####################################################################################################
 @route(PREFIX + '/ZDFSendungenAZ')
 def ZDFSendungenAZ(name):
 	Log('ZDFSendungenAZ')
@@ -2004,52 +2079,71 @@ def SendungenAZList(char):
 			oc.add(DirectoryObject(key=Callback(Sendung, title=title, assetId=assetId), title=title, 
 				thumb=thumb, summary=summary))
   
-	if len(oc) == 0:
-		return MessageContainer("Empty", "There aren't any speakers whose name starts with " + char)
+	if len(oc) == 1:	# home berücksichtigen
+		return NotFound('Leer - keine Sendung(en), die mit  >' + char + '< starten')
 
 	return oc
   
 ####################################################################################################
 @route(PREFIX + '/Sendung/{assetId}', allow_sync = True)
-def Sendung(title, assetId, offset=0):
-	Log('Sendung: ' + title); Log(assetId); Log(offset);
+def Sendung(title, assetId, offset=0, search_url = None, search_mode=False):
+	Log('Sendung: ' + title); Log(assetId); Log(offset);Log(search_url);
 	oc = ObjectContainer(title2=title.decode(encoding="utf-8", errors="ignore"), view_group="InfoList")
 	oc = home(cont=oc)								# Home-Button
 
 	if(assetId == 'MEISTGESEHEN'):
 		maxLength = 25	# vormals 10
 		content = XML.ElementFromURL(ZDF_MEISTGESEHEN % (offset), cacheTime=CACHE_1HOUR)
-		#content = XML.ElementFromURL(ZDF_MEISTGESEHEN % (offset), cacheTime=0)	# Debug
 	elif(assetId.find('VERPASST_') != -1):
 		maxLength = 50
 		Log(maxLength); 
 		d = re.search('VERPASST_([0-9]{1,6})', assetId)
-		#if(d == None):
-		#  return oc
 		day = d.group(1)
 		content = XML.ElementFromURL(ZDF_SENDUNG_VERPASST % (day, day, offset), cacheTime=CACHE_1HOUR)
-		#content = XML.ElementFromURL(ZDF_SENDUNG_VERPASST % (day, day, offset), cacheTime=0)	# Debug
+	elif(assetId.find('SEARCH_') != -1):	# Diese assetId werden über die URL ZDF_SENDUNG nicht gefunden
+		search_mode = True					# Ablauf: Wiederholung Suchanfrage (search_url), Ausfiltern assetId
+		maxLength = 50		# hier nur Platzhalter
+		assetId = assetId.split('SEARCH_')[1]
+		content = XML.ElementFromURL(search_url)
 	else:
 		maxLength = 25
 		content = XML.ElementFromURL(ZDF_SENDUNG % (str(assetId), offset), cacheTime=CACHE_1HOUR)
-		#content = XML.ElementFromURL(ZDF_SENDUNG % (str(assetId), offset), cacheTime=0)	# Debug
-	Log(assetId);  Log(content); 
 
-	more = content.xpath('//teaserlist/additionalTeaser')[0].text == 'true'
+	Log(assetId);  Log(content); 
+	try:	# Attribut additionalTeaser in Suchergebnissen n.v. 
+		more = content.xpath('//teaserlist/additionalTeaser')[0].text == 'true'
+	except:
+		more  = False
+		
 	teasers = content.xpath('//teaserlist/teasers/teaser')
 	Log(more); Log(teasers)
 	for teaser in teasers:
-		Log('teaser: '); Log(teaser)
+		s = XML.StringFromElement(teaser)
+		# Log(s)	# bei Bedarf
 		typ = teaser.xpath('./type')[0].text
-		for res in THUMBNAIL:
-			thumb = teaser.xpath('./teaserimages/teaserimage[@key="%s"]' % (res))[0].text
-			if thumb.find('fallback') == -1:
-				break
-
+		Log('teaser: '); Log(teaser);Log(typ);
+		teaserimages = teaser.xpath('./teaserimages/teaserimage')
+		thumbfind = False
+		for image in teaserimages:
+			if thumbfind:
+				continue
+			s = XML.StringFromElement(image)
+			s = mystrip(s)
+			thumb = stringextract('http:', '</teaserimage>', s)
+			thumb = 'http:' + thumb
+			# Log(s); Log(thumb)
+			for res in THUMBNAIL:			# entweder Größe passend zur Liste oder letztes Image	
+				if thumb.find(res) > 0:
+					thumbfind = True
+					# Log(res); Log(thumb);
+					break
+		
 		ttitle = teaser.xpath('./information/title')[0].text	
 		tsummary = teaser.xpath('./information/detail')[0].text
 		tassetId = teaser.xpath('./details/assetId')[0].text
-		Log(typ); Log(ttitle); Log(tsummary); Log(tassetId);	
+		Log('2154');Log(thumb);Log(typ); Log(ttitle); Log(tsummary); Log(assetId); Log(tassetId);
+		if search_mode and (assetId != tassetId):	# übergebenene assetId Suchergebnis herausfiltern
+				continue
 		
 		'''			
 		Problemfeld Video-URL:
@@ -2078,14 +2172,13 @@ def Sendung(title, assetId, offset=0):
 			#airtime = teaser.xpath('./details/onlineairtime')[0].text  # Archivierungszeitpunkt?
 			airtime = teaser.xpath('./details/airtime')[0].text
 			date = Datetime.ParseDate(airtime)
-			lengthSec = teaser.xpath('./details/lengthSec')[0].text
-			minutes = int(lengthSec) / 60
-			if minutes >= 1:
-				dauer = 'Dauer: ' + str(minutes) + ' min'
-			else:
-				dauer = 'Dauer: ' + str(lengthSec) + ' sec'
+			# lengthSec = teaser.xpath('./details/lengthSec')[0].text   # nicht immer vorh. (z.B. Suche)
+			length = teaser.xpath('./details/length')[0].text
+			dauer = length		# ev. noch formatieren, Bsp.: 11 min, 00:02:27.000, oder zusätzl. <lengthSec>147</lengthSec>
+			if dauer.find('.000'):
+				dauer = dauer.split('.000')[0]
 			tagline = airtime + ' | ' + dauer
-			duration = CalculateDuration(teaser.xpath('./details/length')[0].text)
+			duration = CalculateDuration(length)
 			details = XML.ElementFromURL(ZDF_BEITRAG_DETAILS % tassetId, cacheTime=CACHE_1HOUR)
 			#details = XML.ElementFromURL(ZDF_BEITRAG_DETAILS % tassetId, cacheTime=0)	# Debug
 			vtype = details.xpath('//video/type')[0].text
@@ -2120,7 +2213,7 @@ def Sendung(title, assetId, offset=0):
 	#Somehow the webservice does not support an offset over 100	
 	if more and int(offset) + maxLength <= 100:
 		oc.add(NextPageObject(key=Callback(Sendung, title=title, assetId=assetId, offset=str(int(offset)+maxLength)), 
-			title=str("Weitere Beiträge").decode('utf-8', 'strict'), summary=None, thumb="more.png"))
+			title=str("Weitere Beiträge").decode('utf-8', 'strict'), summary=None, thumb=R(ICON_MEHR)))
 	return oc
 
 #--------------------------------------------------------------------------------------------
@@ -2331,10 +2424,10 @@ def GetAttribute(text, attribute, delimiter1 = '=', delimiter2 = ','):
         return ''
 
 #----------------------------------------------------------------  
-def NotFound():
+def NotFound(msg):
     return ObjectContainer(
         header=u'%s' % L('Error'),
-        message=u'%s' % L('No entries found')
+        message=u'%s' % (msg)
     )
 
 #----------------------------------------------------------------  
