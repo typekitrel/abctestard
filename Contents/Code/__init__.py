@@ -5,7 +5,9 @@ import string
 import urllib		# urllib.quote()
 import os 			# u.a. Behandlung von Pfadnamen
 import re			# u.a. Reguläre Ausdrücke, z.B. in CalculateDuration
+import time
 import datetime
+
 import locale
 
 import updater
@@ -13,8 +15,8 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.3.9'		
-VDATE = '08.09.2016'
+VERSION =  '2.4.1'		
+VDATE = '27.09.2016'
 
 
 # (c) 2016 by Roland Scholz, rols1@gmx.de
@@ -1496,37 +1498,45 @@ def get_epg_DW(epg_url, epgname):					# EPG-Daten ermitteln für SenderLiveListe
 	#page = HTML.ElementFromURL(epg_url, cacheTime=1)
 	page = HTTP.Request(epg_url, cacheTime=1, timeout=float(1)).content #  nur Stringsuche
 	
-	# xpath nach id="currentDate" nicht nötig, da die Daten des akt. Tages führen, die restlichen 6 Tage folgen
-	liste =  re.findall("td class=\"time\">(.*?)</td>\s+?", page)	# xpath n.m., da <td class="time"> auch ohne Zeitangabe vorh.
-	#Log(liste);	# bei Bedarf
+	# xpath n.m., da <td class="time"> auch ohne Zeitangabe vorh., Zeitangaben + Sprachen überschneiden sich
+	# liste =  re.findall("td class=\"time\">(.*?)</td>\s+?", page)	# falsche Ergebnisse wg. o.g. Überschneidung 
 	
-	now = datetime.datetime.now()
+	liste = blockextract('<tr class=\"langDE', page)  	# einschl. <tr class="langDE highlight">			
+	Log(len(liste));	# bei Bedarf
+	if len(liste) == 0: # Sicherung
+		return '','','Problem mit EPG-Daten'
+	
+	now = datetime.datetime.now()		# akt. Zeit
 	nowtime = now.strftime("%H:%M")		# DW: <td class="time">00:15</td>
-	#for time_str in liste:
+	
 	for i in range (len(liste)):
-		starttime = liste[i]			# aktuelle Sendezeit
+		# starttime =stringextract('class=\"time\">', '</td>', liste[i]) # aktuelle Sendezeit UTC-Zeit (minus 2 Std)
+		starttime =stringextract('data-time=\"', '\"></td>', liste[i]) # aktuelle Sendezeit
+		starttime = starttime[0:10]			# 13-stel, auf 10 Stellen kürzen für Operationen mittels datetime.fromtimestamp
+		starttime = datetime.datetime.fromtimestamp(int(starttime))
+		starttime =  starttime.strftime("%H:%M")	
 		try:
-			endtime = liste[i+1]		# nächste Sendezeit		
+			endtime = stringextract('data-time=\"', '\"></td>', liste[i+1])		# nächste Sendezeit		
+			endtime = endtime[0:10]			# 13-stel, auf 10 Stellen kürzen für Operationen mittels datetime.fromtimestamp
+			endtime = datetime.datetime.fromtimestamp(int(endtime))
+			endtime =  endtime.strftime("%H:%M")	
 		except:
 			endtime = '23:59'			# Listenende
-			
-		#Log('starttime ' + starttime); # Log('endtime ' + endtime); Log('nowtime ' + nowtime);	# bei Bedarf
+
+		#Log('starttime ' + starttime); Log('endtime ' + endtime); Log('nowtime ' + nowtime);	# bei Bedarf
+		epg_date = ''
 		if nowtime >= starttime and nowtime < endtime:
 			epg_date = starttime
-			pos = page.find(starttime)			# auf Seite wiederfinden + ausschneiden
-			pos2 = page.find(endtime, pos +1)
-			try:
-				page_segment =  page[pos:pos2]
-			except:
-				page_segment =  page[pos:]
-			epg_title = stringextract('<h2>', '</h2>', page_segment)
-			epg_text = stringextract('nofollow\">', '</a', page_segment)
-			label = stringextract('label\">', '</span', page_segment)		# Sprachlabel
+			epg_title = stringextract('<h2>', '</h2>', liste[i])
+			epg_text = stringextract('nofollow\">', '</a', liste[i])
+			label = stringextract('label\">', '</span', liste[i])		# Sprachlabel
 			epg_text = label + ' | ' + epg_text
 			epg_text = unescape(epg_text)				# HTML-Escapezeichen  im Teasertext	
-			Log(page_segment[0:40])
+			Log(liste[i][0:40])
 			break
-	
+	if epg_date == '':					# Sicherung
+		return '','','Problem mit EPG-Daten'
+		
  	Log(epg_date); Log(epg_title); Log(epg_text[0:80]);  
 	return epg_date, epg_title, epg_text
 		
@@ -2474,7 +2484,25 @@ def teilstring(zeile, startmarker, endmarker):  		# return '' bei Fehlschlag
   else:
     teils = ''
   #Log(pos1) Log(pos2) 
-  return teils
+  return teils 
+#----------------------------------------------------------------  
+def blockextract(blockmark, mString):  	# extrahiert Blöcke begrenzt durch blockmark aus mString
+	#	Rückgabe in Liste. Letzter Block reicht bis Ende mString (undefinierte Länge)
+	#	Verwendung, wenn xpath nicht funktioniert (Bsp. Tabelle EPG-Daten www.dw.com/de/media-center/live-tv/s-100817)
+	rlist = []				
+	if 	blockmark == '' or 	mString == '':
+		return rlist
+	pos2 = 1
+	while pos2 > 0:
+		pos1 = mString.find(blockmark)						
+		ind = len(blockmark)
+		pos2 = mString.find(blockmark, pos1 + ind)		
+	
+		block = mString[pos1:pos2]	# extrahieren einschl.  1. blockmark
+		rlist.append(block)
+		# reststring bilden:
+		mString = mString[pos2:]	# Rest von mString, Block entfernt	
+	return rlist  
 #----------------------------------------------------------------  
 def repl_dop(liste):	# Doppler entfernen, im Python-Script OK, Problem in Plex - s. PageControl
 	mylist=liste

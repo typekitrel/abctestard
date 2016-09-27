@@ -2,8 +2,17 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------			gelöschte Releases: älter als  1.3		
 
+27.09.2016 2.4.1 Update		EPG-Daten von Deutscher Welle: Datensatz Deutsche Welle in livesenderTV.xmlgeändert 
+				(Sender-URL und EPG-URL). Sender-URL zeigte vorher auf spanische Inhalte. 
+				Funktion get_epg_DW: für den Zeitvergleich wird nun "time local" ausgewertet statt 
+				wie vorher "time" (UTC-Zeit, 2 Std. zurück).
+				Neue Hilfsroutine blockextract - Verwendung, falls (wie bei den EPG-Daten hier)
+				xpath nicht funktioniert 
+				
+25.09.2016 2.4.0 Update		EPG-Daten von Deutscher Welle geändert / Absturz TV-Live-Sender: 
+				Fehler bis zur Bereinigung  abgefangen 
 07.09.2016 2.3.9 Update		Fehlende Suchfunktion für ZDF Mediathek nachgerüstet.
-				Suchfunktion für ZDF Mediathek: Fehleroutine bereinigt + verbessert (Rücksprung zum Menü ARD)
+				Suchfunktion für ZDF Mediathek: Fehleroutine bereinigt + verbessert (Rücksprung zum Menü ZDF)
 				ZDF Mediathek: THUMBNAIL-Liste um aktuell verwendete Formate erweitert.
 				ZDF Mediathek (Funktion Sendungen): Anpassungen im Code für Verarbeitung von Suchergebnissen,
 				fehleranfällige THUMBNAIL-Ermittlung korrigiert

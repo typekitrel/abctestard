@@ -145,12 +145,12 @@
 	</item>
 	<item>
 		<title>Deutsche Welle</title>
-		<link>http://dwstream3-lh.akamaihd.net/i/dwstream3_live@124409/master.m3u8</link>
+		<link>http://dwstream6-lh.akamaihd.net/i/dwstream6_live@124409/master.m3u8</link>
 		<thumbnail>tv-deutsche-welle.png</thumbnail>
 		<genre>TV</genre>
 		<info>Deutsche_Welle</info>
 		<date>19.06.2016</date>
-		<epg_url>http://www.dw.com/de/programm/tv-programm/s-4765-9800</epg_url>
+		<epg_url>http://www.dw.com/de/media-center/live-tv/s-100817</epg_url>
 		<epg_schema>DW</epg_schema>
 		<fanart></fanart>
 	</item>
