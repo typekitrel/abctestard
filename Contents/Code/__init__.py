@@ -200,7 +200,7 @@ def Main():
 		summary='Suche nach neuen Updates starten', tagline='Bezugsquelle: ' + repo_url, thumb=R(ICON_MAIN_UPDATER)))
 		
 	oc.add(DirectoryObject(key = Callback(Main_Options, title='Einstellungen'), title = 'Einstellungen', 
-		summary = 'Videos automatisch abspielen, bevorzugtes Video-Format, bevorzugte Bandbreite, bevorzugte Qualitaet', 
+		summary = 'Live-TV-Sender: EPG-Daten verwenden, verfuegbare Bandbreiten anzeigen', 
 		thumb = R(ICON_PREFS)))
 
 	return oc
@@ -1591,8 +1591,6 @@ def SenderLiveResolution(path, title, thumb, include_container=False):
 def Arteplaylist(oc, url, title, thumb):
 	Log('Arteplaylist')
 	playlist = HTTP.Request(url).content  # als Text, nicht als HTML-Element
-
-#todo:  DW - <table data-channel-id="5" filtern, sonst Uhrzeit-Überschneidungen (bis </table>)
 
 	HLS_SQ_1 = stringextract('\"HLS_SQ_1\": {', '}', playlist)	# .m3u8 deutsch
 	HLS_SQ_2 = stringextract('\"HLS_SQ_2\": {', '}', playlist)  # .m3u8 französisch
