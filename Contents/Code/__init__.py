@@ -15,8 +15,8 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.4.1'		
-VDATE = '27.09.2016'
+VERSION =  '2.4.2'		
+VDATE = '28.09.2016'
 
 
 # (c) 2016 by Roland Scholz, rols1@gmx.de
@@ -1501,6 +1501,8 @@ def get_epg_DW(epg_url, epgname):					# EPG-Daten ermitteln für SenderLiveListe
 	# xpath n.m., da <td class="time"> auch ohne Zeitangabe vorh., Zeitangaben + Sprachen überschneiden sich
 	# liste =  re.findall("td class=\"time\">(.*?)</td>\s+?", page)	# falsche Ergebnisse wg. o.g. Überschneidung 
 	
+	page = stringextract('<table data-channel-id=\"5\"', '</table>', page)	# Filterung deutscher Inhalte
+	# Log(page)			# bei Bedarf
 	liste = blockextract('<tr class=\"langDE', page)  	# einschl. <tr class="langDE highlight">			
 	Log(len(liste));	# bei Bedarf
 	if len(liste) == 0: # Sicherung
@@ -1583,41 +1585,38 @@ def SenderLiveResolution(path, title, thumb, include_container=False):
 @route(PREFIX + '/Arteplaylist')	# Auswertung Arte-Parameter rtmp- + hls-streaming
 	# Die unter  https://api.arte.tv/api/player/v1/livestream/de?autostart=1 ausgelieferte Textdatei
 	# 	enthält je 2 rtmp-Url und 2 hls-Url
+	# 27.09.2016: Format + Sender URL's geändert - json, 2 x .f4m, 2 x .m3u8 (jeweils deutsch/französisch)
+	#	wir verwenden nur die beiden .m3u8-Versionen. 
+	#	Sender artelive-lh.akamaihd.net statt delive.artestras.cshls.lldns.net
 def Arteplaylist(oc, url, title, thumb):
 	Log('Arteplaylist')
 	playlist = HTTP.Request(url).content  # als Text, nicht als HTML-Element
-	#rtmp1_list = playlist.split("RTMP_EQ_1")
-	rtmp1_list = stringextract('\"RTMP_EQ_1\":', '\"RTMP_EQ_2\":', playlist) # orig.: "HLS_EQ_1":
-	rtmp2_list = stringextract('\"RTMP_EQ_2\":', '\"HLS_EQ_1\":', playlist)
-	hls1_list = stringextract('\"HLS_EQ_1\":', '\"HLS_EQ_2\":', playlist)
-	hls2_list = stringextract('\"HLS_EQ_2\":', '\"tracking\":', playlist) 
-	Log(rtmp1_list)
+
+#todo:  DW - <table data-channel-id="5" filtern, sonst Uhrzeit-Überschneidungen (bis </table>)
+
+	HLS_SQ_1 = stringextract('\"HLS_SQ_1\": {', '}', playlist)	# .m3u8 deutsch
+	HLS_SQ_2 = stringextract('\"HLS_SQ_2\": {', '}', playlist)  # .m3u8 französisch
+	# Log(HLS_SQ_1); Log(HLS_SQ_2);  # bei Bedarf
 	
-	r1 = stringextract('\"streamer\": \"', '\",',  rtmp1_list)  # rtmp-Url verteilt auf 2 Zeilen
-	r2 = stringextract('\"url\": \"', '\",',  rtmp1_list)
-	rtmp1_url = r1 + r2 
-	rtmp1_url = repl_char('\\', rtmp1_url)	# Quotierung für Slashes entfernen
-	
-	r1 = stringextract('\"streamer\": \"', '\",',  rtmp2_list)  # 2. rtmp-Url
-	r2 = stringextract('\"url\": \"', '\",',  rtmp2_list)
-	rtmp2_url = r1 + r2 
-	rtmp2_url = repl_char('\\', rtmp2_url)	# Quotierung für Slashes entfernen
-	
-	r1 = stringextract('\"url\": \"', '\",',  hls1_list)  # hls-Url nur in 1 Zeile (m3u8-Url)
-	r2 = stringextract('\"url\": \"', '\",',  hls2_list)  # hls-Url nur in 1 Zeile (m3u8-Url)
+	r1 = stringextract('\"url\": \"', '\",',  HLS_SQ_1)  # hls-Url 
+	r2 = stringextract('\"url\": \"', '\",',  HLS_SQ_2)  # 
 	hls1_url = repl_char('\\', r1)	# Quotierung für Slashes entfernen
-	hls2_url = repl_char('\\', r2)		
+	hls2_url = repl_char('\\', r2)	
+	Log(hls1_url);Log(hls2_url);
+		
+	title1=title;title2=title;
+	notfound = 	'Problem: URL nicht gefunden! '
+	if hls1_url == '':		# Sicherung bzw. Info im Titel bei leeren Links
+		title1 = notfound + title1
+	if hls2_url == '':		
+		title2 = notfound + title2
 	
-	oc.add(CreateVideoStreamObject(url=rtmp1_url, title=title + ' (de) | rtmp', 	# weniger stabil als HLS
-		summary='RTMP-Streaming deutsch', meta='', thumb=thumb, rtmp_live='ja', resolution=''))
-	oc.add(CreateVideoStreamObject(url=rtmp2_url, title=title + ' (fr) | rtmp', 	# weniger stabil als HLS
-		summary='RTMP-Streaming französisch', meta='', thumb=thumb, rtmp_live='ja', resolution=''))
-	oc.add(CreateVideoStreamObject(url=hls1_url, title=title + ' (de) | http', 
+	oc.add(CreateVideoStreamObject(url=hls1_url, title=title1 + ' (de) | http', 
 		summary='HLS-Streaming deutsch', meta='', thumb=thumb, rtmp_live='nein', resolution=''))
-	oc.add(CreateVideoStreamObject(url=hls2_url, title=title + ' (fr) | http', 
+	oc.add(CreateVideoStreamObject(url=hls2_url, title=title2 + ' (fr) | http', 
 		summary='HLS-Streaming französisch', meta='', thumb=thumb, rtmp_live='nein', resolution=''))
 	
-	Log(rtmp1_url); Log(rtmp2_url); Log(hls1_url); Log(hls2_url); Log(len(oc))
+	Log(len(oc))
 	return oc
 
 ####################################################################################################
@@ -1645,12 +1644,12 @@ def CreateVideoStreamObject(url, title, summary, meta, thumb, rtmp_live, resolut
   #				Die CRITICAL Meldung CreateVideoStreamObject() takes at least 7 arguments (7 given) führt
   #				nicht zum Abbruch des Streams.
   
-	Log('CreateVideoStreamObject: ' + url); Log('rtmp_live: ' + rtmp_live) 
-	Log('include_container: '  + str(include_container))
+	Log('CreateVideoStreamObject: '); Log(url); Log(rtmp_live) 
+	Log('include_container: '); Log(include_container)
 
 	if url.find('rtmp:') >= 0:	# rtmp = Protokoll für flash, Quellen: rtmpdump, shark, Chrome/Entw.-Tools
 		if rtmp_live == 'ja':
-			Log('rtmp_live: ' + rtmp_live) 
+			Log('rtmp_live: '); Log(rtmp_live) 
 			mo = MediaObject(parts=[PartObject(key=RTMPVideoURL(url=url,live=True))]) # live=True nur Streaming
 			rating_key = title
 			videoclip_obj = VideoClipObject(
@@ -2475,12 +2474,12 @@ def stringextract(mFirstChar, mSecondChar, mString):  	# extrahiert Zeichenkette
 	#Log(pos1); Log(ind); Log(pos2);  Log(rString); 
 	return rString
 #----------------------------------------------------------------  
-def teilstring(zeile, startmarker, endmarker):  		# return '' bei Fehlschlag
+def teilstring(zeile, startmarker, endmarker):  		# rfind: endmarker=letzte Fundstelle, return '' bei Fehlschlag
   # die übergebenen Marker bleiben Bestandteile der Rückgabe (werden nicht abgeschnitten)
   pos2 = zeile.find(endmarker, 0)
   pos1 = zeile.rfind(startmarker, 0, pos2)
   if pos1 & pos2:
-    teils = zeile[pos1:pos2+len(endmarker)]	# Versatz +5 schneidet die begrenzenden Suchstellen ab 
+    teils = zeile[pos1:pos2+len(endmarker)]	# 
   else:
     teils = ''
   #Log(pos1) Log(pos2) 
