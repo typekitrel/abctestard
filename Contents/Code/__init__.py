@@ -15,12 +15,14 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.4.2'		
-VDATE = '28.09.2016'
+VERSION =  '2.4.3'		
+VDATE = '01.10.2016'
+# todo: Abgleich mit Uhrzeit, Regional-Live-TV-Sender anpassen (Doppel nur bei SWR BW + RP)
+#	Details zur Sendung über Sendungs-ID
 
 
 # (c) 2016 by Roland Scholz, rols1@gmx.de
-#	GUI by Arauco (Plex-Forum)
+#	GUI by Arauco (Plex-Forum) from V1.5.1
 # 
 #     Testing Enviroment -> README.md
 # 
@@ -1260,29 +1262,28 @@ def SenderLiveListe(title, listname, offset=0):	#
 		Log(Prefs['pref_use_epg']) 					# Voreinstellung: EPG nutzen? - nur mit Schema nutzbar 
 		if Prefs['pref_use_epg'] == True:
 			epg_schema = stringextract('<epg_schema>', '</epg_schema>', element_str)	# bisher nur ARD, ZDF
-			epg_url = stringextract('<epg_url>', '</epg_url>', element_str)				# Link auf Seite mit Info zur Sendung		
+			epg_url = stringextract('<epg_url>', '</epg_url>', element_str)				# Link auf Seite mit Info zur Sendung
+			epg_url = unescape(epg_url)						# amp; entfernen! Herkunft: HTML.ElementFromString bei &-Zeichen
+			Log('--')		# Suchmarke 
+			Log(epg_url)
+			
+			now = datetime.datetime.now()		# akt. Zeit, Parameter für epg_url nach ARD-Schema
+			myDate = now.strftime("%d.%m.%Y")	
 			
 			if epg_schema == 'ARD':						# EPG-Daten ARD holen 
+				epg_url = epg_url % myDate
 				epg_date, epg_title, epg_text = get_epg_ARD(epg_url, listname)			
 					
 			if epg_schema == 'ZDF':						# EPG-Daten  ZDF holen	
 				epgname = stringextract('<epgname>', '</epgname>', element_str)		
 				epg_date, epg_title, epg_text = get_epg_ZDF(epg_url, epgname)	
-									
-			if epg_schema == 'KiKA':					# EPG-Daten  KiKA holen	
-				epgname = stringextract('<epgname>', '</epgname>', element_str)		
-				epg_date, epg_title, epg_text = get_epg_KiKA(epg_url, epgname)	
-									
-			if epg_schema == 'Phoenix':					# EPG-Daten  Phoenix holen	
-				epgname = stringextract('<epgname>', '</epgname>', element_str)		
-				epg_date, epg_title, epg_text = get_epg_Phoenix(epg_url, epgname)	
-									
+																		
 			if epg_schema == 'DW':					# EPG-Daten  Deutsche Welle holen	
 				epgname = stringextract('<epgname>', '</epgname>', element_str)		
 				epg_date, epg_title, epg_text = get_epg_DW(epg_url, epgname)	
 								
 		Log(epg_schema); Log(epg_url); 
-		Log(epg_title); Log(epg_date); Log(epg_text[0:40]);		
+		# Log(epg_title); Log(epg_date); Log(epg_text[0:40]);	# bei Bedarf	
 		if epg_date and epg_title:
 			summary = epg_date + ' | ' + epg_title
 		if epg_text:								# kann fehlen
@@ -1311,25 +1312,50 @@ def get_epg_ARD(epg_url, listname):					# EPG-Daten ermitteln für SenderLiveLis
 	Log('get_epg_ARD: ' + listname)
 	epg_date = ''; epg_title=''; epg_text=''
 
-	page = HTTP.Request(epg_url, cacheTime=1, timeout=float(1)).content # ohne xpath, Cache max. 1 sec
+	page = HTTP.Request(epg_url, cacheTime=1, timeout=float(3)).content # ohne xpath, Cache max. 3 sec
 	# Log(page)		# nur bei Bedarf		
+	liste = blockextract('class=\"sendungslink\"', page)  
+	Log(len(liste));	# bei Bedarf
+	if len(liste) == 0: # Sicherung
+		return '','','Keine EPG-Daten gefunden'
 	
-	s = stringextract('mod modA modProgramm', '<div class=\"modSocialbar\">', page)		
-	#Log(s)			# nur bei Bedarf				
-	if s.find('<span class=\"date\">'):
-		epg_date = stringextract('<span class=\"date\">', '</span>', s)
-		#epg_date = epg_date.replace('\t', '').replace('\n', '').replace('\r', '')
-		epg_date = mystrip(epg_date)
-	if s.find('<span class=\"titel\">'):
-		epg_title = stringextract('<span class=\"titel\">', '</span', s)
-		#epg_title = epg_title.strip(' \t\n\r')
-		epg_title = mystrip(epg_title)
-		epg_title = unescape(epg_title)				# HTML-Escapezeichen  im Titel	
+	now = datetime.datetime.now()		# akt. Zeit
+	nowtime = now.strftime("%H:%M")		# ARD: <span class="date"> \r 00:15 \r <div class="icons">
+	
+	for i in range (len(liste)):		# ältere Sendungen enthalten - daher Schleife + Zeitabgleich	
+		starttime = stringextract('<span class=\"date\">', '<', liste[i]) # aktuelle Sendezeit
+		starttime = mystrip(starttime)
+		try:
+			endtime = stringextract('<span class=\"date\">', '<', liste[i+1])		# nächste Sendezeit		
+			endtime = mystrip(endtime)
+		except:
+			endtime = '23:59'			# Listenende
+
+		#Log('starttime ' + starttime); Log('endtime ' + endtime); Log('nowtime ' + nowtime);	# bei Bedarf
+		epg_date = ''
+		if nowtime >= starttime and nowtime < endtime:
+			epg_date = stringextract('<span class=\"date\">', '<', liste[i])
+			epg_date = mystrip(epg_date) + ' - ' + endtime
 			
-	if s.find('<p class=\"teasertext\">'):			# kann fehlen
-		epg_text = stringextract('<p class=\"teasertext\">', '</p', s)
-		epg_text = epg_text.replace('\t', '').replace('\n', '').replace('\r', '')
-		epg_text = unescape(epg_text)				# HTML-Escapezeichen  im Teasertext	
+			epg_title = stringextract('<span class=\"titel\">', '<',  liste[i])
+			epg_title = mystrip(epg_title)
+			epg_title = unescape(epg_title)			
+					
+			epg_text = stringextract('<span class=\"subtitel\">', '<',  liste[i])
+			epg_text = mystrip(epg_text)
+			epg_text = unescape(epg_text)
+			
+			# weitere Details via eventid z.Z. nicht verfügbar - beim Abruf klemmt Plex ohne Fehlermeldung:
+			#eventid = stringextract('data-eventid=\"', '\"', liste[i])	# Bsp. 	2872518888223822
+			#details_url = "http://programm.ard.de/?sendung=" + eventid
+			#page = HTTP.Request(details_url, cacheTime=1, timeout=float(10)).content # ohne xpath, Cache max. 1 sec
+			#epg_details = stringextract('name=\"description\" content="', '\" />', page)
+			#epg_text = unescape(epg_text[0:80])
+			
+			break
+	
+	if epg_date == '':					# Sicherung
+		return '','','Problem mit EPG-Daten'	
 			
 	epg_text = epg_text.decode(encoding="utf-8", errors="ignore") # möglich: UnicodeDecodeError: 'utf8' codec can't decode byte 0xc3 ...
 	Log(epg_date); Log(epg_title); Log(epg_text[0:80]); 	
@@ -1345,7 +1371,7 @@ def get_epg_ZDF(epg_url, epgname):					# EPG-Daten ermitteln für SenderLiveList
 	xdef = (('//*[@class="{0}"]').format(x))
 	Log(xdef)
 	xpath_liste = page.xpath(xdef)					# EPG-Daten für ganzen Tag
-	Log(epgname); # Log(liste)						# bei Bedarf
+	Log(epgname); #Log(xpath_liste)						# bei Bedarf
 	
 	now = datetime.datetime.now()
 	nowtime = now.strftime("%H:%M")		# ZDF: <p class="time">23:10</p>
@@ -1371,11 +1397,12 @@ def get_epg_ZDF(epg_url, epgname):					# EPG-Daten ermitteln für SenderLiveList
 					
 		#Log(element_str); 				# bei Bedarf
 		#Log(element_next_str)			# bei Bedarf
-		Log('starttime ' + starttime); Log('endtime ' + endtime); Log('nowtime ' + nowtime);	# bei Bedarf
+		#Log('starttime ' + starttime); Log('endtime ' + endtime); Log('nowtime ' + nowtime);	# bei Bedarf
 		
 		if nowtime >= starttime and nowtime < endtime:
 			#  	Beschreib.: h3, (h5), (p, p). h3= titel, h5= Untertitel, p=Herkunft/Jahr 
 			epg_date = starttime
+			epg_date = starttime + ' - ' + endtime
 			pos = element_str.find(starttime)			# auf Seite wiederfinden + ausschneiden, enthält col_r
 			pos2 = element_str.find('broadcasts\">', pos +1) 
 			try:
@@ -1408,90 +1435,6 @@ def get_epg_ZDF(epg_url, epgname):					# EPG-Daten ermitteln für SenderLiveList
 	epg_text = epg_text.decode(encoding="utf-8", errors="ignore")	
 	Log(epg_date); Log(epg_title); Log(epg_text[0:40]);  
 	return epg_date, epg_title, epg_text
-#----------------------
-def get_epg_KiKA(epg_url, epgname):					# EPG-Daten ermitteln für SenderLiveListe, KiKA
-	Log('get_epg_KiKA: ' + epgname)		
-
-	#page = HTML.ElementFromURL(epg_url, cacheTime=1, timeout=float(1))	# EPG-Daten laden, Cache max. 1 sec
-	page = HTTP.Request(epg_url, cacheTime=1, timeout=float(1)).content # für KIKA ohne xpath - hier nur Stringsuche
-	
-	now = datetime.datetime.now()
-	nowtime = now.strftime("%Y-%m-%dT%H:%M:%S")		# im kika-format
-
-	epg_date = ''; 	epg_title = ''; epg_text = ''
-	# Suchzeile: data-ctrl-livestreamprogress= ... ,'start':'2016-06-19T07:50:00+02:00','end':'2016-06-19T08:20:00+02:00'}"
-	while len(page) >= 0:
-		data_line = stringextract('data-ctrl-livestreamprogress=', '}\"', page)
-		pos = page.find('data-ctrl-livestreamprogress=')
-		next_pos = pos + len(data_line)	
-		page_segment =  page[next_pos:] 						# Teilstück auschneiden
-		pos2 = page_segment.find('data-ctrl-livestreamprogress=')
-		page_segment =  page_segment[:pos2]  							
-
-		# Log(data_line); Log(next_pos);  Log(pos2); Log(page_segment) # bei Bedarf
-		if data_line == '':
-			break
-
-		if data_line.find('start'):
-			starttime = stringextract('\'start\':\'', '\',', data_line)
-			endtime = stringextract('\'end\':\'', '\'', data_line)
-			Log(data_line); Log(starttime); Log(endtime)
-			
-			starttime.split('+')[0]; endtime.split('+')[0];		# +02:00 abschneiden
-			if nowtime >= starttime and nowtime < endtime:
-				epg_date = starttime[11:16] + ' - ' + endtime[11:16]
-				epg_title = stringextract('<h4 class=\"headline\">', '</h4>', page_segment) # Titel fehlt manchmal
-				epg_text = epg_title 														# epg_text fehlt hier
-				epg_title = unescape(epg_title)				# HTML-Escapezeichen  im Titel	
-				epg_text = unescape(epg_text)				# HTML-Escapezeichen  im Titel	
-				break											# fertig
-		page = page[next_pos:]		# ab hier weitersuchen		
-				
-	if epg_date == '' and epg_title == "":			# ab ca. 21 Uhr Sendeschluss
-		epg_date = nowtime = now.strftime("jetzt: %H:%M")	
-		epg_title= 'keine Sendung gefunden'; epg_text = 'vermutlich Sendeschluss'
-	epg_text = epg_text.decode(encoding="utf-8", errors="ignore")	
-	Log(epg_date); Log(epg_title); Log(epg_text[0:40]);  
-	return epg_date, epg_title, epg_text
-#----------------------
-def get_epg_Phoenix(epg_url, epgname):					# EPG-Daten ermitteln für SenderLiveListe, Phoenix
-	Log('get_epg_Phoenix: ' + epgname)		
-	#Log(epgname)
-
-	#page = HTML.ElementFromURL(epg_url, cacheTime=1, timeout=float(0.5))	# EPG-Daten laden, Cache max. 1 sec
-	page = HTML.ElementFromURL(epg_url, cacheTime=1)
-	#page = HTTP.Request(epg_url, cacheTime=1, timeout=float(1)).content # ohne xpath, Cache max. 1 sec
-	
-	liste = page.xpath("//div[@class='sendung aktiv']")	# Phoenix zeigt  EPG-Daten eindeutig für die aktuelle Sendung
-		
-	Log(liste);
-	epg_date = ''; epg_title = ''; epg_text = '';
-	try:			# manchmal ohne Kennung 'sendung aktiv'
-		element = liste[0]	# Phoenix zeigt  EPG-Daten eindeutig für die aktuelle Sendung
-	except:
-		Log('get_epg_Phoenix: Kennung >sendung aktiv< fehlt');
-		now = datetime.datetime.now()
-		epg_date = now.strftime("%H:%M")			# akt. Zeit als Fehlerhinweis
-		epg_title = 'Programmhinweis >sendung aktiv< fehlt auf ' + epg_url
-		return epg_date, epg_title, epg_text
-	
-	
-	s = HTML.StringFromElement(element)
-	Log(s[0:40])					# bei Bedarf
-	
-	epg_date =  stringextract('\"uz\">', '<', s)	# Formate: class="uz">21.45<br/>, class="uz">22.30</span>
-	epg_date =  epg_date[0:5]						# vorsichtshalber begrenzen				
-	epg_title_h1 = stringextract('<h1>', '</h1>', s)
-	epg_title_h1 = epg_title_h1.split('title=')[1]
-	epg_title = stringextract('>', '<', epg_title_h1)
-	
-	epg_text = stringextract('<em>', '</em>', s)
-	epg_text = unescape(epg_text)				# HTML-Escapezeichen  im Teasertext	
-	
-	epg_text = epg_text.decode(encoding="utf-8", errors="ignore")	
- 	Log(epg_date); Log(epg_title); Log(epg_text[0:40]);  
-	return epg_date, epg_title, epg_text
- 
 #----------------------
 def get_epg_DW(epg_url, epgname):					# EPG-Daten ermitteln für SenderLiveListe, Deutsche Welle
 	Log('get_epg_DW: ' + epgname)	
@@ -1551,6 +1494,7 @@ def SenderLiveResolution(path, title, thumb, include_container=False):
 	url_m3u8 = path
 	Log(title); Log(url_m3u8);
 
+	title = title.decode(encoding="utf-8", errors="ignore")
 	oc = ObjectContainer(view_group="InfoList", title1=title + ' Live', art=ICON)
 	oc = home(cont=oc)								# Home-Button
 	
@@ -1854,7 +1798,7 @@ def RadioAnstalten(path, title,sender,thumbs):
 	
 	if len(oc) < 1:	      		# keine Radiostreams gefunden		
 		Log('oc = 0, keine Radiostreams gefunden') 		 
-		msgH = 'keine Radiostreams bei ' + title + ' gefunden/verfuegbar' 
+		msgHg = 'keine Radiostreams bei ' + title + ' gefunden/verfuegbar' 
 		msg =  'keine Radiostreams bei ' + title + ' gefunden/verfuegbar, ' + 'Seite: ' + path
 		return ObjectContainer(header=msgH, message=msg)	# bricht Auswertung für Anstalt komplett ab							
 				
@@ -2356,6 +2300,8 @@ def Parseplaylist(container, url_m3u8, thumb):		# master.m3u8 auswerten, Url mus
 #	aktuelle Lösung (ab April 2016):  Sonderbehandlung Arte in Arteplaylists
 #  2. Besonderheit: fast identische URL's zu einer Auflösung (...av-p.m3u8, ...av-b.m3u8) Unterschied n.b.
 #  3. Besonderheit: für manche Sendungen nur 1 Qual.-Stufe verfügbar (Bsp. Abendschau RBB)
+#  4. Besonderheit: manche Playlists enthalten zusätzlich abgeschaltete Links, gekennzeichnet mit #. Fehler Webplayer:
+#		 crossdomain access denied. Keine Probleme mit OpenPHT und VLC
 
   Log ('Parseplaylist: ' + url_m3u8)
   if url_m3u8.find('http://') == 0:			# URL oder lokale Datei?
@@ -2386,7 +2332,7 @@ def Parseplaylist(container, url_m3u8, thumb):		# master.m3u8 auswerten, Url mus
 		# als Titel wird die  < angezeigt (Sender ist als thumb erkennbar)
 		if int(Bandwith) >  64000: 	# < 64000 vermutl. nur Audio, als Video keine Wiedergabe 
 			title='Bandbreite ' + Bandwith
-			if url.find('#') >= 0:	# Bsp. saarl. Rundf.: Kennzeichnung für abgeschalteten Link
+			if url.find('#') >= 0:	# Bsp. SR = Saarl. Rundf.: Kennzeichnung für abgeschalteten Link
 				Resolution = 'zur Zeit nicht verfügbar!'
 			if Bandwith == BandwithOld:	# Zwilling -Test
 				title = 'Bandbreite ' + Bandwith + ' (2. Alternative)'
@@ -2394,7 +2340,7 @@ def Parseplaylist(container, url_m3u8, thumb):		# master.m3u8 auswerten, Url mus
 				pos = url_m3u8.rfind('/')				# m3u8-Dateinamen abschneiden
 				url = url_m3u8[0:pos+1] + url 			# Basispfad + relativer Pfad
 				
-			Log(url); Log(title); Log(thumb); 
+			Log(url); Log(title); Log(thumb); Log('Resolution')
 			container.add(CreateVideoStreamObject(url=url, title=title, # Einbettung in DirectoryObject zeigt bei
 				summary= Resolution, meta=Codecs, thumb=thumb, 			# AllConnect trotzdem nur letzten Eintrag
 				rtmp_live='nein', resolution=''))
@@ -2487,7 +2433,7 @@ def blockextract(blockmark, mString):  	# extrahiert Blöcke begrenzt durch bloc
 	#	Rückgabe in Liste. Letzter Block reicht bis Ende mString (undefinierte Länge)
 	#	Verwendung, wenn xpath nicht funktioniert (Bsp. Tabelle EPG-Daten www.dw.com/de/media-center/live-tv/s-100817)
 	rlist = []				
-	if 	blockmark == '' or 	mString == '':
+	if 	blockmark == '' or 	mString == '' or mString.find(blockmark) < 0:
 		return rlist
 	pos2 = 1
 	while pos2 > 0:

@@ -22,7 +22,7 @@
 		<genre>TV</genre>
 		<info>daserste</info>
 		<date>11.06.2016</date>
-		<epg_url>http://www.ardmediathek.de/tv/Das-Erste/live?kanal=208</epg_url>
+		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28106</epg_url>
 		<epg_schema>ARD</epg_schema>
 		<fanart></fanart>
 	</item>
@@ -45,9 +45,9 @@
 		<genre>TV</genre>
 		<info>kinderkanal</info>
 		<date>11.06.2016</date>
-		<epg_url>http://www.kika.de/videos/livestream/livestream110.html</epg_url>
-		<epg_schema>KiKA</epg_schema>
-		<epgname>KiKA</epgname>
+		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28008</epg_url>
+		<epg_schema>ARD</epg_schema>
+		<epgname>kika</epgname>
 		<fanart></fanart>
 	</item>
 	<item>
@@ -58,7 +58,7 @@
 		<genre>TV</genre>
 		<info>arte</info>
 		<date>11.06.2016</date>
-		<epg_url>http://www.ardmediathek.de/tv/ARTE/live?kanal=5880</epg_url>
+		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28724</epg_url>
 		<epg_schema>ARD</epg_schema>
 		<fanart></fanart>
 	</item>
@@ -69,7 +69,7 @@
 		<genre>TV</genre>
 		<info>3sat</info>
 		<date>11.06.2016</date>
-		<epg_url>http://www.ardmediathek.de/tv/3sat/live?kanal=5900</epg_url>
+		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28007</epg_url>
 		<epg_schema>ARD</epg_schema>
 		<fanart></fanart>
 	</item>
@@ -86,7 +86,7 @@
 		<fanart></fanart>
 	</item>
 	<item>
-		<title>ZDFkultur</title>
+		<title>ZDFkultur - Sender wurde am 30.09.2016 eingestellt!</title>
 		<link>http://zdf1112-lh.akamaihd.net/i/de11_v1@392881/master.m3u8</link>
 		<thumbnail>tv-zdf-kultur.png</thumbnail>
 		<genre>TV</genre>
@@ -116,7 +116,7 @@
 		<genre>TV</genre>
 		<info>ardalpha</info>
 		<date>11.06.2016</date>
-		<epg_url>http://www.ardmediathek.de/tv/ARD-alpha/live?kanal=5868</epg_url>
+		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28487</epg_url>
 		<epg_schema>ARD</epg_schema>
 		<fanart></fanart>
 	</item>
@@ -127,9 +127,9 @@
 		<genre>TV</genre>
 		<info>phoenix</info>
 		<date>11.06.2016</date>
-		<epg_url>https://www.phoenix.de/content/phoenix/tv_programm/1</epg_url>
+		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28725</epg_url>
 		<epg_url2>http://programm.ard.de/TV/phoenix?datum=</epg_url2>
-		<epg_schema>Phoenix</epg_schema>
+		<epg_schema>ARD</epg_schema>
 		<fanart></fanart>
 	</item>
 	<item>
@@ -139,7 +139,7 @@
 		<genre>TV</genre>
 		<info>tagesschau</info>
 		<date>11.06.2016</date>
-		<epg_url>http://www.ardmediathek.de/tv/tagesschau24/live?kanal=5878</epg_url>
+		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28721</epg_url>
 		<epg_schema>ARD</epg_schema>
 		<fanart></fanart>
 	</item>
@@ -171,7 +171,7 @@
 		<genre>TV</genre>
 		<info>br</info>
 		<date>11.06.2016</date>
-		<epg_url>http://www.ardmediathek.de/tv/BR-Fernsehen-Nord/live?kanal=21537244</epg_url>
+		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28107</epg_url>
 		<epg_schema>ARD</epg_schema>
 		<fanart></fanart>
 	</item>
@@ -182,7 +182,7 @@
 		<genre>TV</genre>
 		<info>hr</info>
 		<date>11.06.2016</date>
-		<epg_url>http://www.ardmediathek.de/tv/hr-fernsehen/live?kanal=5884</epg_url>
+		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28108</epg_url>
 		<epg_schema>ARD</epg_schema>
 		<fanart></fanart>
 	</item>
@@ -193,7 +193,7 @@
 		<genre>TV</genre>
 		<info>mdr_s</info>
 		<date>11.06.2016</date>
-		<epg_url>http://www.ardmediathek.de/tv/MDR-SACHSEN/live?kanal=1386804</epg_url>
+		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28428</epg_url>
 		<epg_schema>ARD</epg_schema>
 		<fanart></fanart>
 	</item>
@@ -204,7 +204,7 @@
 		<genre>TV</genre>
 		<info>mdr_sa</info>
 		<date>11.06.2016</date>
-		<epg_url>http://www.ardmediathek.de/tv/MDR-SACHSEN-ANHALT/live?kanal=1386898</epg_url>
+		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28429</epg_url>
 		<epg_schema>ARD</epg_schema>
 		<fanart></fanart>
 	</item>
@@ -215,7 +215,7 @@
 		<genre>TV</genre>
 		<info>mdr_th</info>
 		<date>11.06.2016</date>
-		<epg_url>http://www.ardmediathek.de/tv/MDR-TH%C3%9CRINGEN/live?kanal=1386988</epg_url>
+		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28430</epg_url>
 		<epg_schema>ARD</epg_schema>
 		<fanart></fanart>
 	</item>	
@@ -226,7 +226,7 @@
 		<genre>TV</genre>
 		<info>ndr_hh</info>
 		<date>11.06.2016</date>
-		<epg_url>http://www.ardmediathek.de/tv/NDR-Hamburg/live?kanal=21518348</epg_url>
+		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28225</epg_url>
 		<epg_schema>ARD</epg_schema>
 		<fanart></fanart>
 	</item>
@@ -237,7 +237,7 @@
 		<genre>TV</genre>
 		<info>ndr_mv</info>
 		<date>11.06.2016</date>
-		<epg_url>http://www.ardmediathek.de/tv/NDR-Mecklenburg-Vorpommern/live?kanal=21518350</epg_url>
+		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28224</epg_url>
 		<epg_schema>ARD</epg_schema>
 		<fanart></fanart>
 	</item>
@@ -248,7 +248,7 @@
 		<genre>TV</genre>
 		<info>ndr_ns</info>
 		<date>11.06.2016</date>
-		<epg_url>http://www.ardmediathek.de/tv/NDR-Niedersachsen/live?kanal=21518352</epg_url>
+		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28226</epg_url>
 		<epg_schema>ARD</epg_schema>
 		<fanart></fanart>
 	</item>
@@ -259,7 +259,7 @@
 		<genre>TV</genre>
 		<info>ndr_sh</info>
 		<date>11.06.2016</date>
-		<epg_url>http://www.ardmediathek.de/tv/NDR-Schleswig-Holstein/live?kanal=21518354</epg_url>
+		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28227</epg_url>
 		<epg_schema>ARD</epg_schema>
 		<fanart></fanart>
 	</item>
@@ -270,7 +270,7 @@
 		<genre>TV</genre>
 		<info>rbb_ber</info>
 		<date>11.06.2016</date>
-		<epg_url>http://www.ardmediathek.de/tv/rbb-Fernsehen-Berlin/live?kanal=21518358</epg_url>
+		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28206</epg_url>
 		<epg_schema>ARD</epg_schema>
 		<fanart></fanart>
 	</item>
@@ -281,7 +281,7 @@
 		<genre>TV</genre>
 		<info>rbb_br</info>
 		<date>11.06.2016</date>
-		<epg_url>http://www.ardmediathek.de/tv/rbb-Fernsehen-Brandenburg/live?kanal=21518356</epg_url>
+		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28205</epg_url>
 		<epg_schema>ARD</epg_schema>
 		<fanart></fanart>
 	</item>
@@ -292,7 +292,7 @@
 		<genre>TV</genre>
 		<info>sr</info>
 		<date>11.06.2016</date>
-		<epg_url>http://www.ardmediathek.de/tv/SR-Fernsehen/live?kanal=5870</epg_url>
+		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28486</epg_url>
 		<epg_schema>ARD</epg_schema>
 		<fanart></fanart>
 	</item>
@@ -303,7 +303,7 @@
 		<genre>TV</genre>
 		<info>swr</info>
 		<date>11.06.2016</date>
-		<epg_url>http://www.ardmediathek.de/tv/SWR-Rheinland-Pfalz/live?kanal=5872</epg_url>
+		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28113</epg_url>
 		<epg_schema>ARD</epg_schema>
 		<fanart></fanart>
 	</item>
@@ -314,7 +314,7 @@
 		<genre>TV</genre>
 		<info>WDR</info>
 		<date>11.06.2016</date>
-		<epg_url>http://www.ardmediathek.de/tv/WDR-Fernsehen/live?kanal=5902</epg_url>
+		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28111</epg_url>
 		<epg_schema>ARD</epg_schema>
 		<fanart></fanart>
 	</item>
