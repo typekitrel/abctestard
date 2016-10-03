@@ -15,8 +15,8 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.4.3'		
-VDATE = '01.10.2016'
+VERSION =  '2.4.4'		
+VDATE = '03.10.2016'
 # todo: Abgleich mit Uhrzeit, Regional-Live-TV-Sender anpassen (Doppel nur bei SWR BW + RP)
 #	Details zur Sendung über Sendungs-ID
 
@@ -223,8 +223,8 @@ def Main_ARD(name):
 		summary='', tagline='TV', thumb=R(ICON_ARD_VERP)))
 	oc.add(DirectoryObject(key=Callback(SendungenAZ, name='Sendungen 0-9 | A-Z'), title='Sendungen A-Z',
 		summary='', tagline='TV', thumb=R(ICON_ARD_AZ)))
-	oc.add(DirectoryObject(key=Callback(Einslike, title='Einslike'), title='Einslike',
-		summary='', tagline='TV', thumb=R(ICON_ARD_EINSLIKE)))
+	oc.add(DirectoryObject(key=Callback(Einslike, title='Einslike'), title='Einslike - abgeschaltet!',
+		summary='Internetseiten sind geschlossen.', tagline='TV', thumb=R(ICON_ARD_EINSLIKE)))
 
 	title = 'Ausgewählte Filme'.decode(encoding="utf-8", errors="ignore")
 	oc.add(DirectoryObject(key=Callback(ARDMore, title=title), title=title,
@@ -574,7 +574,8 @@ def transl_wtag(tag):	# Wochentage engl./deutsch wg. Problemen mit locale-Settin
 	# Ablauf: 	
 	#			hier: Rubrik-Liste zusammenstellen mit Links zu den "mehr"-Seiten, 
 	#			weiter wie Verpasst Woche (->PageControl -> SinglePage -> Parseplaylist -> CreateVideoClipObject
-def Einslike(title):	
+def Einslike(title):
+	return 	Main_ARD("ARD Mediathek")	# 03.10.2016 Sender von ARD abgeschaltet
 	title2='Einslike - Videos fuer Musik und Lifestyle in der ARD Mediathek'
 	oc = ObjectContainer(view_group="InfoList", title1=NAME, title2=title2, art = ObjectContainer.art)
 	oc = home(cont=oc)								# Home-Button

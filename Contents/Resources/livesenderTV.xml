@@ -5,7 +5,7 @@
   <description>Livestreams</description>
   <thumbnail></thumbnail>
   <fanart></fanart>
-  <date>11.06.2016 rols1</date>
+  <date>01.10.2016 rols1</date>
   <credits>Gammel, Grafiken @Arauco (Plex-Forum)</credits>
  </channels_info>
  
@@ -21,7 +21,7 @@
 		<thumbnail>tv-das-erste.png</thumbnail>
 		<genre>TV</genre>
 		<info>daserste</info>
-		<date>11.06.2016</date>
+		<date>01.10.2016</date>
 		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28106</epg_url>
 		<epg_schema>ARD</epg_schema>
 		<fanart></fanart>
@@ -44,7 +44,7 @@
 		<thumbnail>tv-kika.png</thumbnail>
 		<genre>TV</genre>
 		<info>kinderkanal</info>
-		<date>11.06.2016</date>
+		<date>01.10.2016</date>
 		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28008</epg_url>
 		<epg_schema>ARD</epg_schema>
 		<epgname>kika</epgname>
@@ -57,9 +57,21 @@
 		<1link>http://www.arte.tv/arte_vp/index.php?json_url=https://api.arte.tv/api/player/v1/livestream/de?autostart=1&lang=de_DE&config=arte_tvguide_live</1link>
 		<genre>TV</genre>
 		<info>arte</info>
-		<date>11.06.2016</date>
+		<date>01.10.2016</date>
 		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28724</epg_url>
 		<epg_schema>ARD</epg_schema>
+		<fanart></fanart>
+	</item>
+	<item>
+		<title>ARD ONE</title>
+		<link>http://wdr_einsfestival-lh.akamaihd.net/i/wdr_einsfestival@328300/master.m3u8</link>
+		<thumbnail>tv-one.png</thumbnail>
+		<genre>TV</genre>
+		<info>ARD ONE</info>
+		<date>03.10.2016</date>
+		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28722</epg_url>
+		<epg_schema>ARD</epg_schema>
+		<epgname>one</epgname>
 		<fanart></fanart>
 	</item>
 	<item>
@@ -68,7 +80,7 @@
 		<thumbnail>tv-3sat.png</thumbnail>
 		<genre>TV</genre>
 		<info>3sat</info>
-		<date>11.06.2016</date>
+		<date>01.10.2016</date>
 		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28007</epg_url>
 		<epg_schema>ARD</epg_schema>
 		<fanart></fanart>
@@ -83,18 +95,6 @@
 		<epg_url>http://www.zdf.de/epg/programm-4100.html</epg_url>
 		<epg_schema>ZDF</epg_schema>
 		<epgname>zdf_neo</epgname>
-		<fanart></fanart>
-	</item>
-	<item>
-		<title>ZDFkultur - Sender wurde am 30.09.2016 eingestellt!</title>
-		<link>http://zdf1112-lh.akamaihd.net/i/de11_v1@392881/master.m3u8</link>
-		<thumbnail>tv-zdf-kultur.png</thumbnail>
-		<genre>TV</genre>
-		<info>zdf_kultur</info>
-		<date>11.06.2016</date>
-		<epg_url>http://www.zdf.de/epg/programm-4100.html</epg_url>
-		<epg_schema>ZDF</epg_schema>
-		<epgname>zdf_kultur</epgname>
 		<fanart></fanart>
 	</item>
 	<item>
@@ -115,7 +115,7 @@
 		<thumbnail>tv-alpha.png</thumbnail>
 		<genre>TV</genre>
 		<info>ardalpha</info>
-		<date>11.06.2016</date>
+		<date>01.10.2016</date>
 		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28487</epg_url>
 		<epg_schema>ARD</epg_schema>
 		<fanart></fanart>
@@ -126,7 +126,7 @@
 		<thumbnail>tv-phoenix.png</thumbnail>
 		<genre>TV</genre>
 		<info>phoenix</info>
-		<date>11.06.2016</date>
+		<date>01.10.2016</date>
 		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28725</epg_url>
 		<epg_url2>http://programm.ard.de/TV/phoenix?datum=</epg_url2>
 		<epg_schema>ARD</epg_schema>
@@ -138,7 +138,7 @@
 		<thumbnail>tv-tagesschau.png</thumbnail>
 		<genre>TV</genre>
 		<info>tagesschau</info>
-		<date>11.06.2016</date>
+		<date>01.10.2016</date>
 		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28721</epg_url>
 		<epg_schema>ARD</epg_schema>
 		<fanart></fanart>
@@ -170,7 +170,7 @@
 		<thumbnail>tv-br.png</thumbnail>
 		<genre>TV</genre>
 		<info>br</info>
-		<date>11.06.2016</date>
+		<date>01.10.2016</date>
 		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28107</epg_url>
 		<epg_schema>ARD</epg_schema>
 		<fanart></fanart>
@@ -181,7 +181,7 @@
 		<thumbnail>tv-hr.png</thumbnail>
 		<genre>TV</genre>
 		<info>hr</info>
-		<date>11.06.2016</date>
+		<date>01.10.2016</date>
 		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28108</epg_url>
 		<epg_schema>ARD</epg_schema>
 		<fanart></fanart>
@@ -192,7 +192,7 @@
 		<thumbnail>tv-mdr-sachsen.png</thumbnail>
 		<genre>TV</genre>
 		<info>mdr_s</info>
-		<date>11.06.2016</date>
+		<date>01.10.2016</date>
 		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28428</epg_url>
 		<epg_schema>ARD</epg_schema>
 		<fanart></fanart>
@@ -203,7 +203,7 @@
 		<thumbnail>tv-mdr-sachsen-anhalt.png</thumbnail>
 		<genre>TV</genre>
 		<info>mdr_sa</info>
-		<date>11.06.2016</date>
+		<date>01.10.2016</date>
 		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28429</epg_url>
 		<epg_schema>ARD</epg_schema>
 		<fanart></fanart>
@@ -214,7 +214,7 @@
 		<thumbnail>tv-mdr-thueringen.png</thumbnail>
 		<genre>TV</genre>
 		<info>mdr_th</info>
-		<date>11.06.2016</date>
+		<date>01.10.2016</date>
 		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28430</epg_url>
 		<epg_schema>ARD</epg_schema>
 		<fanart></fanart>
@@ -225,7 +225,7 @@
 		<thumbnail>tv-ndr-hamburg.png</thumbnail>
 		<genre>TV</genre>
 		<info>ndr_hh</info>
-		<date>11.06.2016</date>
+		<date>01.10.2016</date>
 		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28225</epg_url>
 		<epg_schema>ARD</epg_schema>
 		<fanart></fanart>
@@ -236,7 +236,7 @@
 		<thumbnail>tv-ndr-mecklenburg-vorpommern.png</thumbnail>
 		<genre>TV</genre>
 		<info>ndr_mv</info>
-		<date>11.06.2016</date>
+		<date>01.10.2016</date>
 		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28224</epg_url>
 		<epg_schema>ARD</epg_schema>
 		<fanart></fanart>
@@ -247,7 +247,7 @@
 		<thumbnail>tv-ndr-niedersachsen.png</thumbnail>
 		<genre>TV</genre>
 		<info>ndr_ns</info>
-		<date>11.06.2016</date>
+		<date>01.10.2016</date>
 		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28226</epg_url>
 		<epg_schema>ARD</epg_schema>
 		<fanart></fanart>
@@ -258,7 +258,7 @@
 		<thumbnail>tv-ndr-schleswig-holstein.png</thumbnail>
 		<genre>TV</genre>
 		<info>ndr_sh</info>
-		<date>11.06.2016</date>
+		<date>01.10.2016</date>
 		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28227</epg_url>
 		<epg_schema>ARD</epg_schema>
 		<fanart></fanart>
@@ -269,7 +269,7 @@
 		<thumbnail>tv-rbb-berlin.png</thumbnail>
 		<genre>TV</genre>
 		<info>rbb_ber</info>
-		<date>11.06.2016</date>
+		<date>01.10.2016</date>
 		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28206</epg_url>
 		<epg_schema>ARD</epg_schema>
 		<fanart></fanart>
@@ -280,7 +280,7 @@
 		<thumbnail>tv-rbb-brandenburg.png</thumbnail>
 		<genre>TV</genre>
 		<info>rbb_br</info>
-		<date>11.06.2016</date>
+		<date>01.10.2016</date>
 		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28205</epg_url>
 		<epg_schema>ARD</epg_schema>
 		<fanart></fanart>
@@ -291,7 +291,7 @@
 		<thumbnail>tv-sr.png</thumbnail>
 		<genre>TV</genre>
 		<info>sr</info>
-		<date>11.06.2016</date>
+		<date>01.10.2016</date>
 		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28486</epg_url>
 		<epg_schema>ARD</epg_schema>
 		<fanart></fanart>
@@ -302,7 +302,7 @@
 		<thumbnail>tv-swr.png</thumbnail>
 		<genre>TV</genre>
 		<info>swr</info>
-		<date>11.06.2016</date>
+		<date>01.10.2016</date>
 		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28113</epg_url>
 		<epg_schema>ARD</epg_schema>
 		<fanart></fanart>
@@ -313,7 +313,7 @@
 		<thumbnail>tv-wdr.png</thumbnail>
 		<genre>TV</genre>
 		<info>WDR</info>
-		<date>11.06.2016</date>
+		<date>01.10.2016</date>
 		<epg_url>http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/?datum=%s&sender=28111</epg_url>
 		<epg_schema>ARD</epg_schema>
 		<fanart></fanart>

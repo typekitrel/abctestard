@@ -2,6 +2,10 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------			gelöschte Releases: älter als  1.3		
 
+03.10.2016 2.4.4	TV-Livestreams (Live-Sender Überregional): Ersatz des eingestellten Senders ZDFkultur durch den
+			ARD-Sender ONE (löst bei der ARD EinsFestival ab).
+			Hinweis auf eingestellten Sender EinsLike im Menü Main_ARD + Rücksprung zum Menü in Funktion EinsLike.
+			
 01.10.2016 2.4.3 EPG-Daten ARD-Sender: Umstellung auf neue Quelle http://programm.ard.de/TV/ARD-Mediathek/Programmkalender/.
 			Anpassungen der Datensätze in livesenderTV.xml (Feld epg_url). Anpassungen in Funktion SenderLiveListe
 			und get_epg_ARD. Wegfall der Funktionen get_epg_KIKA und get_epg_Phoenix.
