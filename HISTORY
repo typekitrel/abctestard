@@ -2,6 +2,22 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------			gelöschte Releases: älter als  1.3		
 
+02.11.2016 2.4.9	Fertigstellung neue Funktionen ZDF_Verpasst, ZDFSendungenAZ, SendungenAZList, ZDF_Sendungen, 
+			Rubriken, RubrikSingle, ZDF_get_contentRubriken
+
+31.10.2016 2.4.8	nicht auf Github
+			Fertigstellung neue Funktionen ZDF_Search, ZDF_get_content, GetZDFVideoSources.
+
+30.10.2016 2.4.7	nicht auf Github
+			Aufdecken der Videoquellen (Chrome-Tools) + diverse Tests der verfügbaren Formate. 
+			Neue Funktion GetZDFVideoSources.
+
+29.10.2016 2.4.6	nicht auf Github
+			ZDF-Funktionen: Erfassung neue Struktur + Konzept für Codierung. Neue Funktionsrümpfe.
+
+28.10.2016 2.4.5	Hauptmenü: Hinweis auf Ausfall aller ZDF-Funktionen (nach aktuellem Relaunch
+			des ZDF-Mediathek-Internetangebots)
+
 03.10.2016 2.4.4	TV-Livestreams (Live-Sender Überregional): Ersatz des eingestellten Senders ZDFkultur durch den
 			ARD-Sender ONE (löst bei der ARD EinsFestival ab).
 			Hinweis auf eingestellten Sender EinsLike im Menü Main_ARD + Rücksprung zum Menü in Funktion EinsLike.

@@ -7,6 +7,7 @@ import os 			# u.a. Behandlung von Pfadnamen
 import re			# u.a. Reguläre Ausdrücke, z.B. in CalculateDuration
 import time
 import datetime
+import json			# json -> Textstrings
 
 import locale
 
@@ -15,10 +16,11 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.4.4'		
-VDATE = '03.10.2016'
-# todo: Abgleich mit Uhrzeit, Regional-Live-TV-Sender anpassen (Doppel nur bei SWR BW + RP)
-#	Details zur Sendung über Sendungs-ID
+VERSION =  '2.4.9'		
+VDATE = '02.11.2016'
+
+# todo: zum Problem crossdomain-error Test mit headers (s.o.) in PlayVideo
+#	
 
 
 # (c) 2016 by Roland Scholz, rols1@gmx.de
@@ -89,29 +91,6 @@ ICON_CANCEL = "icon-error.png"
 ICON_MEHR = "icon-mehr.png"
 
 
-THUMBNAIL = [									# Vorgaben für THUMBNAILS in ZDF_BEITRAG_DETAILS, Suchergebnissen
-  '946x532',									# 946x532 teilw. als Fallback gekennzeichnet
-  '644x363',
-  '672x378',
-  '644x363',
-  '485x273',
-  '476x268',
-  '404x227', 
-  '404x227',
-]
-
-SENDUNGENAZ = [									# ZDF A-Z
-  ['ABC', 'A', 'C'],
-  ['DEF', 'D', 'F'],
-  ['GHI', 'G', 'I'],
-  ['JKL', 'J', 'L'],
-  ['MNO', 'M', 'O'],
-  ['PQRS', 'P', 'S'],
-  ['TUV', 'T', 'V'],
-  ['WXYZ', 'W', 'Z'],
-  ['0-9', '0-9', '0-9']
-]
-
 BASE_URL = 'http://www.ardmediathek.de'
 ARD_VERPASST = '/tv/sendungVerpasst?tag='		# ergänzt mit 0, 1, 2 usw.
 ARD_AZ = '/tv/sendungen-a-z?buchstabe='			# ergänzt mit 0-9, A, B, usw.
@@ -128,16 +107,13 @@ ARD_Filme = 'http://www.ardmediathek.de/tv/Ausgew%C3%A4hlte-Filme/mehr?documentI
 ARD_FilmeAll = 'http://www.ardmediathek.de/tv/Alle-Filme/mehr?documentId=33594630'
 ARD_RadioAll = 'http://www.ardmediathek.de/radio/live?genre=Alle+Genres&kanal=Alle'
 
-ZDF					= 'http://www.zdf.de/ZDFmediathek/hauptnavigation/startseite?flash=off'	# Mediathek ohne Flash
-ZDF_RUBRIKEN      	= 'http://www.zdf.de/ZDFmediathek/xmlservice/web/rubriken'
-ZDF_THEMEN        	= 'http://www.zdf.de/ZDFmediathek/xmlservice/web/themen'
-ZDF_MEISTGESEHEN	= 'http://www.zdf.de/ZDFmediathek/xmlservice/web/meistGesehen?id=_GLOBAL&maxLength=10&offset=%s'
-ZDF_SENDUNGEN_AZ	= 'http://www.zdf.de/ZDFmediathek/xmlservice/web/sendungenAbisZ?characterRangeStart=%s&characterRangeEnd=%s&detailLevel=2'
-ZDF_SENDUNG_VERPASST = 'http://www.zdf.de/ZDFmediathek/xmlservice/web/sendungVerpasst?enddate=%s&maxLength=50&startdate=%s&offset=%s'
-ZDF_SENDUNG         = 'http://www.zdf.de/ZDFmediathek/xmlservice/web/aktuellste?id=%s&maxLength=25&offset=%s'
-ZDF_BEITRAG        	= 'http://www.zdf.de/ZDFmediathek/beitrag/%s/%s'
-ZDF_BEITRAG_DETAILS = 'http://www.zdf.de/ZDFmediathek/xmlservice/web/beitragsDetails?id=%s'
-ZDF_Search_PATH		= 'https://www.zdf.de/ZDFmediathek/xmlservice/web/detailsSuche?searchString=%s&maxLength=%s&offset=%s'
+
+# Relaunch der Mediathek beim ZDF ab 28.10.2016: xml-Service abgeschaltet
+ZDF_BASE				= 'https://www.zdf.de'
+# ZDF_Search_PATH: ganze Sendungen, sortiert nach Datum
+ZDF_Search_PATH	 = 'https://www.zdf.de/suche?q=%s&from=&to=&sender=alle+Sender&attrs=&contentTypes=episode&sortBy=date&page=%s'
+ZDF_SENDUNG_VERPASST 	= 'https://www.zdf.de/sendung-verpasst?airtimeDate=%s'  # Datumformat 2016-10-31
+ZDF_SENDUNGEN_AZ		= 'https://www.zdf.de/sendungen-a-z?group=%s'			# group-Format: a,b, ... 0-9: group=0+-+9
 
 
 REPO_NAME = 'Plex-Plugin-ARDMediathek2016'
@@ -189,8 +165,14 @@ def Main():
 	# folgendes DirectoryObject ist Deko für das nicht sichtbare InputDirectoryObject dahinter:
 	oc.add(DirectoryObject(key=Callback(Main_ARD, name="ARD Mediathek"), title="ARD Mediathek",
 		summary='', tagline='TV', thumb=R(ICON_MAIN_ARD)))
+		
 	oc.add(DirectoryObject(key=Callback(Main_ZDF, name="ZDF Mediathek"), title="ZDF Mediathek", 
 		summary='', tagline='TV', thumb=R(ICON_MAIN_ZDF)))
+#	oc.add(DirectoryObject(key=Callback(Main), title="Baustelle, siehe Plexforum", 
+#		summary='', tagline='TV', thumb=R(ICON_MAIN_ZDF)))
+#	oc.add(DirectoryObject(key=Callback(Test), title="Test Heute-Show", 
+#		summary='', tagline='TV', thumb=R(ICON_MAIN_ZDF)))
+		
 	oc.add(DirectoryObject(key=Callback(SenderLiveListePre, title='TV-Livestreams'), title='TV-Livestreams',
 		summary='', tagline='TV', thumb=R(ICON_MAIN_TVLIVE)))
 	oc.add(DirectoryObject(key=Callback(RadioLiveListe, path=ARD_RadioAll, title='Radio-Livestreams'), 
@@ -254,18 +236,20 @@ def Main_ZDF(name):
 	# folgendes DirectoryObject ist Deko für das nicht sichtbare InputDirectoryObject dahinter:
 	oc.add(DirectoryObject(key=Callback(Main_ZDF, name=name),title='Suche: im Suchfeld eingeben', 
 		summary='', tagline='TV', thumb=R(ICON_ZDF_SEARCH)))
-	oc.add(InputDirectoryObject(key=Callback(ZDF_Search,  channel='ZDF', s_type='video', title=u'%s' % L('Search Video')),
+	oc.add(InputDirectoryObject(key=Callback(ZDF_Search, s_type='video', title=u'%s' % L('Search Video')),
 		title=u'%s' % L('Search'), prompt=u'%s' % L('Search Video'), thumb=R(ICON_ZDF_SEARCH)))
 		
 	oc.add(DirectoryObject(key=Callback(VerpasstWoche, name=name), title="Sendung Verpasst (1 Woche)",
 		thumb=R(ICON_ZDF_VERP)))
 	oc.add(DirectoryObject(key=Callback(ZDFSendungenAZ, name="Sendungen A-Z"), title="Sendungen A-Z",
 		thumb=R(ICON_ZDF_AZ)))
-	oc.add(DirectoryObject(key=Callback(RubrikenThemen, auswahl="Rubriken"), title="Rubriken", 
+	oc.add(DirectoryObject(key=Callback(Rubriken, name="Rubriken"), title="Rubriken", 
 		thumb=R(ICON_ZDF_RUBRIKEN)))
-	oc.add(DirectoryObject(key=Callback(RubrikenThemen, auswahl="Themen"), title="Themen", thumb=R(ICON_ZDF_Themen)))
-	oc.add(DirectoryObject(key=Callback(Sendung, title="Meist Gesehen", assetId="MEISTGESEHEN"), title="Meist Gesehen",
-		thumb=R(ICON_ZDF_MEIST)))
+		
+	# nach Relaunch entfallen: 	ev. MEISTGESEHEN neu auflegen
+	#oc.add(DirectoryObject(key=Callback(RubrikenThemen, auswahl="Themen"), title="Themen", thumb=R(ICON_ZDF_Themen)))
+	#oc.add(DirectoryObject(key=Callback(Sendung, title="Meist Gesehen", assetId="MEISTGESEHEN"), title="Meist Gesehen",
+	#	thumb=R(ICON_ZDF_MEIST)))
  
 	return oc	
 #----------------------------------------------------------------
@@ -487,7 +471,7 @@ def SendungenAZ(name):		# Auflistung 0-9 (1 Eintrag), A-Z (einzeln)
 ####################################################################################################
 @route(PREFIX + '/Search')	# Suche - Verarbeitung der Eingabe
 	# Hinweis zur Suche in der Mediathek: miserabler unscharfer Algorithmus - findet alles mögliche
-def Search(channel, query=None, title=L('Search'), s_type='video', offset=0, **kwargs):
+def Search(query=None, title=L('Search'), s_type='video', offset=0, **kwargs):
 	Log('Search'); Log(query)
 	
 	name = 'Suchergebnis zu: ' + query
@@ -531,7 +515,7 @@ def VerpasstWoche(name):	# Wochenliste zeigen
 		iPath = BASE_URL + ARD_VERPASST + str(nr)
 		rdate = now - datetime.timedelta(days = nr)
 		iDate = rdate.strftime("%d.%m.%Y")		# Formate s. man strftime (3)
-		zdfDate = rdate.strftime("%d%m%y")		
+		zdfDate = rdate.strftime("%Y-%m-%d")		
 		iWeekday =  rdate.strftime("%A")
 		punkte = '.'
 		if nr == 0:
@@ -547,7 +531,7 @@ def VerpasstWoche(name):	# Wochenliste zeigen
 			oc.add(DirectoryObject(key=Callback(PageControl, title=title, path=iPath, cbKey='SinglePage'), 
 				title=title, thumb=R(ICON_ARD_VERP)))				
 		else:
-			oc.add(DirectoryObject(key=Callback(Sendung, title=title, assetId="VERPASST_"+zdfDate),	  
+			oc.add(DirectoryObject(key=Callback(ZDF_Verpasst, title=title, zdfDate=zdfDate),	  
 				title=title, thumb=R(ICON_ZDF_VERP)))
 	return oc
 #------------
@@ -1865,426 +1849,387 @@ def PlayAudio(url):				# runtime- Aufruf PlayAudio.mp3
 ####################################################################################################
 #									ZDF-Funktionen
 #
-@route(PREFIX + '/ZDF_Search')	# Suche - Verarbeitung der Eingabe
+@route(PREFIX + '/ZDF_Search')	# Suche - Verarbeitung der Eingabe. Neu ab 28.10.2016 (nach Relaunch ZDF)
 	# Hinweis zur Suche in der Mediathek: miserabler unscharfer Algorithmus - findet alles mögliche
-def ZDF_Search(channel, query=None, title=L('Search'), s_type='video', offset=0, **kwargs):
+	#	Anzahl Suchergebnisse: 25 - nicht beeinflussbar
+def ZDF_Search(query=None, title=L('Search'), s_type='video', pagenr='', **kwargs):
 	query = urllib.quote(query)
-	Log('ZDF_Search'); Log(query)
+	Log('ZDF_Search'); Log(query); Log(pagenr); 
+		
+	path = ZDF_Search_PATH % (query, pagenr)
+	Log(path)	
+	page = HTTP.Request(path, cacheTime=1).content 
+	# Log(page)	# bei Bedarf		
+	searchResult = stringextract('data-loadmore-result-count=\"', '\"', page)
+	Log(searchResult)	
 	
-	maxLength = 50
-	Log(maxLength); Log(offset); 
-	
-	path = ZDF_Search_PATH % (query, maxLength, offset)
-	Log(maxLength);Log(path)	
-	content = XML.ElementFromURL(path)
-	
-	searchResult = content.xpath('//teaserlist/searchResult/batch/text()')[0]
-	Log(content);Log(searchResult)	
-	
+	if pagenr == '':		# erster Aufruf muss '' sein
+		pagenr = 1
 	NAME = 'ZDF Mediathek'
-	name = 'Suchergebnis zu: %s (Gesamt: %s, ab %s)'  		% (urllib.unquote(query), searchResult, max(1, offset))
+	name = 'Suchergebnisse zu: %s (Gesamt: %s), Seite %s'  % (urllib.unquote(query), searchResult, pagenr)
 	name = name.decode(encoding="utf-8", errors="ignore")
 	oc = ObjectContainer(view_group="InfoList", title1=NAME, title2=name, art = ObjectContainer.art)
-	oc = home(cont=oc)								# Home-Button
-
-	if searchResult == '0':
-		msg_notfound = 'Leider kein Treffer.'
-		title = msg_notfound.decode(encoding="utf-8", errors="ignore")
-		summary = 'zurück zu ' + NAME.decode(encoding="utf-8", errors="ignore")		
-		oc.add(DirectoryObject(key=Callback(Main_ZDF, name=NAME), title=msg_notfound, 
+	oc = home(cont=oc)								# Home-Button	
+	
+	content =  blockextract('class=\"content-link\">', page)
+	Log(len(content));	
+	if len(content) == 0:										# kein Ergebnis oder allg. Fehler
+		msg_notfound = 'keine Inhalte - unbekannter Fehler' 	# sollte nicht vorkommen
+		if searchResult == '0':									# Suche OK, aber ohne Treffer
+			msg_notfound = 'Leider kein Treffer.'	
+			
+		s = 'Es ist leider ein Fehler aufgetreten.'				# ZDF-Meldung Server-Problem
+		if page.find('\"title\">' + s) >= 0:
+			msg_notfound = s + ' Bitte versuchen Sie es später noch einmal.'
+						
+		title = msg_notfound.decode(encoding="utf-8", errors="ignore")					
+		summary = 'zurück zur ' + NAME.decode(encoding="utf-8", errors="ignore")		
+		oc.add(DirectoryObject(key=Callback(Main_ZDF, name=NAME), title=title, 
 			summary=summary, tagline='TV', thumb=R(ICON_MAIN_ZDF)))
 		return oc
-	
-	teasers = content.xpath('//teaserlist/teasers/teaser')
-	# Log(teasers);
-	for teaser in teasers:
-		teaserimages = teaser.xpath('./teaserimages/teaserimage')
-		thumbfind = False
-		for image in teaserimages:
-			if thumbfind:
-				continue
-			s = XML.StringFromElement(image)
-			s = mystrip(s)
-			thumb = stringextract('http:', '</teaserimage>', s)
-			thumb = 'http:' + thumb
-			# Log(s); Log(thumb)
-			for res in THUMBNAIL:			# entweder Größe passend zur Liste oder letztes Image	
-				if thumb.find(res) > 0:
-					thumbfind = True
-					# Log(res); Log(thumb);
-					break
-
-		title = teaser.xpath('./information/title')[0].text
-		summary = teaser.xpath('./information/detail')[0].text
-		assetId = teaser.xpath('./details/assetId')[0].text
-		assetId = 'SEARCH_' + assetId
 		
-		typ = teaser.xpath('./type')[0].text
-		# hier ev. weitere geeignete Formate verwenden (Bilderserien, Themen usw.)
-		# 	getestet + nicht geeignet: einzelsendung, thema, sendung
-		if(typ !=  'video'):	
-			Log('ZDF_Search: Unsupported type ' + typ)
-			continue
-
-		airtime = teaser.xpath('./details/airtime')[0].text
-		date = Datetime.ParseDate(airtime)
-		# lengthSec = teaser.xpath('./details/lengthSec')[0].text   # nicht immer vorh. (z.B. Suche)
-		length = teaser.xpath('./details/length')[0].text
-		dauer = length		# ev. noch formatieren, Bsp.: 11 min, 00:02:27.000, oder zusätzl. <lengthSec>147</lengthSec>
-		if dauer.find('.000'):
-			dauer = dauer.split('.000')[0]
-		tagline = airtime + ' | ' + dauer
-
-		Log(assetId);Log(typ);Log(title);Log(thumb);Log(summary[0:40]);
-		summary = summary.decode(encoding="utf-8", errors="ignore")
-		tagline = tagline.decode(encoding="utf-8", errors="ignore")
-		# in Sendung wird die Suchanfrage wiederholt und der Treffer über die assetId ausgefiltert:
-		oc.add(DirectoryObject(key=Callback(Sendung, title=title, assetId=assetId, search_url=path), title=title, 
-			thumb=thumb, summary=summary, tagline=tagline))
-			
-	# auf mehr prüfen:
-	if int(offset) + int(maxLength) < int(searchResult):
-		offset = int(offset) + int(maxLength) + 1 
-		oc.add(DirectoryObject(key=Callback(ZDF_Search, channel=channel, query=query, offset=offset ), 
-			title=str("Weitere Beiträge").decode('utf-8', 'strict'), thumb=R(ICON_MEHR), summary=None))	
+	oc = ZDF_get_content(oc=oc, page=page)
+	
+	# auf mehr prüfen (Folgeseite auf content-link = Ausschlusskriterum prüfen):
+	pagenr = int(pagenr) + 1
+	path = ZDF_Search_PATH % (query, pagenr)
+	Log(pagenr); Log(path)
+	page = HTTP.Request(path, cacheTime=1).content
+	pos =  page.find('\"content-link\"')
+	if pos >= 0: 
+		title = "Weitere Beiträge".decode(encoding="utf-8", errors="ignore")
+		oc.add(DirectoryObject(key=Callback(ZDF_Search, query=query, pagenr=pagenr), 
+			title=title, thumb=R(ICON_MEHR), summary=''))	
  
 	return oc
- 
+	
+#-------------------------
+@route(PREFIX + '/ZDF_Verpasst')
+def ZDF_Verpasst(title, zdfDate):
+	Log('ZDF_Verpasst'); Log(title); Log(zdfDate)
+	oc = ObjectContainer(title2=title, view_group="List")
+	oc = home(cont=oc)								# Home-Button
+
+	path = ZDF_SENDUNG_VERPASST % zdfDate
+	page = HTTP.Request(path, cacheTime=1).content 
+	Log(path);	# Log(page)	# bei Bedarf
+			
+	oc = ZDF_get_content(oc=oc, page=page)
+	
+	return oc
+	
 ####################################################################################################
 @route(PREFIX + '/ZDFSendungenAZ')
 def ZDFSendungenAZ(name):
 	Log('ZDFSendungenAZ')
 	oc = ObjectContainer(title2=name, view_group="List")
 	oc = home(cont=oc)								# Home-Button
-
-	# A to Z
-	for page in SENDUNGENAZ:
-		oc.add(DirectoryObject(key=Callback(SendungenAZList, char=page[0]), title=page[0], thumb=R(ICON_ZDF_AZ)))
-	return oc
-
-####################################################################################################
-@route(PREFIX + '/RubrikenThemen')
-def RubrikenThemen(auswahl):
-	#auswahl = 'Rubriken'
-	Log.Debug('RubrikenThemen: ' + auswahl)
-	oc = ObjectContainer(title2='ZDF: ' + auswahl, view_group="List")
-	oc = home(cont=oc)								# Home-Button
-
-	if(auswahl == 'Rubriken'):
-		content = XML.ElementFromURL(ZDF_RUBRIKEN, cacheTime=CACHE_1HOUR)
-		#content = XML.ElementFromURL(ZDF_RUBRIKEN, cacheTime=0)	# Debug
-	elif(auswahl == 'Themen'):
-		content = XML.ElementFromURL(ZDF_THEMEN, cacheTime=CACHE_1HOUR)
-		#content = XML.ElementFromURL(ZDF_THEMEN, cacheTime=0)	# Debug
-	else:
-		raise Ex.MediaNotAvailable
-		
-	Log(content)
-	teasers = content.xpath('//teaserlist/teasers/teaser')
-	for teaser in teasers:
-		typ = teaser.xpath('./type')[0].text
-		if(typ != 'rubrik' and typ != 'topthema' and typ != 'thema'):
-			Log('RubrikenThemen: Unsupported type ' + typ)
-			continue
-      
-		for res in THUMBNAIL:
-			thumb = teaser.xpath('./teaserimages/teaserimage[@key="%s"]' % (res))[0].text
-			if thumb.find('fallback') == -1:
-				break
-      
-		title = teaser.xpath('./information/title')[0].text
-		summary = teaser.xpath('./information/detail')[0].text
-		assetId = teaser.xpath('./details/assetId')[0].text
-
-		tagline = None
-		if(typ == 'topthema'):
-			title = 'Topthema - %s' % (title)
-			tagline = 'Topthema'
-		oc.add(DirectoryObject(key=Callback(Sendung, title=title, assetId=assetId), title=title, 
-			thumb=thumb, summary=summary, tagline=tagline))
-			
-	Log(auswahl); Log(title); Log(assetId);
-	return oc
 	
+	azlist = list(string.ascii_uppercase)
+	azlist.append('0-9')
+	title = "Sendungen A-Z"
+
+	# Menü A to Z
+	for element in azlist:
+		oc.add(DirectoryObject(key=Callback(SendungenAZList, title=title, element=element), 
+			title='Sendungen mit ' + element, thumb=R(ICON_ZDF_AZ)))
+
+	return oc
+
 ####################################################################################################
-@route(PREFIX + '/SendungenAZList/{char}')
-def SendungenAZList(char):
+@route(PREFIX + '/SendungenAZList')
+def SendungenAZList(title, element):	# Sendungen zm gewählten Buchstaben
 	Log('SendungenAZList')
-	oc = ObjectContainer(title2=char, view_group="List")
+	title2='Sendungen mit ' + element
+	oc = ObjectContainer(title2=title2, view_group="List")
 	oc = home(cont=oc)								# Home-Button
 
-	for page in SENDUNGENAZ:
-		if page[0] != char:
-			continue
-		content = XML.ElementFromURL(ZDF_SENDUNGEN_AZ % (page[1], page[2]), cacheTime=CACHE_1HOUR)
-		#content = XML.ElementFromURL(ZDF_SENDUNGEN_AZ % (page[1], page[2]), cacheTime=0)	# Debug
-		teasers = content.xpath('//teaserlist/teasers/teaser')
-		for teaser in teasers:
-			for res in THUMBNAIL:
-				thumb = teaser.xpath('./teaserimages/teaserimage[@key="%s"]' % (res))[0].text
-				if thumb.find('fallback') == -1:
-					break
-      
-			title = teaser.xpath('./information/title')[0].text
-			summary = teaser.xpath('./information/detail')[0].text
-			assetId = teaser.xpath('./details/assetId')[0].text
-			oc.add(DirectoryObject(key=Callback(Sendung, title=title, assetId=assetId), title=title, 
-				thumb=thumb, summary=summary))
-  
+	group = element	
+	if element == '0-9':
+		group = '0+-+9'		# ZDF-Vorgabe
+	azPath = ZDF_SENDUNGEN_AZ % group
+	page = HTTP.Request(azPath, cacheTime=1).content 
+	Log(azPath);	# Log(page)	# bei Bedarf
+
+	oc = ZDF_get_content(oc=oc, page=page)
+	  
 	if len(oc) == 1:	# home berücksichtigen
-		return NotFound('Leer - keine Sendung(en), die mit  >' + char + '< starten')
+		return NotFound('Leer - keine Sendung(en), die mit  >' + element + '< starten')
+
+	return oc
+	
+####################################################################################################
+# 	wrapper für Mehrfachseiten aus ZDF_get_content (multi=True). Dort ist kein rekursiver Aufruf
+#	möglich (Übergabe Objectcontainer in Callback nicht möglich - kommt als String an)
+@route(PREFIX + '/ZDF_Sendungen')	
+def ZDF_Sendungen(url, title):
+	Log('ZDFSendungen')
+	oc = ObjectContainer(title2=title, view_group="List")
+	oc = home(cont=oc)								# Home-Button
+	
+	page = HTTP.Request(url, cacheTime=1).content 
+	# Log(page)	# bei Bedarf
+			
+	oc = ZDF_get_content(oc=oc, page=page)
 
 	return oc
   
 ####################################################################################################
-@route(PREFIX + '/Sendung/{assetId}', allow_sync = True)
-def Sendung(title, assetId, offset=0, search_url = None, search_mode=False):
-	Log('Sendung: ' + title); Log(assetId); Log(offset);Log(search_url);
-	oc = ObjectContainer(title2=title.decode(encoding="utf-8", errors="ignore"), view_group="InfoList")
+@route(PREFIX + '/Rubriken')
+def Rubriken(name):
+	Log('Rubriken')
+	oc = ObjectContainer(title2='ZDF: ' + name, view_group="List")
 	oc = home(cont=oc)								# Home-Button
 
-	if(assetId == 'MEISTGESEHEN'):
-		maxLength = 25	# vormals 10
-		content = XML.ElementFromURL(ZDF_MEISTGESEHEN % (offset), cacheTime=CACHE_1HOUR)
-	elif(assetId.find('VERPASST_') != -1):
-		maxLength = 50
-		Log(maxLength); 
-		d = re.search('VERPASST_([0-9]{1,6})', assetId)
-		day = d.group(1)
-		content = XML.ElementFromURL(ZDF_SENDUNG_VERPASST % (day, day, offset), cacheTime=CACHE_1HOUR)
-	elif(assetId.find('SEARCH_') != -1):	# Diese assetId werden über die URL ZDF_SENDUNG nicht gefunden
-		search_mode = True					# Ablauf: Wiederholung Suchanfrage (search_url), Ausfiltern assetId
-		maxLength = 50		# hier nur Platzhalter
-		assetId = assetId.split('SEARCH_')[1]
-		content = XML.ElementFromURL(search_url)
-	else:
-		maxLength = 25
-		content = XML.ElementFromURL(ZDF_SENDUNG % (str(assetId), offset), cacheTime=CACHE_1HOUR)
+	# zuerst holen wir uns die Rubriken von einer der Rubrikseiten:
+	path = 'https://www.zdf.de/doku-wissen'
+	page = HTTP.Request(path, cacheTime=1).content 
 
-	Log(assetId);  Log(content); 
-	try:	# Attribut additionalTeaser in Suchergebnissen n.v. 
-		more = content.xpath('//teaserlist/additionalTeaser')[0].text == 'true'
-	except:
-		more  = False
-		
-	teasers = content.xpath('//teaserlist/teasers/teaser')
-	Log(more); Log(teasers)
-	for teaser in teasers:
-		s = XML.StringFromElement(teaser)
-		# Log(s)	# bei Bedarf
-		typ = teaser.xpath('./type')[0].text
-		Log('teaser: '); Log(teaser);Log(typ);
-		teaserimages = teaser.xpath('./teaserimages/teaserimage')
-		thumbfind = False
-		for image in teaserimages:
-			if thumbfind:
-				continue
-			s = XML.StringFromElement(image)
-			s = mystrip(s)
-			thumb = stringextract('http:', '</teaserimage>', s)
-			thumb = 'http:' + thumb
-			# Log(s); Log(thumb)
-			for res in THUMBNAIL:			# entweder Größe passend zur Liste oder letztes Image	
-				if thumb.find(res) > 0:
-					thumbfind = True
-					# Log(res); Log(thumb);
-					break
-		
-		ttitle = teaser.xpath('./information/title')[0].text	
-		tsummary = teaser.xpath('./information/detail')[0].text
-		tassetId = teaser.xpath('./details/assetId')[0].text
-		Log('2154');Log(thumb);Log(typ); Log(ttitle); Log(tsummary); Log(assetId); Log(tassetId);
-		if search_mode and (assetId != tassetId):	# übergebenene assetId Suchergebnis herausfiltern
-				continue
-		
-		'''			
-		Problemfeld Video-URL:
-			Videoquellen werden im Webservice der ZDF-Mediathek über folgende URL ermittelt (Bsp.:)
-				details-Bsp.: http://www.zdf.de/ZDFmediathek/xmlservice/web/beitragsDetails?id=2739308
-			Die Auswahl ist umfangreich - häufig ca. 30 Quellen in verschiedenen Auflösungen, darunter 
-			h264-mpeg4-Videos, rtsp-Streams, vod-Streams (Video-on-Demand, Dateiendung manifest.f4m), 
-			http-Streams (Dateiendung manifest.mp4), rtmp/rtmpt-Streams (Dateiendungen .smil, .meta), 
-			MOV-Videos (QuickTime Movie, Dateiendung .mov), WebM-Videos (HTML5-Videos, Dateiendung .webm),
-			m3u8-Streaming (Playlist-Datei, Dateiendung .m3u8).
-			Zusätzliche gibt es noch eine Version für HBBTV (mit spez. Receiver) im Feld <tvUrl>.
+	listblock =  stringextract('<li class=\"dropdown-block x-left\">', 'link js-track-click icon-104_live-tv', page)
+	rubriken =  blockextract('class=\"dropdown-item', listblock)
+	
+	for rec in rubriken:
+		path = stringextract('href=\"', '\"', rec)
+		path = ZDF_BASE + path
+		title = stringextract('class=\"link-text\">', '</span>', rec)
+		title = mystrip(title)
+		if title == "Sendungen A-Z":	# Rest nicht mehr relevant
+			break
+		oc.add(DirectoryObject(key=Callback(RubrikSingle, title=title, path=path), 
+			title=title, thumb=R(ICON_ARD_RUBRIKEN)))	
+	
+	return oc
+#-------------------------
+@route(PREFIX + '/RubrikSingle')
+def RubrikSingle(title, path):
+	Log('RubrikSingle')
+	oc = ObjectContainer(title2=title, view_group="List")
+	oc = home(cont=oc)								# Home-Button
+	
+	page = HTTP.Request(path, cacheTime=1).content 
+	# Log(page)	# bei Bedarf			
+	oc = ZDF_get_contentRubriken(oc=oc, page=page)
+	
+	return oc
+	
+####################################################################################################
+@route(PREFIX + '/ZDF_get_content')
+def ZDF_get_content(oc, page):	# für ZDF_Search, ZDF_Verpasst, SendungenAZList
+	Log('ZDF_get_content'); 
+	
+	content =  blockextract('class=\"content-link\">', page)
+	Log(len(content));	
+	if len(content) == 0:										# kein Ergebnis oder allg. Fehler
+		msg_notfound = 'Leider keine Inhalte' 					# z.B. bei A-Z für best. Buchstaben 
 			
-			In ZDFMediathek V2.0 wurde die Video-URL für h264-mpeg4-Videos (basetype="h264_aac_mp4_http_na_na")
-			ermittelt. Die Server sind unterschiedlich (z.B. vdl.zdf.de, nrodl.zdf.de); einige blocken die 
-			Auslieferung (beobachtet bei  vdl.zdf.de), ev. um Downloads zu verhindern.
+		s = 'Es ist leider ein Fehler aufgetreten.'				# ZDF-Meldung Server-Problem
+		if page.find('\"title\">' + s) >= 0:
+			msg_notfound = s + ' Bitte versuchen Sie es später noch einmal.'
+						
+		title = msg_notfound.decode(encoding="utf-8", errors="ignore")					
+		summary = 'zurück zur ' + NAME.decode(encoding="utf-8", errors="ignore")		
+		oc.add(DirectoryObject(key=Callback(Main_ZDF, name=NAME), title=title, 
+			summary=summary, tagline='TV', thumb=R(ICON_MAIN_ZDF)))
+		return oc
+	
+	multi = False			# steuert Mehrfachergebnisse
+	for rec in content:
+		meta_image = stringextract('<meta itemprop=\"image\"', '>', rec)
+		if meta_image == '':									# kein meta-Bild -> nichts verwertbares
+			continue
+		thumb  = stringextract('class="m-8-9"  data-srcset="', ' ', rec)  	# Alternative Anfang rec
+		if thumb == '':														# Fallback thumb
+			thumb  = stringextract('content=\"', '\"', meta_image)
+			if thumb.find(ZDF_BASE) == -1:	 # Bsp.: "./img/bgs/zdf-typical-fallback-314x314.jpg?cb=0.18.1787"
+				thumb = ZDF_BASE + thumb[1:] # 	Fallback-Image  ohne Host
+		path =  stringextract('<a href=\"', '\"', rec)
+		path = ZDF_BASE + mystrip(path)
+		title = stringextract('Teaser:', '\"', rec)
+		title = mystrip(unescape(title))
+		
+		teaser_label = stringextract('class=\"teaser-label\"', '</div>', rec)
+		teaser_typ =  stringextract('<strong>', '</strong>', teaser_label)		
+		if teaser_typ == 'Beiträge':						# Mehrfachergebnisse ohne Datum + Uhrzeit
+			multi = True
+			teaser_count = stringextract('</span>', '<strong>', teaser_label)
+			summary = teaser_count + ' ' + teaser_typ 
+		
+		else:
+			if rec.find('class=\"video-airing\"') >= 0:		# ZDF_Search: nur Datum
+				airing = stringextract('video-airing\">', '<', rec)
+			else:			
+				teaser_label = stringextract('class=\"teaser-label\"', '</div>', rec)
+				dt1 =  stringextract('</span>', '<strong>', teaser_label)
+				dt2 =  stringextract('<strong>', '</strong>', teaser_label)
+				airing = dt1 + ' | ' + dt2 + ' Uhr'
 			
-			Wir verwenden hier vorerst nur die m3u8-Streaming-Angebote, da solche sich im Plugin ARDMediathek2016
-			bewährt haben und die offenichtlich bei jeder Sendung angeboten werden (hier: 
-			basetype="h264_aac_ts_http_m3u8_http". Bei Bedarf können später andere nachgerüstet werden.		
-		'''
-		if(typ == 'video'):
-			show = teaser.xpath('./details/originChannelTitle')[0].text
-			if(show != title):
-				ttitle = '%s - %s' % (show, ttitle)
-
-			#airtime = teaser.xpath('./details/onlineairtime')[0].text  # Archivierungszeitpunkt?
-			airtime = teaser.xpath('./details/airtime')[0].text
-			date = Datetime.ParseDate(airtime)
-			# lengthSec = teaser.xpath('./details/lengthSec')[0].text   # nicht immer vorh. (z.B. Suche)
-			length = teaser.xpath('./details/length')[0].text
-			dauer = length		# ev. noch formatieren, Bsp.: 11 min, 00:02:27.000, oder zusätzl. <lengthSec>147</lengthSec>
-			if dauer.find('.000'):
-				dauer = dauer.split('.000')[0]
-			tagline = airtime + ' | ' + dauer
-			duration = CalculateDuration(length)
-			details = XML.ElementFromURL(ZDF_BEITRAG_DETAILS % tassetId, cacheTime=CACHE_1HOUR)
-			#details = XML.ElementFromURL(ZDF_BEITRAG_DETAILS % tassetId, cacheTime=0)	# Debug
-			vtype = details.xpath('//video/type')[0].text
-			Log('vtype: ' + vtype); Log(tagline); Log(dauer); Log(duration); Log(details); 
+				video_duration = stringextract('\"video-duration\">', '</dd>', rec)
+				if video_duration:
+					airing = airing + ' | ' + video_duration
+			if teaser_typ == 'Exklusiv':					# kurze Einzelvideos, hier ohne Datum + Zeit
+				airing = teaser_typ
+			summary = airing	
+			if summary == ' |  Uhr' :				# unbrauchbar
+				summary = ''
+		
+		tagline = ''
+	
+		Log(thumb);Log(path);Log(title);Log(summary);
+		title = title.decode(encoding="utf-8", errors="ignore")
+		summary = summary.decode(encoding="utf-8", errors="ignore")
+		tagline = tagline.decode(encoding="utf-8", errors="ignore")
+		if multi == True:
+			oc.add(DirectoryObject(key=Callback(ZDF_Sendungen, url=path, title=title), 
+				title=title, thumb=thumb, summary=summary, tagline=tagline))			
+		else:
+			oc.add(DirectoryObject(key=Callback(GetZDFVideoSources, title=title, url=path, thumb=thumb), 
+				title=title, thumb=thumb, summary=summary, tagline=tagline))
 				
-			if(vtype == 'video' or vtype == 'livevideo'):  # wir verwenden nur m3u8-Dateien, falls vorhanden
-				try:	# manchmal nur im Angebot: vcmsUrl (Verweis auf Beitrag in der Mediathek)  oder tvUrl (HBBTV) 
-					#videoURL = details.xpath('//formitaet[@basetype="h264_aac_mp4_http_na_na" and quality="veryhigh" and ratio="16:9"]/url')[0].text # V 2.0
-					videoURL = details.xpath('//formitaet[@basetype="h264_aac_ts_http_m3u8_http" and quality="high"]/url')[0].text
-				except:
-					Log('vtype: ' + 'kein Video zum m3u8-Streaming gefunden')
-					break	# ohne Hinweis überspringen
-			else:
-				Log('Sendung: unkown Type ' + vtype)	
-				Log(" -> PICKED %s", videoURL)
-			
-			Log('videoURL ' +videoURL)		# OK: nrodl.zdf.de, rodl.zdf.de, geblockt: tvdl.zdf.de
-			if videoURL:		# erst master.m3u8 komplett, Auswertung einzelner Auflösungen in VideoParameterAuswahl
-				oc.add(DirectoryObject(key=Callback(VideoParameterAuswahl, tassetId=tassetId, videoURL=videoURL, 
-					title=ttitle, duration=duration,thumb=thumb, summary=tsummary), title=ttitle, thumb=thumb, 
-					summary=tsummary, tagline=tagline))
-
-		elif(typ == 'thema' or typ == 'sendung'):
-				oc.add(DirectoryObject(key=Callback(Sendung, title=ttitle, assetId=tassetId), title=ttitle, 
-					thumb=thumb, summary=tsummary))
-		elif(typ == 'imageseries_informativ'):
-				oc.add(PhotoAlbumObject(url=ZDF_BEITRAG % ('bilderserie', tassetId), title=ttitle, 
-					summary=tsummary, thumb=thumb))
-					
-	
-	Log(len(oc)); Log(more); Log(offset); Log(maxLength); 
-	#Somehow the webservice does not support an offset over 100	
-	if more and int(offset) + maxLength <= 100:
-		oc.add(NextPageObject(key=Callback(Sendung, title=title, assetId=assetId, offset=str(int(offset)+maxLength)), 
-			title=str("Weitere Beiträge").decode('utf-8', 'strict'), summary=None, thumb=R(ICON_MEHR)))
 	return oc
+	
+####################################################################################################
+@route(PREFIX + '/ZDF_get_contentRubriken')
+def ZDF_get_contentRubriken(oc, page):	# für Rubriken - ähnlich, aber div. Abweichungen zu ZDF_get_content 
+	Log('ZDF_get_content'); 
+	
+	content =  blockextract('class=\"b-cluster-teaser', page)
+	Log(len(content));	
+	if len(content) == 0:										# kein Ergebnis oder allg. Fehler
+		msg_notfound = 'Leider keine Inhalte' 					# z.B. bei A-Z für best. Buchstaben 
+			
+		s = 'Es ist leider ein Fehler aufgetreten.'				# ZDF-Meldung Server-Problem
+		if page.find('\"title\">' + s) >= 0:
+			msg_notfound = s + ' Bitte versuchen Sie es später noch einmal.'
+						
+		title = msg_notfound.decode(encoding="utf-8", errors="ignore")					
+		summary = 'zurück zur ' + NAME.decode(encoding="utf-8", errors="ignore")		
+		oc.add(DirectoryObject(key=Callback(Main_ZDF, name=NAME), title=title, 
+			summary=summary, tagline='TV', thumb=R(ICON_MAIN_ZDF)))
+		return oc
+	
+	multi = False			# steuert Mehrfachergebnisse - bis 2.11.2016 ohne Relevanz
+	for rec in content:
+		# Log(rec)  # bei Bedarf
+		meta_image = stringextract('<meta itemprop=\"image\"', '>', rec)
+		if meta_image == '':									# kein meta-Bild -> nichts verwertbares
+			continue
+		thumb  = stringextract('class="m-8-9"  data-srcset="', ' ', rec)  	# Alternative Anfang rec
+		if thumb == '':														# Fallback thumb
+			thumb  = stringextract('class=\"b-plus-button m-small', '\"', meta_image)
+			if thumb.find(ZDF_BASE) == -1:	 # Bsp.: "./img/bgs/zdf-typical-fallback-314x314.jpg?cb=0.18.1787"
+				thumb = ZDF_BASE + thumb[1:] # 	Fallback-Image  ohne Host
+			
+		summary = stringextract('itemprop=\"description\">', '</p>', rec)
+		summary =  mystrip(summary)
+		plusbar = stringextract('<a href=\"', 'data-tracking', rec)		# kompakte Beschreibung, ohne thumb
+		path =  stringextract('plusbar-url=\"', '\"', plusbar)
+		title = stringextract('plusbar-title=\"', '\"', plusbar)
+		title = unescape(title)						
+		tagline = ''
 
-#--------------------------------------------------------------------------------------------
-@route(PREFIX + '/VideoParameterAuswahl', allow_sync = True)
-	# duration für CreateVideoStreamObject nicht benötigt, ev. bei Bedarf für andere Videoformate
-def VideoParameterAuswahl(videoURL, title, tassetId, duration, thumb, summary):
-	Log('VideoParameterAuswahl:' + videoURL); 
+		Log(thumb);Log(path);Log(title);Log(summary);
+		title = title.decode(encoding="utf-8", errors="ignore")
+		summary = summary.decode(encoding="utf-8", errors="ignore")
+		tagline = tagline.decode(encoding="utf-8", errors="ignore")
+		if multi == True:
+			oc.add(DirectoryObject(key=Callback(ZDF_Sendungen, url=path, title=title), 
+				title=title, thumb=thumb, summary=summary, tagline=tagline))			
+		else:
+			oc.add(DirectoryObject(key=Callback(GetZDFVideoSources, title=title, url=path, thumb=thumb), 
+				title=title, thumb=thumb, summary=summary, tagline=tagline))
+				
+	return oc
+	
+####################################################################################################
+@route(PREFIX + '/GetZDFVideoSources')
+def GetZDFVideoSources(url, title, thumb):
+	Log('GetVideoSources'); 
 	oc = ObjectContainer(title2=title.decode(encoding="utf-8", errors="ignore"), view_group="InfoList")
 	oc = home(cont=oc)								# Home-Button
 
-	oc.add(CreateVideoStreamObject(videoURL, title=title, 	# master.m3u8 high
-		#summary='automatische Auflösung | funktioniert nicht mit allen Playern', meta='', 
-		summary='automatische Auflösung | Auswahl durch den Player', meta='', 
-		thumb=thumb, rtmp_live='nein', resolution=''))
-	oc = Parseplaylist(oc, videoURL, thumb)	# Einträge für die einzelnen Auflösungen dort zusätzlich zum
-											# Eintrag '..automatisch'
+	page = HTTP.Request(url, cacheTime=1).content 							# 1. player-Konfig. ermitteln
+	# Log(page)
+	zdfplayer = stringextract('data-module=\"zdfplayer\"', 'autoplay', page)		
+	# Log(zdfplayer)
+	player_id =  stringextract('data-zdfplayer-id=\"', '\"', zdfplayer)	
+	Log(player_id)
+	config_url = stringextract('\"config\": \"', '\"', zdfplayer)	
+	Log(config_url)
+	profile_url = stringextract('\"content\": \"', '\"', zdfplayer)	
+	# Bsp.:  "https://api.zdf.de/content/documents/heute-show-vom-21-10-2016-102.json?profile=player"
+	Log(profile_url)
 	
-	stext = 'Rueckmeldung im Plex-Forum willkommen (was läuft womit?)'
-	stext = stext.decode(encoding="utf-8", errors="ignore")
-	oc.add(DirectoryObject(key=Callback(OtherSources, tassetId=tassetId, videoURL=videoURL, title=title, 
-		duration=duration, thumb=thumb,  summary=summary), title='weitere Videos - nicht alle getestet', 
-			summary=stext, thumb=thumb))
+	config_url = ZDF_BASE + config_url 
+	page = HTTP.Request(config_url).content 								# 2. apiToken ermitteln
+	apiToken = stringextract('\"apiToken\": \"', '\"', page)
+	Log(apiToken)	
 	
-	Log(len(oc))
-	return oc
+	#headers = {'Api-Auth':"Bearer d2726b6c8c655e42b68b0db26131b15b22bd1a32", 'Host':"api.zdf.de", 'Accept-Encoding':"gzip, deflate, sdch, br", 'Accept':"application/vnd.de.zdf.v1.0+json", 'User-Agent':"Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2490.76 Mobile Safari/537.36", 'Referer':"https://www.zdf.de/comedy/heute-show/heute-show-vom-21-10-2016-102.html"}
+	# Bearer = apiToken aus https://www.zdf.de/ZDFplayer/configs/zdf/zdf2016/configuration.json 
+	#	entbehrlich: User-Agent, Referer
+	headers = {'Api-Auth':"Bearer d2726b6c8c655e42b68b0db26131b15b22bd1a32", 'Host':"api.zdf.de", 'Accept-Encoding':"gzip, deflate, sdch, br", 'Accept':"application/vnd.de.zdf.v1.0+json"}
+	request = JSON.ObjectFromURL(profile_url, headers=headers)					# 3. Playerdaten ermitteln
+	#Log(request)
+	request = str(request)				# json=dict erlaubt keine Stringsuche, json.dumps klappt hier nicht
+	request = request.decode('utf-8', 'ignore')		
+	
+	pos = request.rfind('mainVideoContent')				# 'mainVideoContent' am Ende suchen
+	request_part = request[pos+1:]
+	#Log(request_part)
+	videodat = stringextract('http://zdf.de/rels/streams/ptmd\': \'', '\',', request_part)	
+	# Bsp.: /tmd/2/portal/vod/ptmd/mediathek/161021_hsh_hsh'
+	Log(videodat)	
 
-#--------------------------------------------------------------------------------------------
-@route(PREFIX + '/OtherSources', allow_sync = True)	# weitere Videoquellen, neuer XML-Request erforderlich,
-													# da das Objekt details in Sendung nicht übergeben werden kann 
-def OtherSources(videoURL, tassetId, title, duration, thumb, summary):
-	Log('OtherSources:' + videoURL); 
-	#oc = ObjectContainer(title2=title.decode(encoding="utf-8", errors="ignore"), view_group="InfoList")
-	#oc = ObjectContainer(title2='weitere Videos - teilweise in Plex nicht lauffaehig', view_group="InfoList")
-	oc = ObjectContainer(title2='weitere Videos - nicht alle getestet', view_group="InfoList")
-	oc = home(cont=oc)								# Home-Button
-
-	#details = XML.ElementFromURL(ZDF_BEITRAG_DETAILS % tassetId, cacheTime=0)	# Debug 
-	details = XML.ElementFromURL(ZDF_BEITRAG_DETAILS % tassetId, cacheTime=CACHE_1HOUR)
+	videodat_url = 'https://api.zdf.de' + videodat							# 4. Videodaten ermitteln
+	# Bsp.: https://api.zdf.de/tmd/2/portal/vod/ptmd/mediathek/161021_hsh_hsh'
+	# 	zweite Variante mit {player} = ngplayer_2_3 : identische Datei
+	# headers = {'Api-Auth':"Bearer d2726b6c8c655e42b68b0db26131b15b22bd1a32", 'Origin':"https://www.zdf.de", 'Host':"api.zdf.de", 'Accept-Encoding':"de-DE,de;q=0.8,en-US;q=0.6,en;q=0.4", 'Accept':"application/vnd.de.zdf.v1.0+json"}
+	# headers schütz hier nicht vor Fehler "crossdomain access denied" - in VLC OK
+	#	Ursache verm.: den Links der versch. Auflösungen fehlt die Endung .m3u8 (hier: .m3u8?null=0),
+	#	der Webplayer folgt nach der Fehlermeldung nur dem ersten Link (kleinste Auflösung)
+	page = JSON.ObjectFromURL(videodat_url)					
+	page = 	json.dumps(page)					# json=dict erlaubt keine Stringsuche
+	#page = page.decode('utf-8', 'ignore')		
+	#Log(page)	
 	
-	try:	#  3GPP-Multimedia								- OK 24.05.2016
-		url = details.xpath('//formitaet[@basetype="h264_aac_3gp_http_na_na" and quality="high"]/url')[0].text
-		oc.add(CreateVideoClipObject(url=url, title=title, 
-			summary='3GPP-Multimedia-Video', meta=url, thumb=thumb, duration=duration, resolution=''))				
-	except:
-		Log('OtherSources: ' + 'Typ >h264_aac_3gp_http_na_na< nicht vorhanden')
-		
-	try:	#  RTSP (Real-Time Streaming Protocol)			- 24.05.2016 neg.: VLC, Chrome + Firefox OK (nur direkt)
-		url = details.xpath('//formitaet[@basetype="h264_aac_3gp_rtsp_na_na" and quality="high"]/url')[0].text
-		oc.add(CreateVideoClipObject(url=url, title=title, 
-			summary='RTSP (Real-Time Streaming Protocol)', meta=url, thumb=thumb, duration=duration, resolution=''))			
-	except:
-		Log('OtherSources: ' + 'Typ >h264_aac_3gp_rtsp_na_na< nicht vorhanden')
-		
-	# nicht umsetzbar (zur Zeit):
-	#	1. HDS: Link führt zu Textdatei *.f4m Video-Url nicht ableitbar
-	#		details.xpath('//formitaet[@basetype="h264_aac_f4f_http_f4m_http" and quality="high"]/url')[0].text
-		
-	#	2. SMIL (Synchronized Multimedia Integration Language) Link führt zu Textdatei *.smil Video-Url nicht ableitbar
-	#		details.xpath('//formitaet[@basetype="h264_aac_mp4_rtmp_smil_http" and quality="high"]/url')[0].text
-	
-	
-	try:	#  Metafile-Video mit RTMP-Stream				- OK 24.05.2016
-		meta_url = details.xpath('//formitaet[@basetype="h264_aac_mp4_rtmp_zdfmeta_http" and quality="high"]/url')[0].text
-		doc =  HTTP.Request(meta_url).content	# Textdatei *.meta laden
-		url =  stringextract('<default-stream-url>', '</default-stream-url>', doc)
-		oc.add(CreateVideoStreamObject(url=url, title=title, 
-			summary='Metafile-Video mit RTMP-Stream', meta=url, thumb=thumb, duration=duration, 
-			rtmp_live='nein', resolution=''))			
-	except:
-		Log('OtherSources: ' + 'Typ >h264_aac_mp4_rtmp_zdfmeta_http< nicht vorhanden')
-	
-	try:	#  Schleife: Auswertung für hbbtv, progressive, restriction_useragent 
-		list = details.xpath('//formitaet[@basetype="h264_aac_mp4_http_na_na" and quality="high"]')
-		Log(list)
-	except:
-		list = None	
-	if list:
-		for spez in list:
-			#Log(HTML.StringFromElement(spez))
-			Log(spez.xpath('./facets/facet/text()')[0])
-			if spez.xpath('./facets/facet/text()')[0] == "hbbtv":		# neg.: VLC, Chrome + Firefox OK (nur direkt)
-				url = spez.xpath('./url')[0].text								
-				oc.add(CreateVideoClipObject(url=url, title=title, 
-				summary='HbbTV (Hybrid broadcast broadband TV)', meta=url, thumb=thumb, duration=duration, resolution=''))							
-			if spez.xpath('./facets/facet/text()')[0] == "progressive":				# OK 24.05.2016 Web + VLC
-				url = spez.xpath('./url')[0].text
-				oc.add(CreateVideoClipObject(url=url, title=title, 
-				summary='H.264 Video - progressive ', meta=url, thumb=thumb, duration=duration, resolution=''))			
-			if spez.xpath('./facets/facet/text()')[0] == "restriction_useragent":	# OK 24.05.2016 Web + VLC
-				url = spez.xpath('./url')[0].text
-				oc.add(CreateVideoClipObject(url=url, title=title, 
-				summary='H.264 Video - restriction_useragent', meta=url, thumb=thumb, duration=duration, resolution=''))			
-			Log(url)
-
-	try:	#  mov-Videos (Apples QuickTime)					- 25.05.2016 neg.: VLC, Chrome + Firefox OK (nur direkt)
-		meta_url = details.xpath('//formitaet[@basetype="h264_aac_mp4_rtsp_mov_http" and quality="high"]/url')[0].text
-		doc =  HTTP.Request(meta_url).content	# Textdatei *.mov laden
-		pos = doc.find('rtsp://')				# 1. Zeile: RTSPtext, 2. Zeile rtsp-Url 
-		url = doc[pos:]
-		oc.add(CreateVideoClipObject(url=url, title=title, 
-		summary='mov-Videos (Apples QuickTime)', meta=url, thumb=thumb, duration=duration, resolution=''))			
-	except:
-		Log('OtherSources: ' + 'Typ >h264_aac_mp4_rtsp_mov_http< nicht vorhanden')
- 
-	try:	#  webm-Videos (Container für Audio + Video im HTML5-Standard)	- 25.05.2016 OK, BubbleUPnP neg.
-		url = details.xpath('//formitaet[@basetype="vp8_vorbis_webm_http_na_na" and quality="high"]/url')[0].text
-		oc.add(CreateVideoClipObject(url=url, title=title, 
-		summary='webm-Videos (Container im HTML5-Standard)', meta=url, thumb=thumb, duration=duration, resolution=''))			
-	except:
-		Log('OtherSources: ' + 'Typ >vp8_vorbis_webm_http_na_na< nicht vorhanden')
-	
-	Log('Anzahl Formate: ' + str(len(oc)))							
-	if len(oc) == 0:
-		summary='zurueck zur Video-Parameter-Auswahl'
-		oc.add(DirectoryObject(key=Callback(VideoParameterAuswahl, videoURL=videoURL, details=details, title=title, 
-			 duration=duration,thumb=thumb, summary=summary), title=title, thumb=thumb, 
-			 summary=summary, tagline='keine weiteren geeignete Videoquellen gefunden'))
+	thumb = "https://www.zdf.de/assets/heute-show-logo-100~314x314?cb=1477646448408"
+	title = "heute-show"
+	formitaeten = blockextract('\"formitaeten\":', page)		# Video-URL's ermitteln
+	Log(formitaeten)
+	i = 0 	# Titel-Zähler für mehrere Objekte mit dem selben Titel (manche Clients verwerfen solche)
+	for rec in formitaeten:							# Datensätze gesamt
+		# Log(rec)		# bei Bedarf
+		typ = stringextract('\"type\": \"', '\"', rec)
+		facets = stringextract('\"facets\": ', ',', rec)	# Bsp.: "facets": ["progressive"]
+		facets = facets.replace('\"', '')
+		Log(typ); Log(facets)
+		if typ == "h264_aac_f4f_http_f4m_http":				# manifest.f4m auslassen
+			continue
+		if typ == "h264_aac_ts_http_m3u8_http":				#z.Z. wg. crossdomain-Error abgeschaltet
+			continue
 			
-	return oc
+		audio = blockextract('\"audio\":', rec)		# Datensätze je Typ
+		# Log(audio)	# bei Bedarf
+		for audiorec in audio:		
+			url = stringextract('\"uri\": \"',  '\"', audiorec)			# URL
+			quality = stringextract('\"quality\": \"',  '\"', audiorec)
+			Log(url); Log(quality);
+			i = i +1
+			if url:
+				if url.find('master.m3u8') > 0:		# 
+					summary = 'Qualität: ' + quality + ' | Typ: ' + typ + ' [Stream]'	
+					summary = summary.decode(encoding="utf-8", errors="ignore")
+					oc.add(CreateVideoStreamObject(url=url, title=str(i) + '. ' + title, rtmp_live='nein',
+						summary=summary, meta='meta' + str(i), thumb=thumb, resolution='unbekannt'))	
+				else:
+					summary = 'Qualität: ' + quality + ' | Typ: ' + typ + ' ' + facets 
+					summary = summary.decode(encoding="utf-8", errors="ignore")
+					oc.add(CreateVideoClipObject(url=url, title=str(i) + '. ' + title, 
+						summary=summary, meta='meta', thumb=thumb, duration='duration', resolution='unbekannt'))	
+
+	return oc	
+	
+#--------------------------------------------------------------------------------------------
 
 ####################################################################################################
 #									Hilfsfunktionen
@@ -2305,10 +2250,12 @@ def Parseplaylist(container, url_m3u8, thumb):		# master.m3u8 auswerten, Url mus
 #		 crossdomain access denied. Keine Probleme mit OpenPHT und VLC
 
   Log ('Parseplaylist: ' + url_m3u8)
-  if url_m3u8.find('http://') == 0:			# URL oder lokale Datei?
+  # seit ZDF-Relaunch 28.10.2016 dort nur noch https
+  if url_m3u8.find('http://') == 0 or url_m3u8.find('https://') == 0:		# URL oder lokale Datei?	
 	playlist = HTTP.Request(url_m3u8).content  # als Text, nicht als HTML-Element
-  else:
+  else:													
 	playlist = Resource.Load(url_m3u8) 
+  Log(playlist)
 	 
   lines = playlist.splitlines()
   #Log(lines)
