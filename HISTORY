@@ -2,6 +2,10 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------			gelöschte Releases: älter als  1.3		
 
+03.11.2016 2.5.0	EPG-Daten: neue Funktion get_epg_ZDF für Live-TV-Sender ZDF, ZDFinfo, ZDFneo
+			Cachebeschränkung aufgehoben + dadurch EPG-Daten beschleunigt
+			Test-Vorbelegung für heute-show (Titel + Bild) in GetZDFVideoSources wieder entfernt	
+
 02.11.2016 2.4.9	Fertigstellung neue Funktionen ZDF_Verpasst, ZDFSendungenAZ, SendungenAZList, ZDF_Sendungen, 
 			Rubriken, RubrikSingle, ZDF_get_contentRubriken
 

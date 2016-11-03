@@ -16,8 +16,8 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.4.9'		
-VDATE = '02.11.2016'
+VERSION =  '2.5.0'		
+VDATE = '03.11.2016'
 
 # todo: zum Problem crossdomain-error Test mit headers (s.o.) in PlayVideo
 #	
@@ -246,7 +246,7 @@ def Main_ZDF(name):
 	oc.add(DirectoryObject(key=Callback(Rubriken, name="Rubriken"), title="Rubriken", 
 		thumb=R(ICON_ZDF_RUBRIKEN)))
 		
-	# nach Relaunch entfallen: 	ev. MEISTGESEHEN neu auflegen
+	# nach ZDF-Relaunch entfallen: 	ev. MEISTGESEHEN neu auflegen
 	#oc.add(DirectoryObject(key=Callback(RubrikenThemen, auswahl="Themen"), title="Themen", thumb=R(ICON_ZDF_Themen)))
 	#oc.add(DirectoryObject(key=Callback(Sendung, title="Meist Gesehen", assetId="MEISTGESEHEN"), title="Meist Gesehen",
 	#	thumb=R(ICON_ZDF_MEIST)))
@@ -1297,7 +1297,8 @@ def get_epg_ARD(epg_url, listname):					# EPG-Daten ermitteln für SenderLiveLis
 	Log('get_epg_ARD: ' + listname)
 	epg_date = ''; epg_title=''; epg_text=''
 
-	page = HTTP.Request(epg_url, cacheTime=1, timeout=float(3)).content # ohne xpath, Cache max. 3 sec
+	# 	Abruf ohne Cachebeschränkung - Seiten enthalten Tagesdaten
+	page = HTTP.Request(epg_url, timeout=float(3)).content # ohne xpath, Timeout max. 3 sec
 	# Log(page)		# nur bei Bedarf		
 	liste = blockextract('class=\"sendungslink\"', page)  
 	Log(len(liste));	# bei Bedarf
@@ -1347,74 +1348,42 @@ def get_epg_ARD(epg_url, listname):					# EPG-Daten ermitteln für SenderLiveLis
 	return epg_date, epg_title, epg_text
 #----------------------
 def get_epg_ZDF(epg_url, epgname):					# EPG-Daten ermitteln für SenderLiveListe, ZDF
-	Log('get_epg_ZDF: ' + epgname)		
+	Log('get_epg_ZDF: ' + epgname)					#	neu nach ZDF-Relaunch 28.10.2016
 	#Log(epgname)
 
-	page = HTML.ElementFromURL(epg_url, cacheTime=1, timeout=float(1))	# EPG-Daten laden, Cache max. 1 sec
-	#page = HTTP.Request(epg_url, cacheTime=1, timeout=float(1)).content # ohne xpath, Cache max. 1 sec
-	x = ('{0} broadcasts'.format(epgname))			# xpath Bsp.: <td class="zdf_kultur broadcasts">
-	xdef = (('//*[@class="{0}"]').format(x))
-	Log(xdef)
-	xpath_liste = page.xpath(xdef)					# EPG-Daten für ganzen Tag
-	Log(epgname); #Log(xpath_liste)						# bei Bedarf
+	page = HTTP.Request(epg_url).content 	# ohne Cachebeschränkung - Seiten enthalten Tagesdaten
+	epgZDF =  blockextract('class="b-epg-timeline timeline-', page)	# Datensätze für ZDF, ZDFinfo, ZDFneo
+	# Log(epgZDF); 				# bei Bedarf
+	for epg_rec in epgZDF:
+		mark = 'timeline-' + epgname
+		if epg_rec.find(mark) >= 0:		# Name hinter timeline-, Bsp.: timeline-ZDFneo
+			break
+	# Log(epg_rec)		# bei Bedarf
+	rec_liste = blockextract('class=\"overlay-link-title\"', epg_rec)	# Datensätze für epgname
+	# Log(rec_liste)	# bei Bedarf
 	
 	now = datetime.datetime.now()
-	nowtime = now.strftime("%H:%M")		# ZDF: <p class="time">23:10</p>
+	nowtime = now.strftime("%H:%M")		  	# ZDF-Format, Bsp.: 05:50
 	epg_date = ''; epg_title = ''; epg_text = '';
 	
-	liste = []
-	for i in range (len(xpath_liste)):		# bereinigen - häufig sowas: <td class="zdf broadcasts"></td>
-		element = xpath_liste[i]		  
-		element_str = HTML.StringFromElement(element)
-		element_str = mystrip(element_str)
-		if len(element_str) > 50:
-			liste.append(element_str)	
-
-	for i in range (len(liste)):
-		element_str = liste[i]		  
-		starttime = stringextract('<p class=\"time\">', '</p>', element_str)	# aktuelle Sendezeit
-		
-		try:
-			element_next_str = liste[i+1]	# nächste Sendezeit			  
-			endtime = stringextract('<p class=\"time\">', '</p>', element_next_str)	# nächste Sendezeit	
-		except:
-			endtime = '23:59'			# Listenende
-					
-		#Log(element_str); 				# bei Bedarf
-		#Log(element_next_str)			# bei Bedarf
-		#Log('starttime ' + starttime); Log('endtime ' + endtime); Log('nowtime ' + nowtime);	# bei Bedarf
+	for rec in rec_liste:				# schön: Zeitangabe enthält Anfang + Ende, Bsp.: 05:50 - 06:35
+		# Log(rec)	# bei Bedarf
+		sendtime = 	stringextract('class=\"time\">', '</span>', rec)	
+		starttime = sendtime[0:4]
+		endtime = sendtime[8:]					
+		# Log('starttime ' + starttime); Log('endtime ' + endtime); Log('nowtime ' + nowtime);	# bei Bedarf
 		
 		if nowtime >= starttime and nowtime < endtime:
 			#  	Beschreib.: h3, (h5), (p, p). h3= titel, h5= Untertitel, p=Herkunft/Jahr 
-			epg_date = starttime
-			epg_date = starttime + ' - ' + endtime
-			pos = element_str.find(starttime)			# auf Seite wiederfinden + ausschneiden, enthält col_r
-			pos2 = element_str.find('broadcasts\">', pos +1) 
-			try:
-				col_r =  element_str[pos:pos2]
-			except:
-				col_r =  element_str[pos:]			
-			
-			epg_title = stringextract('<h3>', '</h3>', col_r)	# h5, h3 immmer vorhanden, h3 manchmal leer			
-			etext = stringextract('<h5>', '</h5>', col_r)
-			Log(epg_date); Log(epg_title); Log(etext); 
-			if col_r.find('<p>'):
-				etext2 = stringextract('<p>', '</p>', col_r)			# Text?
-				lpos = col_r.find('/p')
-				#Log(lpos)					# bei Bedarf
-				etext3 = ''
-				if col_r.find('<p>', lpos + 2) >0 :						# noch weiterer Text?
-					col_r = col_r[lpos +  2:]
-					#Log(col_r)						
-					etext3 = stringextract('<p>', '</p>', col_r)	
-			if etext:
-				if etext2: 
-					etext = etext + ' | ' + etext2
-					if etext3: 
-						etext = etext2 + ' | ' + etext3
-			epg_text = etext
-			epg_text = unescape(epg_text)		
-			
+			epg_date = sendtime	
+			epg_cat = 	stringextract('link-category\">', '<span', rec)		
+			epg_title = stringextract('</span></span>', '</a>', rec)
+			epg_title = mystrip(epg_title)		# mit Zeilenumbruch	
+			# etext = stringextract('</span></span>', '</h5>', rec)  # weitere Infos fehlen, ev. in plusbar?
+			if epg_cat:
+				epg_title = epg_cat + ' | ' + epg_title				# Kat. + Titel zusammenfassen
+			Log(epg_date); Log(epg_title); # Log(etext); 
+			epg_title = unescape(epg_title); 	epg_text = unescape(epg_text)			
 			break												# fertig mit 'Jetzt'
 						
 	epg_text = epg_text.decode(encoding="utf-8", errors="ignore")	
@@ -1424,7 +1393,7 @@ def get_epg_ZDF(epg_url, epgname):					# EPG-Daten ermitteln für SenderLiveList
 def get_epg_DW(epg_url, epgname):					# EPG-Daten ermitteln für SenderLiveListe, Deutsche Welle
 	Log('get_epg_DW: ' + epgname)	
 	#page = HTML.ElementFromURL(epg_url, cacheTime=1)
-	page = HTTP.Request(epg_url, cacheTime=1, timeout=float(1)).content #  nur Stringsuche
+	page = HTTP.Request(epg_url, timeout=float(1)).content #  nur Stringsuche
 	
 	# xpath n.m., da <td class="time"> auch ohne Zeitangabe vorh., Zeitangaben + Sprachen überschneiden sich
 	# liste =  re.findall("td class=\"time\">(.*?)</td>\s+?", page)	# falsche Ergebnisse wg. o.g. Überschneidung 
@@ -1849,7 +1818,7 @@ def PlayAudio(url):				# runtime- Aufruf PlayAudio.mp3
 ####################################################################################################
 #									ZDF-Funktionen
 #
-@route(PREFIX + '/ZDF_Search')	# Suche - Verarbeitung der Eingabe. Neu ab 28.10.2016 (nach Relaunch ZDF)
+@route(PREFIX + '/ZDF_Search')	# Suche - Verarbeitung der Eingabe. Neu ab 28.10.2016 (nach ZDF-Relaunch)
 	# Hinweis zur Suche in der Mediathek: miserabler unscharfer Algorithmus - findet alles mögliche
 	#	Anzahl Suchergebnisse: 25 - nicht beeinflussbar
 def ZDF_Search(query=None, title=L('Search'), s_type='video', pagenr='', **kwargs):
@@ -2192,8 +2161,6 @@ def GetZDFVideoSources(url, title, thumb):
 	#page = page.decode('utf-8', 'ignore')		
 	#Log(page)	
 	
-	thumb = "https://www.zdf.de/assets/heute-show-logo-100~314x314?cb=1477646448408"
-	title = "heute-show"
 	formitaeten = blockextract('\"formitaeten\":', page)		# Video-URL's ermitteln
 	Log(formitaeten)
 	i = 0 	# Titel-Zähler für mehrere Objekte mit dem selben Titel (manche Clients verwerfen solche)
@@ -2229,8 +2196,6 @@ def GetZDFVideoSources(url, title, thumb):
 
 	return oc	
 	
-#--------------------------------------------------------------------------------------------
-
 ####################################################################################################
 #									Hilfsfunktionen
 def Parseplaylist(container, url_m3u8, thumb):		# master.m3u8 auswerten, Url muss komplett sein
@@ -2378,6 +2343,7 @@ def teilstring(zeile, startmarker, endmarker):  		# rfind: endmarker=letzte Fund
   return teils 
 #----------------------------------------------------------------  
 def blockextract(blockmark, mString):  	# extrahiert Blöcke begrenzt durch blockmark aus mString
+	#	blockmark bleibt Bestandteil der Rückgabe
 	#	Rückgabe in Liste. Letzter Block reicht bis Ende mString (undefinierte Länge)
 	#	Verwendung, wenn xpath nicht funktioniert (Bsp. Tabelle EPG-Daten www.dw.com/de/media-center/live-tv/s-100817)
 	rlist = []				
