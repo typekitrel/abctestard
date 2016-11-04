@@ -16,8 +16,8 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.5.0'		
-VDATE = '03.11.2016'
+VERSION =  '2.5.1'		
+VDATE = '04.11.2016'
 
 # todo: zum Problem crossdomain-error Test mit headers (s.o.) in PlayVideo
 #	
@@ -1827,7 +1827,7 @@ def ZDF_Search(query=None, title=L('Search'), s_type='video', pagenr='', **kwarg
 		
 	path = ZDF_Search_PATH % (query, pagenr)
 	Log(path)	
-	page = HTTP.Request(path, cacheTime=1).content 
+	page = HTTP.Request(path).content 
 	# Log(page)	# bei Bedarf		
 	searchResult = stringextract('data-loadmore-result-count=\"', '\"', page)
 	Log(searchResult)	
@@ -1880,9 +1880,9 @@ def ZDF_Verpasst(title, zdfDate):
 	oc = home(cont=oc)								# Home-Button
 
 	path = ZDF_SENDUNG_VERPASST % zdfDate
-	page = HTTP.Request(path, cacheTime=1).content 
+	page = HTTP.Request(path).content 
 	Log(path);	# Log(page)	# bei Bedarf
-			
+
 	oc = ZDF_get_content(oc=oc, page=page)
 	
 	return oc
@@ -1917,7 +1917,7 @@ def SendungenAZList(title, element):	# Sendungen zm gewählten Buchstaben
 	if element == '0-9':
 		group = '0+-+9'		# ZDF-Vorgabe
 	azPath = ZDF_SENDUNGEN_AZ % group
-	page = HTTP.Request(azPath, cacheTime=1).content 
+	page = HTTP.Request(azPath).content 
 	Log(azPath);	# Log(page)	# bei Bedarf
 
 	oc = ZDF_get_content(oc=oc, page=page)
@@ -1936,7 +1936,7 @@ def ZDF_Sendungen(url, title):
 	oc = ObjectContainer(title2=title, view_group="List")
 	oc = home(cont=oc)								# Home-Button
 	
-	page = HTTP.Request(url, cacheTime=1).content 
+	page = HTTP.Request(url).content 
 	# Log(page)	# bei Bedarf
 			
 	oc = ZDF_get_content(oc=oc, page=page)
@@ -1971,22 +1971,31 @@ def Rubriken(name):
 #-------------------------
 @route(PREFIX + '/RubrikSingle')
 def RubrikSingle(title, path):
-	Log('RubrikSingle')
+	Log('RubrikSingle'); Log(path)
 	oc = ObjectContainer(title2=title, view_group="List")
 	oc = home(cont=oc)								# Home-Button
 	
 	page = HTTP.Request(path, cacheTime=1).content 
 	# Log(page)	# bei Bedarf			
-	oc = ZDF_get_contentRubriken(oc=oc, page=page)
+	oc = ZDF_get_content(oc=oc, page=page)
 	
 	return oc
 	
 ####################################################################################################
-@route(PREFIX + '/ZDF_get_content')
-def ZDF_get_content(oc, page):	# für ZDF_Search, ZDF_Verpasst, SendungenAZList
+@route(PREFIX + '/ZDF_get_content')	# von RubrikSingle
+#	Die Erkennung von Mehrfachseiten (multi=true) ist leider nicht allen Fällen möglich. Bsp.:
+#	Liveticker, Bilderserien usw. werden ohne bes. Kennung hier angezeigt. Bis auf Weiteres werden
+#	die Folgeseiten mit Fehlermeldung abgefangen (nach Test auf Videos) 
+
+def ZDF_get_content(oc, page):	# für Rubriken div. Abweichungen zu ZDF_get_content 
 	Log('ZDF_get_content'); 
-	
-	content =  blockextract('class=\"content-link\">', page)
+
+# todo: bildeserien Bsp.: https://www.zdf.de/sport/uefa-champions-league/fussball-champions-league-gruppenphase-vierter-spieltag-dienstag-bilderserie-100.html
+#	von https://www.zdf.de/sport
+#	Fehler ab: Bundesliga: Liveticker und Statistiken
+#			https://www.zdf.de/sport/fussball-bundesliga-ergebnisse-und-liveticker-100.html
+
+	content =  blockextract('class=\"artdirect\"', page)
 	Log(len(content));	
 	if len(content) == 0:										# kein Ergebnis oder allg. Fehler
 		msg_notfound = 'Leider keine Inhalte' 					# z.B. bei A-Z für best. Buchstaben 
@@ -2001,84 +2010,11 @@ def ZDF_get_content(oc, page):	# für ZDF_Search, ZDF_Verpasst, SendungenAZList
 			summary=summary, tagline='TV', thumb=R(ICON_MAIN_ZDF)))
 		return oc
 	
-	multi = False			# steuert Mehrfachergebnisse
-	for rec in content:
-		meta_image = stringextract('<meta itemprop=\"image\"', '>', rec)
-		if meta_image == '':									# kein meta-Bild -> nichts verwertbares
-			continue
-		thumb  = stringextract('class="m-8-9"  data-srcset="', ' ', rec)  	# Alternative Anfang rec
-		if thumb == '':														# Fallback thumb
-			thumb  = stringextract('content=\"', '\"', meta_image)
-			if thumb.find(ZDF_BASE) == -1:	 # Bsp.: "./img/bgs/zdf-typical-fallback-314x314.jpg?cb=0.18.1787"
-				thumb = ZDF_BASE + thumb[1:] # 	Fallback-Image  ohne Host
-		path =  stringextract('<a href=\"', '\"', rec)
-		path = ZDF_BASE + mystrip(path)
-		title = stringextract('Teaser:', '\"', rec)
-		title = mystrip(unescape(title))
-		
-		teaser_label = stringextract('class=\"teaser-label\"', '</div>', rec)
-		teaser_typ =  stringextract('<strong>', '</strong>', teaser_label)		
-		if teaser_typ == 'Beiträge':						# Mehrfachergebnisse ohne Datum + Uhrzeit
-			multi = True
-			teaser_count = stringextract('</span>', '<strong>', teaser_label)
-			summary = teaser_count + ' ' + teaser_typ 
-		
-		else:
-			if rec.find('class=\"video-airing\"') >= 0:		# ZDF_Search: nur Datum
-				airing = stringextract('video-airing\">', '<', rec)
-			else:			
-				teaser_label = stringextract('class=\"teaser-label\"', '</div>', rec)
-				dt1 =  stringextract('</span>', '<strong>', teaser_label)
-				dt2 =  stringextract('<strong>', '</strong>', teaser_label)
-				airing = dt1 + ' | ' + dt2 + ' Uhr'
-			
-				video_duration = stringextract('\"video-duration\">', '</dd>', rec)
-				if video_duration:
-					airing = airing + ' | ' + video_duration
-			if teaser_typ == 'Exklusiv':					# kurze Einzelvideos, hier ohne Datum + Zeit
-				airing = teaser_typ
-			summary = airing	
-			if summary == ' |  Uhr' :				# unbrauchbar
-				summary = ''
-		
-		tagline = ''
-	
-		Log(thumb);Log(path);Log(title);Log(summary);
-		title = title.decode(encoding="utf-8", errors="ignore")
-		summary = summary.decode(encoding="utf-8", errors="ignore")
-		tagline = tagline.decode(encoding="utf-8", errors="ignore")
-		if multi == True:
-			oc.add(DirectoryObject(key=Callback(ZDF_Sendungen, url=path, title=title), 
-				title=title, thumb=thumb, summary=summary, tagline=tagline))			
-		else:
-			oc.add(DirectoryObject(key=Callback(GetZDFVideoSources, title=title, url=path, thumb=thumb), 
-				title=title, thumb=thumb, summary=summary, tagline=tagline))
-				
-	return oc
-	
-####################################################################################################
-@route(PREFIX + '/ZDF_get_contentRubriken')
-def ZDF_get_contentRubriken(oc, page):	# für Rubriken - ähnlich, aber div. Abweichungen zu ZDF_get_content 
-	Log('ZDF_get_content'); 
-	
-	content =  blockextract('class=\"b-cluster-teaser', page)
-	Log(len(content));	
-	if len(content) == 0:										# kein Ergebnis oder allg. Fehler
-		msg_notfound = 'Leider keine Inhalte' 					# z.B. bei A-Z für best. Buchstaben 
-			
-		s = 'Es ist leider ein Fehler aufgetreten.'				# ZDF-Meldung Server-Problem
-		if page.find('\"title\">' + s) >= 0:
-			msg_notfound = s + ' Bitte versuchen Sie es später noch einmal.'
-						
-		title = msg_notfound.decode(encoding="utf-8", errors="ignore")					
-		summary = 'zurück zur ' + NAME.decode(encoding="utf-8", errors="ignore")		
-		oc.add(DirectoryObject(key=Callback(Main_ZDF, name=NAME), title=title, 
-			summary=summary, tagline='TV', thumb=R(ICON_MAIN_ZDF)))
-		return oc
-	
-	multi = False			# steuert Mehrfachergebnisse - bis 2.11.2016 ohne Relevanz
 	for rec in content:
 		# Log(rec)  # bei Bedarf
+		teaser_cat= ''; actionDetail = ''; genre = ''; summary = ''; duration = ''
+		multi = False			# steuert Mehrfachergebnisse 
+		airing = ''
 		meta_image = stringextract('<meta itemprop=\"image\"', '>', rec)
 		if meta_image == '':									# kein meta-Bild -> nichts verwertbares
 			continue
@@ -2088,15 +2024,85 @@ def ZDF_get_contentRubriken(oc, page):	# für Rubriken - ähnlich, aber div. Abw
 			if thumb.find(ZDF_BASE) == -1:	 # Bsp.: "./img/bgs/zdf-typical-fallback-314x314.jpg?cb=0.18.1787"
 				thumb = ZDF_BASE + thumb[1:] # 	Fallback-Image  ohne Host
 			
-		summary = stringextract('itemprop=\"description\">', '</p>', rec)
-		summary =  mystrip(summary)
-		plusbar = stringextract('<a href=\"', 'data-tracking', rec)		# kompakte Beschreibung, ohne thumb
+		# plusbar-Auswertung:	
+		plusbar = stringextract('data-module=\"plusbar\"', '</div>', rec) # kompakte Beschreibung, ohne thumb
+		# Log(plusbar)	# bei Bedarf
+		if plusbar == '':	# Satz könnte auf andere Inhalte zeigen
+			continue			
 		path =  stringextract('plusbar-url=\"', '\"', plusbar)
-		title = stringextract('plusbar-title=\"', '\"', plusbar)
-		title = unescape(title)						
-		tagline = ''
+		plusbar_title = stringextract('plusbar-title=\"', '\"', plusbar)	# Bereichs-, nicht Einzeltitel, nachrangig
+		plusbar_title = unescape(plusbar_title)				
 
-		Log(thumb);Log(path);Log(title);Log(summary);
+		# multi- und Teaser-Behandlung:	
+		teaser_label = stringextract('class=\"teaser-label\"', '</div>', rec)
+		teaser_typ =  stringextract('<strong>', '</strong>', teaser_label)
+		if 	teaser_label:
+			dt1 =  stringextract('</span>', '<strong>', teaser_label)   
+			dt2 =  stringextract('<strong>', '</strong>', teaser_label)
+			Log(teaser_label);Log(teaser_typ);
+			Log(dt1); Log(dt2);
+			
+		if teaser_typ == 'Beiträge':		# Mehrfachergebnisse ohne Datum + Uhrzeit
+			multi = True
+			summary = dt1 + teaser_typ 		# Anzahl Beiträge
+			
+		if 	teaser_label.find('class=\"icon-301_clock') >= 0:							# Wochentag + Uhrzeit
+			airing = dt1 + ' | ' + dt2 + ' Uhr'
+		if 	teaser_label.find('class=\"icon-302_countdown') >= 0:						# Countdown
+			airing = dt1 + ' ' + dt2
+			
+		Log(airing)		
+		subscription = stringextract('subscription=\"', '\"', plusbar)		
+		# Log(subscription)
+		if subscription == 'true':			# 				
+			multi = True
+			teaser_count = stringextract('</span>', '<strong>', teaser_label)	# bei Beiträgen
+			stage_title = stringextract('class=\"stage-title\"', '</h1>', rec)  
+			summary = teaser_count + ' ' + teaser_typ 
+
+		# Auswertung Datum + Uhrzeit
+		if rec.find('class=\"vid-content\"') >= 0:				
+			video_datum = stringextract('video-airing\">', '<', rec)	# Video-Datum		
+			duration = stringextract('video-duration\">', '<', rec)		# Video-Länge
+			if duration:
+				airing = airing + ' | ' + duration
+			
+		# teaser_cat. div. Formate, Bsp.: <span class="teaser-cat" itemprop="genre">
+		teaser_cat = stringextract('class=\"teaser-cat\"', '</span>', rec)
+		teaser_cat = teaser_cat.replace('>', "")
+		teaser_cat = teaser_cat.replace('itemprop=\"genre\"', "")	
+		teaser_cat = teaser_cat.strip()
+		
+		href_title = stringextract('<a href=\"', '>', rec)		# href-link hinter teaser-cat kann Titel enthalten
+		href_title = stringextract('title="', '\"', href_title)
+		href_title = unescape(href_title)
+		# actionDetail = stringextract('|Teaser:', '\"', rec)  # |Teaser: gehört zum Folgesatz!
+		genre = stringextract('itemprop=\"genre\">', '</span>', rec)
+		genre = genre.strip()	
+		description = stringextract('itemprop=\"description\">', '</p>', rec)
+		description = description.strip()	
+		description = unescape(description)
+		
+		title = teaser_cat
+		if href_title:				
+			title = title + ' | ' + href_title		
+		if title == '':				
+			title = plusbar_title	# nachrangig, z.B. Zeitbereich: Morgens 5:30 - 12:00
+		title = unescape(title)
+		title = title.strip()
+		#if teaser_cat:					# 
+		#	title = teaser_cat + ': ' + title		# Kategory, z.B.: Serien | Heldt
+
+		if multi == True:			
+			tagline = 'Folgeseiten'
+		else:
+			tagline = airing
+		
+		if description:
+			summary = description
+			
+		Log(teaser_cat);Log(actionDetail);Log(genre);Log(description);			
+		Log(thumb);Log(path);Log(title);Log(summary);Log(multi);
 		title = title.decode(encoding="utf-8", errors="ignore")
 		summary = summary.decode(encoding="utf-8", errors="ignore")
 		tagline = tagline.decode(encoding="utf-8", errors="ignore")
@@ -2112,21 +2118,22 @@ def ZDF_get_contentRubriken(oc, page):	# für Rubriken - ähnlich, aber div. Abw
 ####################################################################################################
 @route(PREFIX + '/GetZDFVideoSources')
 def GetZDFVideoSources(url, title, thumb):
-	Log('GetVideoSources'); 
+	Log('GetVideoSources'); Log(url)
 	oc = ObjectContainer(title2=title.decode(encoding="utf-8", errors="ignore"), view_group="InfoList")
 	oc = home(cont=oc)								# Home-Button
 
-	page = HTTP.Request(url, cacheTime=1).content 							# 1. player-Konfig. ermitteln
+	page = HTTP.Request(url).content 							# 1. player-Konfig. ermitteln
 	# Log(page)
-	zdfplayer = stringextract('data-module=\"zdfplayer\"', 'autoplay', page)		
-	# Log(zdfplayer)
-	player_id =  stringextract('data-zdfplayer-id=\"', '\"', zdfplayer)	
-	Log(player_id)
-	config_url = stringextract('\"config\": \"', '\"', zdfplayer)	
-	Log(config_url)
+	zdfplayer = stringextract('data-module=\"zdfplayer\"', 'autoplay', page)			
+	player_id =  stringextract('data-zdfplayer-id=\"', '\"', zdfplayer)		
+	config_url = stringextract('\"config\": \"', '\"', zdfplayer)		
 	profile_url = stringextract('\"content\": \"', '\"', zdfplayer)	
 	# Bsp.:  "https://api.zdf.de/content/documents/heute-show-vom-21-10-2016-102.json?profile=player"
-	Log(profile_url)
+	Log(zdfplayer); Log(player_id); Log(config_url); Log(profile_url)
+	if zdfplayer == '':
+		msgH='Fehler auf Seite\r' + url
+		msg = msgH  + ':  kein Video gefunden'
+		return ObjectContainer(header=msgH, message=msg)		
 	
 	config_url = ZDF_BASE + config_url 
 	page = HTTP.Request(config_url).content 								# 2. apiToken ermitteln
@@ -2391,7 +2398,7 @@ def repl_char(cut_char, line):	# problematische Zeichen in Text entfernen, wenn 
 #----------------------------------------------------------------  	
 def unescape(line):	# HTML-Escapezeichen in Text entfernen, bei Bedarf erweitern. ARD auch &#039; statt richtig &#39;
 	line_ret = (line.replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">")
-		.replace("&#39;", "'").replace("&#039;", "'").replace("&quot;", '"'))
+		.replace("&#39;", "'").replace("&#039;", "'").replace("&quot;", '"').replace("&#x27;", "'"))
 	# Log(line_ret)		# bei Bedarf
 	return line_ret	
 #----------------------------------------------------------------  	
