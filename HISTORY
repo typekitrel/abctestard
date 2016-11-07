@@ -2,6 +2,13 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------			gelöschte Releases: älter als  1.3		
 
+07.11.2016 2.5.2	ZDF-Bereich: Unterstützung für mehrteilige Suchbegriffe.
+			ZDF-Bereich: Unterstützung von Bildgalerien
+			ZDF-Bereich: Auswahl kleiner Senderlogos (240x270) zur Verminderung der Netzwerklast. Weitere 
+			Fehlerbereinigung in ZDF_get_content
+			ZDF_Search: Überflüssige Abfrage auf leere Inhalte gelöscht (erfolgt nun in ZDF_get_content)
+			Fehlerbereinigung in ZDF_Bildgalerie (mögliche Begrenzer für Textstrings erweitert)
+
 04.11.2016 2.5.1	ZDF-Bereich: Fehlerbereinigung in ZDF_get_content + Integration von ZDF_get_contentRubriken.
 
 03.11.2016 2.5.0	EPG-Daten: neue Funktion get_epg_ZDF für Live-TV-Sender ZDF, ZDFinfo, ZDFneo
