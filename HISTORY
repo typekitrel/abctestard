@@ -2,6 +2,11 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------			gelöschte Releases: älter als  1.3		
 
+08.11.2016 2.5.3	ZDF-Bereich: crossdomain-Error für m3u8-Streaming abgestellt (Umstellung des
+			Server-Request auf http statt wie vom ZDF vorgegeben https) 
+			Radio-Livestreams: für neuen Sender "NDR Plus" neues Logo im Verzeichnis Ressources hinzugefügt, 
+			Datei livesenderRadio.xml angepasst.
+
 07.11.2016 2.5.2	ZDF-Bereich: Unterstützung für mehrteilige Suchbegriffe.
 			ZDF-Bereich: Unterstützung von Bildgalerien
 			ZDF-Bereich: Auswahl kleiner Senderlogos (240x270) zur Verminderung der Netzwerklast. Weitere 

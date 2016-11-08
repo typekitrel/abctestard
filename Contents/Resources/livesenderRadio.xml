@@ -40,9 +40,9 @@
 		<title>NDR</title>
 		<link>http://www.ardmediathek.de/radio/live?genre=Alle+Genres&amp;kanal=680</link>
 		<thumbnail>radio-ndr.png</thumbnail>
-		<sender>NDR Blue|NDR Info|NDR Info Spezial|NDR Kultur|NDR 1 Niedersachsen|NDR 1 Radio MV|NDR 1 Welle Nord|
+		<sender>NDR Blue|NDR Info|NDR Info Spezial|NDR Kultur|NDR Plus|NDR 1 Niedersachsen|NDR 1 Radio MV|NDR 1 Welle Nord|
 			NDR 2|N-JOY|NDR 90,3</sender>		
-		<thumblist>radio-ndr-blue.png|radio-ndr-info.png|radio-ndr-info-spezial.png|radio-ndr-kultur.png|
+		<thumblist>radio-ndr-blue.png|radio-ndr-info.png|radio-ndr-info-spezial.png|radio-ndr-kultur.png|radio-ndr-plus.png|
 			radio-ndr1-niedersachsen.png|radio-ndr1-radio-mv.png|radio-ndr1-welle-nord.png|radio-ndr2.png|
 			radio-njoy.png|radio-ndr-903.png</thumblist>
 	</item>

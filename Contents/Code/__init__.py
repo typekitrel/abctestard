@@ -16,8 +16,8 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.5.2'		
-VDATE = '07.11.2016'
+VERSION =  '2.5.3'		
+VDATE = '08.11.2016'
 
 # 
 #	
@@ -2136,10 +2136,11 @@ def ZDF_get_content(oc, page, ID=None):	# ID='Search' od. 'VERPASST' - Abweichun
 	return oc
 	
 ####################################################################################################
-@route(PREFIX + '/GetZDFVideoSources')
-def GetZDFVideoSources(url, title, thumb):
+@route(PREFIX + '/GetZDFVideoSources')							
+def GetZDFVideoSources(url, title, thumb):				# 4 Requests bis zu den Quellen erforderlich!			
 	Log('GetVideoSources'); Log(url)
 	oc = ObjectContainer(title2=title.decode(encoding="utf-8", errors="ignore"), view_group="InfoList")
+	urlSource = url 	# für ZDFotherSources
 
 	page = HTTP.Request(url).content 							# 1. player-Konfig. ermitteln
 	# Log(page)    # bei Bedarf
@@ -2184,13 +2185,87 @@ def GetZDFVideoSources(url, title, thumb):
 	videodat_url = 'https://api.zdf.de' + videodat							# 4. Videodaten ermitteln
 	# Bsp.: https://api.zdf.de/tmd/2/portal/vod/ptmd/mediathek/161021_hsh_hsh'
 	# 	zweite Variante mit {player} = ngplayer_2_3 : identische Datei
-	# headers = {'Api-Auth':"Bearer d2726b6c8c655e42b68b0db26131b15b22bd1a32", 'Origin':"https://www.zdf.de", 'Host':"api.zdf.de", 'Accept-Encoding':"de-DE,de;q=0.8,en-US;q=0.6,en;q=0.4", 'Accept':"application/vnd.de.zdf.v1.0+json"}
-	# headers schütz hier nicht vor Fehler "crossdomain access denied" - in VLC OK
-	#	Ursache verm.: den Links der versch. Auflösungen fehlt die Endung .m3u8 (hier: .m3u8?null=0),
-	#	der Webplayer folgt nach der Fehlermeldung nur dem ersten Link (kleinste Auflösung)
+	# headers = {'Api-Auth':"Bearer d2726b6c8c655e42b68b0db26131b15b22bd1a32", 'Origin':"https://www.zdf.de", 
+	#		'Host':"api.zdf.de", 'Accept-Encoding':"de-DE,de;q=0.8,en-US;q=0.6,en;q=0.4", 
+	#		'Accept':"application/vnd.de.zdf.v1.0+json"}
+	#
+	# Fehler "crossdomain access denied" bei .m3u8-Dateien: Ursache https-Verbindung - konkrete Wechselwirkung n.b.
+	#	div. Versuche mit Änderungen der crossdomain.xml in Plex erfolglos,
+	#	dto. Eintrag des Servers zdfvodnone-vh.akamaihd.net in der hosts-Datei.
+	#	Abhilfe: https -> http, klappt bei allen angebotenen Formaten
+	#	
 	page = JSON.ObjectFromURL(videodat_url)					
 	page = 	json.dumps(page)					# json=dict erlaubt keine Stringsuche
 	#page = page.decode('utf-8', 'ignore')		
+	#Log(page)	
+	
+	formitaeten = blockextract('\"formitaeten\":', page)		# Video-URL's ermitteln
+	# Log(formitaeten)
+	title_call = title
+	i = 0 	# Titel-Zähler für mehrere Objekte mit dem selben Titel (manche Clients verwerfen solche)
+	for rec in formitaeten:							# Datensätze gesamt
+		# Log(rec)		# bei Bedarf
+		typ = stringextract('\"type\": \"', '\"', rec)
+		facets = stringextract('\"facets\": ', ',', rec)	# Bsp.: "facets": ["progressive"]
+		facets = facets.replace('\"', '')
+		Log(typ); Log(facets)
+		if typ == "h264_aac_ts_http_m3u8_http":			# hier nur m3u8-Dateien			
+			audio = blockextract('\"audio\":', rec)		# Datensätze je Typ
+			# Log(audio)	# bei Bedarf
+			for audiorec in audio:		
+				url = stringextract('\"uri\": \"',  '\"', audiorec)			# URL
+				url = url.replace('https', 'http')
+				quality = stringextract('\"quality\": \"',  '\"', audiorec)
+				Log(url); Log(quality);
+				if quality == 'high':					# high bisher identisch mit auto 
+					continue
+				i = i +1
+				if url:
+					if url.find('master.m3u8') > 0:		# 
+						title=str(i) + '. ' + title_call + ' | ' + quality + ' [m3u8]'
+						summary = 'Qualität: ' + quality + ' | Typ: ' + typ + ' [m3u8-Streaming]'	
+						summary = summary.decode(encoding="utf-8", errors="ignore")
+						oc.add(CreateVideoStreamObject(url=url, title=title, rtmp_live='nein',
+							summary=summary, meta= Plugin.Identifier + str(i), thumb=thumb, resolution='unbekannt'))	
+	
+	# oc = Parseplaylist(oc, videoURL, thumb)	# hier nicht benötigt - das ZDF bietet bereits 3 Auflösungsbereiche
+	oc.add(DirectoryObject(key=Callback(ZDFotherSources, url=urlSource, title=title_call,  thumb=thumb),
+		title='weitere Video-Formate', summary='', thumb=R(ICON_MEHR)))
+
+
+	return oc	
+	
+#-------------------------
+@route(PREFIX + '/ZDFotherSources')		# weitere Videoquellen - Quellen werden erneut geladen
+def ZDFotherSources(url, title, thumb):
+	Log('OtherSources:' + url); 
+
+	oc = ObjectContainer(title2=title, view_group="InfoList")
+	oc = home(cont=oc)								# Home-Button
+
+	page = HTTP.Request(url).content 						
+	# Log(page)    # bei Bedarf
+		
+	zdfplayer = stringextract('data-module=\"zdfplayer\"', 'autoplay', page)			
+	player_id =  stringextract('data-zdfplayer-id=\"', '\"', zdfplayer)		
+	config_url = stringextract('\"config\": \"', '\"', zdfplayer)		
+	profile_url = stringextract('\"content\": \"', '\"', zdfplayer)	
+	#Log(zdfplayer); Log(player_id); Log(config_url); Log(profile_url)
+	
+	request = JSON.ObjectFromURL(profile_url)		# klappt hier auch ohne headers				
+	#Log(request)
+	request = str(request)				# json=dict erlaubt keine Stringsuche, json.dumps klappt hier nicht
+	request = request.decode('utf-8', 'ignore')		
+	
+	pos = request.rfind('mainVideoContent')				# 'mainVideoContent' am Ende suchen
+	request_part = request[pos+1:]
+	#Log(request_part)
+	videodat = stringextract('http://zdf.de/rels/streams/ptmd\': \'', '\',', request_part)	
+	# Log(videodat)	
+
+	videodat_url = 'https://api.zdf.de' + videodat							# 4. Videodaten ermitteln
+	page = JSON.ObjectFromURL(videodat_url)					
+	page = 	json.dumps(page)					# json=dict erlaubt keine Stringsuche
 	#Log(page)	
 	
 	formitaeten = blockextract('\"formitaeten\":', page)		# Video-URL's ermitteln
@@ -2204,30 +2279,23 @@ def GetZDFVideoSources(url, title, thumb):
 		Log(typ); Log(facets)
 		if typ == "h264_aac_f4f_http_f4m_http":				# manifest.f4m auslassen
 			continue
-		if typ == "h264_aac_ts_http_m3u8_http":				#z.Z. wg. crossdomain-Error abgeschaltet
+		if typ == "h264_aac_ts_http_m3u8_http":				# bereits in GetZDFVideoSources ausgewertet
 			continue
 			
 		audio = blockextract('\"audio\":', rec)		# Datensätze je Typ
 		# Log(audio)	# bei Bedarf
 		for audiorec in audio:		
 			url = stringextract('\"uri\": \"',  '\"', audiorec)			# URL
+			url = url.replace('https', 'http')
 			quality = stringextract('\"quality\": \"',  '\"', audiorec)
 			Log(url); Log(quality);
 			i = i +1
-			if url:
-				if url.find('master.m3u8') > 0:		# 
-					summary = 'Qualität: ' + quality + ' | Typ: ' + typ + ' [Stream]'	
-					summary = summary.decode(encoding="utf-8", errors="ignore")
-					oc.add(CreateVideoStreamObject(url=url, title=str(i) + '. ' + title, rtmp_live='nein',
-						summary=summary, meta='meta' + str(i), thumb=thumb, resolution='unbekannt'))	
-				else:
-					summary = 'Qualität: ' + quality + ' | Typ: ' + typ + ' ' + facets 
-					summary = summary.decode(encoding="utf-8", errors="ignore")
-					oc.add(CreateVideoClipObject(url=url, title=str(i) + '. ' + title, 
-						summary=summary, meta='meta', thumb=thumb, duration='duration', resolution='unbekannt'))	
-
-	return oc	
-	
+			if url:			
+				summary = 'Qualität: ' + quality + ' | Typ: ' + typ + ' ' + facets 
+				summary = summary.decode(encoding="utf-8", errors="ignore")
+				oc.add(CreateVideoClipObject(url=url, title=str(i) + '. ' + title, 
+					summary=summary, meta= Plugin.Identifier + str(i), thumb=thumb, duration='duration', resolution='unbekannt'))	
+	return oc
 #-------------------------
 def ZDF_Bildgalerie(oc, page):	# Bildgalerie
 	Log('ZDF_Bildgalerie'); 
