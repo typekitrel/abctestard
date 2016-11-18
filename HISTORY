@@ -2,6 +2,26 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------			gelöschte Releases: älter als  1.3		
 
+18.11.2016 2.5.5	Start Barrierearme Angeboten, zunächst ZDF-Bereich.
+			ZDF-Bereich: Ermittlung der Untertitel-Quellen, falls verfügbar, in 
+			Funktion GetZDFVideoSources - bisher ohne Verwendung in Plex (keine
+			Unterstützung von Subtitles bei Channels).
+			Barrierearme Angebote: Info-Videos
+			Barrierearme Angebote: Hörfassungen 
+			Barrierearme Angebote: Untertitel - Startcode wieder auskommentiert, da in Plex noch 
+			keine Untertitel möglich. 
+			Zusätzliche Funktion: "Meist gesehen (1 Woche)" (ZDF-Bereich). 
+			Zusätzliches Menü: Bilderserien (direkte Suche nach Bildstrecken)
+			Debugging: Log(Client.Platform) in CreateVideoClipObject + CreateVideoStreamObject
+
+13.11.2016 2.5.4	nicht auf Github
+			ZDF-Bereich: zusätzl. Funktion get_airing zur Ermittlung von Datum + Uhrzeit aus Strings vom 
+			Format "2016-11-12T21:45:00.000+01:00", Verwendung in tagline in CreateVideoStreamObject +
+			CreateVideoClipObject
+			CreateVideoStreamObject + CreateVideoClipObject: tagline hinzugefügt, um Datum + Uhrzeit aus 
+			airing anzuzeigen.
+			ARD-Bereich: in Funktion get_sendungen replace in Variable subtitel (| für <br>)
+
 08.11.2016 2.5.3	ZDF-Bereich: crossdomain-Error für m3u8-Streaming abgestellt (Umstellung des
 			Server-Request auf http statt wie vom ZDF vorgegeben https) 
 			Radio-Livestreams: für neuen Sender "NDR Plus" neues Logo im Verzeichnis Ressources hinzugefügt, 
