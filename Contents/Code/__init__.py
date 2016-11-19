@@ -16,8 +16,8 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.5.5'		
-VDATE = '18.11.2016'
+VERSION =  '2.5.6'		
+VDATE = '19.11.2016'
 
 # 
 #	
@@ -2290,15 +2290,17 @@ def GetZDFVideoSources(url, title, thumb, tagline):				# 4 Requests bis zu den Q
 		msg = msgH + url
 		return ObjectContainer(message=msg)	  # header=... ohne Wirkung	(?)
 	
-	#config_url = ZDF_BASE + config_url 								# 2. apiToken ermitteln - lassen wir z.Z. weg,
-	#page = HTTP.Request(config_url).content 							# da apiToken immer gleich	
-	#apiToken = stringextract('\"apiToken\": \"', '\"', page)
-	#Log(apiToken)	
+	config_url = ZDF_BASE + config_url 								# 2. apiToken ermitteln - immer identisch?
+	page = HTTP.Request(config_url).content 							# ev. nicht außerhalb Deutschlands?
+	apiToken = stringextract('\"apiToken\": \"', '\"', page)
+	Log(apiToken)	
 	
 	#headers = {'Api-Auth':"Bearer d2726b6c8c655e42b68b0db26131b15b22bd1a32", 'Host':"api.zdf.de", 'Accept-Encoding':"gzip, deflate, sdch, br", 'Accept':"application/vnd.de.zdf.v1.0+json", 'User-Agent':"Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2490.76 Mobile Safari/537.36", 'Referer':"https://www.zdf.de/comedy/heute-show/heute-show-vom-21-10-2016-102.html"}
 	# Bearer = apiToken aus https://www.zdf.de/ZDFplayer/configs/zdf/zdf2016/configuration.json 
 	#	entbehrlich: User-Agent, Referer
-	headers = {'Api-Auth':"Bearer d2726b6c8c655e42b68b0db26131b15b22bd1a32", 'Host':"api.zdf.de", 'Accept-Encoding':"gzip, deflate, sdch, br", 'Accept':"application/vnd.de.zdf.v1.0+json"}
+	# headers = {'Api-Auth':"Bearer d2726b6c8c655e42b68b0db26131b15b22bd1a32", 'Host':"api.zdf.de", 'Accept-Encoding':"gzip, deflate, sdch, br", 'Accept':"application/vnd.de.zdf.v1.0+json"}
+	headers = {'Api-Auth':"Bearer %s" % apiToken, 'Host':"api.zdf.de", 'Accept-Encoding':"gzip, deflate, sdch, br", 'Accept':"application/vnd.de.zdf.v1.0+json"} 
+	Log(headers)
 	request = JSON.ObjectFromURL(profile_url, headers=headers)					# 3. Playerdaten ermitteln
 	#Log(request)
 	request = str(request)				# json=dict erlaubt keine Stringsuche, json.dumps klappt hier nicht
