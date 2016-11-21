@@ -2,6 +2,10 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------			gelöschte Releases: älter als  1.3		
 
+21.11.2016 2.5.7	Überarbeitung in Funktion GetZDFVideoSources (HTTP-Header, Formatierung der json-Ergebnisse,
+			Ermittlung einer alternativen Videoquelle).
+			ZDF_Bildgalerie: Integration von Bildstrecken, die nicht als Galerie deklariert sind.	
+
 19.11.2016 2.5.6	Debugging Error_log PLEX_VIP_LOUNGE (Plex-Forum): in Funktion GetVideoSources die 
 			Ermittlung von apiToken wieder eingeschaltet - apiToken schien bisher immer identisch,
 			außerhalb Deutschlands aber möglicherweise nicht.

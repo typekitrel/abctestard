@@ -16,8 +16,8 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.5.6'		
-VDATE = '19.11.2016'
+VERSION =  '2.5.7'		
+VDATE = '21.11.2016'
 
 # 
 #	
@@ -2231,6 +2231,7 @@ def ZDF_get_content(oc, page, ref_path, ID=None):	# ID='Search' od. 'VERPASST' -
 		if  Client.Platform == 'Plex Home Theater':
 			title, tagline = tagline, title
 			
+		Log('neuer Satz')
 		Log(teaser_cat);Log(actionDetail);Log(genre);Log(description);			
 		Log(thumb);Log(path);Log(title);Log(summary);Log(tagline);Log(multi);
 		title = title.decode(encoding="utf-8", errors="ignore")
@@ -2270,50 +2271,76 @@ def GetZDFVideoSources(url, title, thumb, tagline):				# 4 Requests bis zu den Q
 	oc = ObjectContainer(title2=title.decode(encoding="utf-8", errors="ignore"), view_group="InfoList")
 	urlSource = url 	# für ZDFotherSources
 
-	page = HTTP.Request(url).content 							# 1. player-Konfig. ermitteln
-	# Log(page)    # bei Bedarf
-	
-	if page.find('class=\"content-box gallery-slider-box') >= 0:		# Vorauswertung: Bildgalerie
-		oc = ZDF_Bildgalerie(oc=oc, page=page)
-		return oc
+	page = HTTP.Request(url).content 											# 1. player-Konfig. ermitteln
+	#headers = HTTP.Request(url).headers	# etag entfällt ab 20.11.2016  
+	#headers = str(headers)
+	# Log(headers); # Log(page)    # bei Bedarf
+	#etag = stringextract('etag\': ', ',', headers)  # Bsp: 'etag': 'W/"07e11176a095329b326b128fd3528f916"',
+	#etag = stringextract('\'', '\'', etag)			# Verwendung in header von profile_url
+	#Log(etag)
+
+	if page.find('data-module=\"zdfplayer\"') == -1:		# Vorprüfung auf Videos
+		if page.find('class=\"b-group-contentbox\"') > 0:	# keine Bildgalerie, aber ähnlicher Inhalt
+			oc = ZDF_Bildgalerie(oc=oc, page=page, mode='pics_in_accordion-panels')		
+			return oc		
+		if page.find('class=\"content-box gallery-slider-box') >= 0:		# Vorauswertung: Bildgalerie
+			oc = ZDF_Bildgalerie(oc=oc, page=page, mode='is_gallery')
+			return oc
+			
 	oc = home(cont=oc)		# Home-Button - nach Bildgalerie (PhotoObject nur ohne weitere Medienobjekte)
 	
 	zdfplayer = stringextract('data-module=\"zdfplayer\"', 'autoplay', page)			
 	player_id =  stringextract('data-zdfplayer-id=\"', '\"', zdfplayer)		
-	config_url = stringextract('\"config\": \"', '\"', zdfplayer)		
-	profile_url = stringextract('\"content\": \"', '\"', zdfplayer)	
+	config_url = stringextract('\"config\": \"', '\"', zdfplayer)	
+	profile_url = stringextract('\"content\": \"', '\"', zdfplayer)
+	# config_url: /ZDFplayer/configs/zdf/zdf2016/configuration.json	- enth. Sender-ID's u.a., auch apiToken	
 	# profile_url Bsp.:  "https://api.zdf.de/content/documents/heute-show-vom-21-10-2016-102.json?profile=player"
 	# Log(zdfplayer); Log(player_id); Log(config_url); 
 	Log(profile_url)
-	if zdfplayer == '':
+	if zdfplayer == '':										# Nachprüfung auf Videos
 		msgH='kein Video gefunden. Seite:\r' 
+		alt_msg = 'Video leider nicht mehr verf&uuml;gbar'
+		if page.find(alt_msg) > 0:
+			msgH = alt_msg + ' Seite:\r'
 		msg = msgH + url
 		return ObjectContainer(message=msg)	  # header=... ohne Wirkung	(?)
 	
-	config_url = ZDF_BASE + config_url 								# 2. apiToken ermitteln - immer identisch?
-	page = HTTP.Request(config_url).content 							# ev. nicht außerhalb Deutschlands?
+	config_url = ZDF_BASE + config_url 											# 2. apiToken ermitteln - immer identisch?
+	page = HTTP.Request(config_url).content 									# 	ev. nicht außerhalb Deutschlands?
 	apiToken = stringextract('\"apiToken\": \"', '\"', page)
 	Log(apiToken)	
 	
-	#headers = {'Api-Auth':"Bearer d2726b6c8c655e42b68b0db26131b15b22bd1a32", 'Host':"api.zdf.de", 'Accept-Encoding':"gzip, deflate, sdch, br", 'Accept':"application/vnd.de.zdf.v1.0+json", 'User-Agent':"Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2490.76 Mobile Safari/537.36", 'Referer':"https://www.zdf.de/comedy/heute-show/heute-show-vom-21-10-2016-102.html"}
-	# Bearer = apiToken aus https://www.zdf.de/ZDFplayer/configs/zdf/zdf2016/configuration.json 
-	#	entbehrlich: User-Agent, Referer
-	# headers = {'Api-Auth':"Bearer d2726b6c8c655e42b68b0db26131b15b22bd1a32", 'Host':"api.zdf.de", 'Accept-Encoding':"gzip, deflate, sdch, br", 'Accept':"application/vnd.de.zdf.v1.0+json"}
-	headers = {'Api-Auth':"Bearer %s" % apiToken, 'Host':"api.zdf.de", 'Accept-Encoding':"gzip, deflate, sdch, br", 'Accept':"application/vnd.de.zdf.v1.0+json"} 
-	Log(headers)
+	# zu headers s. ZDF_Video_Quellen.txt + ZDF_Video_HAR_gesamt.txt
+	#	Abruf mit curl + Header-Option OK (z,Z, reicht apiToken)
+	#   headers = {'Api-Auth':"Bearer d2726b6c8c655e42b68b0db26131b15b22bd1a32", 'Host':"api.zdf.de", ... 
+	#   Bearer = apiToken aus https://www.zdf.de/ZDFplayer/configs/zdf/zdf2016/configuration.json 
+	#	nur Api-Auth + Host erforderlich, Rest entbehrlich
+	#headers = {'Api-Auth':"Bearer d2726b6c8c655e42b68b0db26131b15b22bd1a32", 'Host':"api.zdf.de", 'Accept-Encoding':"gzip, deflate, sdch, br", 'Accept':"application/vnd.de.zdf.v1.0+json"}
+	#headers = {'Api-Auth':"Bearer %s" % apiToken, 'If-None-Match':"%s" % etag} 
+	#headers = {'Host':"api.zdf.de", 'Api-Auth': "Bearer %s" % apiToken}
+	#headers = {'Api-Auth': "Bearer %s" % apiToken}
+	headers = {'Api-Auth': "Bearer %s" % apiToken, 'Host':"api.zdf.de", 'Accept-Encoding':"gzip, deflate, sdch, br", 'Accept':"application/vnd.de.zdf.v1.0+json"}
+	# Log(headers)		# bei Bedarf
+	
 	request = JSON.ObjectFromURL(profile_url, headers=headers)					# 3. Playerdaten ermitteln
-	#Log(request)
+	request = json.dumps(request, sort_keys=True, indent=2, separators=(',', ': '))  # sortierte Ausgabe
+	# Log(request)
 	request = str(request)				# json=dict erlaubt keine Stringsuche, json.dumps klappt hier nicht
 	request = request.decode('utf-8', 'ignore')		
 	
 	pos = request.rfind('mainVideoContent')				# 'mainVideoContent' am Ende suchen
-	request_part = request[pos+1:]
-	#Log(request_part)
-	videodat = stringextract('http://zdf.de/rels/streams/ptmd\': \'', '\',', request_part)	
+	request_part = request[pos:]
+	# Log(request_part)			# bei Bedarf
+	old_videodat = stringextract('http://zdf.de/rels/streams/ptmd\": \"', '\",', request_part)	
 	# Bsp.: /tmd/2/portal/vod/ptmd/mediathek/161021_hsh_hsh'
 	# Log(videodat)	
-
-	videodat_url = 'https://api.zdf.de' + videodat							# 4. Videodaten ermitteln
+	old_videodat_url = 'https://api.zdf.de' + old_videodat							# 4. Videodaten ermitteln
+	# neu ab 20.1.2016: uurl-Pfad statt ptmd-Pfad ( ptmd-Pfad fehlt bei Teilvideos)
+	videodat = stringextract('\"uurl\": \"', '\"', request_part)	# Bsp.: 161118_clip_5_hsh
+	videodat_url = 'https://api.zdf.de/tmd/2/portal/vod/ptmd/mediathek/' + videodat
+	Log('ptmd: ' + old_videodat_url); Log('uurl: ' + videodat); Log('videodat_url: ' + videodat_url)	
+	
+	
 	# Bsp.: https://api.zdf.de/tmd/2/portal/vod/ptmd/mediathek/161021_hsh_hsh'
 	# 	zweite Variante mit {player} = ngplayer_2_3 : identische Datei
 	# headers = {'Api-Auth':"Bearer d2726b6c8c655e42b68b0db26131b15b22bd1a32", 'Origin':"https://www.zdf.de", 
@@ -2349,13 +2376,13 @@ def GetZDFVideoSources(url, title, thumb, tagline):				# 4 Requests bis zu den Q
 		typ = stringextract('\"type\": \"', '\"', rec)
 		facets = stringextract('\"facets\": ', ',', rec)	# Bsp.: "facets": ["progressive"]
 		facets = facets.replace('\"', '').replace('\n', '').replace(' ', '')  
-		Log(typ); Log(facets)
+		Log('typ: ' + typ); Log('facets: ' + facets)
 		if typ == "h264_aac_ts_http_m3u8_http":			# hier nur m3u8-Dateien			
 			audio = blockextract('\"audio\":', rec)		# Datensätze je Typ
 			# Log(audio)	# bei Bedarf
 			for audiorec in audio:		
 				url = stringextract('\"uri\": \"',  '\"', audiorec)			# URL
-				url = url.replace('https', 'http')
+				url = url.replace('https', 'http')		# im Plugin kein Zugang mit https!
 				quality = stringextract('\"quality\": \"',  '\"', audiorec)
 				Log(url); Log(quality);
 				if quality == 'high':					# high bisher identisch mit auto 
@@ -2373,7 +2400,6 @@ def GetZDFVideoSources(url, title, thumb, tagline):				# 4 Requests bis zu den Q
 	oc.add(DirectoryObject(key=Callback(ZDFotherSources, url=urlSource, title=title_call, tagline=tagline, thumb=thumb),
 		title='weitere Video-Formate', summary='', thumb=R(ICON_MEHR)))
 
-
 	return oc	
 	
 #-------------------------
@@ -2385,7 +2411,7 @@ def ZDFotherSources(url, title, tagline, thumb):
 	oc = ObjectContainer(title2=title, view_group="InfoList")
 	oc = home(cont=oc)								# Home-Button
 
-	page = HTTP.Request(url).content 						
+	page = HTTP.Request(url).content 					# player-Konfig. ermitteln		
 	# Log(page)    # bei Bedarf
 		
 	zdfplayer = stringextract('data-module=\"zdfplayer\"', 'autoplay', page)			
@@ -2394,22 +2420,35 @@ def ZDFotherSources(url, title, tagline, thumb):
 	profile_url = stringextract('\"content\": \"', '\"', zdfplayer)	
 	#Log(zdfplayer); Log(player_id); Log(config_url); Log(profile_url)
 	
-	request = JSON.ObjectFromURL(profile_url)		# klappt hier auch ohne headers				
-	#Log(request)
+	config_url = ZDF_BASE + config_url 											# 2. apiToken ermitteln - immer identisch?
+	page = HTTP.Request(config_url).content 									# 	ev. nicht außerhalb Deutschlands?
+	apiToken = stringextract('\"apiToken\": \"', '\"', page)
+	Log(apiToken)	
+	
+	headers = {'Api-Auth': "Bearer %s" % apiToken, 'Host':"api.zdf.de", 'Accept-Encoding':"gzip, deflate, sdch, br", 'Accept':"application/vnd.de.zdf.v1.0+json"}
+	# Log(headers)		# bei Bedarf
+
+	request = JSON.ObjectFromURL(profile_url, headers=headers)					# 3. Playerdaten ermitteln
+	request = json.dumps(request, sort_keys=True, indent=2, separators=(',', ': '))  # sortierte Ausgabe
+	# Log(request)
 	request = str(request)				# json=dict erlaubt keine Stringsuche, json.dumps klappt hier nicht
 	request = request.decode('utf-8', 'ignore')		
-	
+		
 	pos = request.rfind('mainVideoContent')				# 'mainVideoContent' am Ende suchen
-	request_part = request[pos+1:]
-	#Log(request_part)
-	videodat = stringextract('http://zdf.de/rels/streams/ptmd\': \'', '\',', request_part)	
+	request_part = request[pos:]
+	# Log(request_part)			# bei Bedarf
+	old_videodat = stringextract('http://zdf.de/rels/streams/ptmd\": \"', '\",', request_part)	
+	# Bsp.: /tmd/2/portal/vod/ptmd/mediathek/161021_hsh_hsh'
 	# Log(videodat)	
-
-	videodat_url = 'https://api.zdf.de' + videodat							# 4. Videodaten ermitteln
-	page = JSON.ObjectFromURL(videodat_url)					
-	#page = 	json.dumps(page)					# json=dict erlaubt keine Stringsuche
+	old_videodat_url = 'https://api.zdf.de' + old_videodat							# 4. Videodaten ermitteln
+	# neu ab 20.1.2016: uurl-Pfad statt ptmd-Pfad ( ptmd-Pfad fehlt bei Teilvideos)
+	videodat = stringextract('\"uurl\": \"', '\"', request_part)	# Bsp.: 161118_clip_5_hsh
+	videodat_url = 'https://api.zdf.de/tmd/2/portal/vod/ptmd/mediathek/' + videodat
+	Log('ptmd: ' + old_videodat_url); Log('uurl: ' + videodat); Log('videodat_url: ' + videodat_url)	
+	
+	page = JSON.ObjectFromURL(videodat_url)	 # json=dict erlaubt keine Stringsuche, Sortierung nötig (not in order!)				
 	page = 	json.dumps(page, sort_keys=True, indent=2, separators=(',', ': '))
-	#Log(page)	
+	# Log(page)	
 	
 	formitaeten = blockextract('\"formitaeten\":', page)		# Video-URL's ermitteln
 	# Log(formitaeten)
@@ -2441,48 +2480,58 @@ def ZDFotherSources(url, title, tagline, thumb):
 					duration='duration', resolution='unbekannt'))	
 	return oc
 #-------------------------
-def ZDF_Bildgalerie(oc, page):	# Bildgalerie
-	Log('ZDF_Bildgalerie'); 
-	content =  stringextract('class=\"content-box gallery-slider-box', 'title=\"Bilderserie schließen\"', page)
-	content =  blockextract('class=\"img-container', content)   					# Bild-Datensätze
+def ZDF_Bildgalerie(oc, page, mode):	# keine Bildgalerie, aber ähnlicher Inhalt
+	Log('ZDF_Bildgalerie'); Log(mode)
+	
+	if mode == 'is_gallery':				# "echte" Bildgalerie
+		content =  stringextract('class=\"content-box gallery-slider-box', 'title=\"Bilderserie schließen\"', page)
+		content =  blockextract('class=\"img-container', content)   					# Bild-Datensätze
+	if mode == 'pics_in_accordion-panels':				# Bilder in Klappboxen	
+		content =  stringextract('class=\"b-group-contentbox\"', '</section>', page)
+		content =  blockextract('class=\"accordion-panel\"', content)
+			
 	Log(len(content))
-	# neuer Container mit neume Titel
+	# neuer Container mit neuem Titel
 	oc = ObjectContainer(title2='ZDF-Bildgalerie', view_group="InfoList")
 	
 	image = 1
 	for rec in content:
 		# Log(rec)  # bei Bedarf
 		summ = ''; 
-		# size = 'Bildgröße (Breite x Höhe):  %s x %s' % (width, height)   # entfällt - keine Übergrößen vorh.
-		img_src =  stringextract('data-srcset=\"', ' ', rec)
-		
-		item_title = stringextract('class=\"item-title', 'class=\"item-description\">', rec)  
-		teaser_cat =  stringextract('class=\"teaser-cat\">', '</span>', item_title)  
-		teaser_cat = teaser_cat.strip()			# teaser_cat hier ohne itemprop
-		if teaser_cat.find('|') > 0:  			# über 3 Zeilen verteilt
-			tclist = teaser_cat.split('|')
-			teaser_cat = str.strip(tclist[0]) + ' | ' + str.strip(tclist[1])			# zusammenführen
-		#Log(teaser_cat)					
-		descript = stringextract('class=\"item-description\">', '</p', rec)
-		pos = descript.find('<span')			# mögliche Begrenzer: '</p', '<span'
-		if pos >= 0:
-			descript = descript[0:pos]
-		descript = descript.strip()
-		#Log(descript)					
+		if mode == 'is_gallery':				# "echte" Bildgalerie
+			img_src =  stringextract('data-srcset=\"', ' ', rec)
+			item_title = stringextract('class=\"item-title', 'class=\"item-description\">', rec)  
+			teaser_cat =  stringextract('class=\"teaser-cat\">', '</span>', item_title)  
+			teaser_cat = teaser_cat.strip()			# teaser_cat hier ohne itemprop
+			if teaser_cat.find('|') > 0:  			# über 3 Zeilen verteilt
+				tclist = teaser_cat.split('|')
+				teaser_cat = str.strip(tclist[0]) + ' | ' + str.strip(tclist[1])			# zusammenführen
+			#Log(teaser_cat)					
+			descript = stringextract('class=\"item-description\">', '</p', rec)
+			pos = descript.find('<span')			# mögliche Begrenzer: '</p', '<span'
+			if pos >= 0:
+				descript = descript[0:pos]
+			descript = descript.strip()
+			#Log(descript)					
 
-		title_add = stringextract('data-plusbar-title=\"', ('\"'), rec)	# aus Plusbar - im Teaser schwierig
-		title = teaser_cat
-		if title_add:
-			title = title + ' |' + title_add
-		if descript:		
-			summ = descript
-		
+			title_add = stringextract('data-plusbar-title=\"', ('\"'), rec)	# aus Plusbar - im Teaser schwierig
+			title = teaser_cat
+			if title_add:
+				title = title + ' |' + title_add
+			if descript:		
+				summ = descript
+				
+		if mode == 'pics_in_accordion-panels':				# Bilder in Klappboxen
+			img_src =  stringextract('data-srcset=\"', ' ', rec)
+			title =  stringextract('class=\"shorter\">', '<br/>', rec) 
+			summ = stringextract('p class=\"text\">', '</p>', rec) 		
+			summ = summ.replace('<br/>', '').replace('<br />', '')
 		
 		title = unescape(title)
 		title = title.decode(encoding="utf-8", errors="ignore")
 		summ = unescape(summ)
 		summ = summ .decode(encoding="utf-8", errors="ignore")
-		Log('neu');Log(title);Log(img_src);Log(summ);
+		Log('neu');Log(title);Log(img_src);Log(summ[0:40]);
 		oc.add(PhotoObject(
 			key=img_src,
 			rating_key='%s.%s' % (Plugin.Identifier, 'Bild ' + str(image)),	# rating_key = eindeutige ID
@@ -2492,7 +2541,8 @@ def ZDF_Bildgalerie(oc, page):	# Bildgalerie
 			))
 		image += 1
 	return oc	
-# 	
+	
+#-------------------------
 ####################################################################################################
 #									Hilfsfunktionen
 def Parseplaylist(container, url_m3u8, thumb):		# master.m3u8 auswerten, Url muss komplett sein
@@ -2695,7 +2745,10 @@ def repl_char(cut_char, line):	# problematische Zeichen in Text entfernen, wenn 
 #----------------------------------------------------------------  	
 def unescape(line):	# HTML-Escapezeichen in Text entfernen, bei Bedarf erweitern. ARD auch &#039; statt richtig &#39;
 	line_ret = (line.replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">")
-		.replace("&#39;", "'").replace("&#039;", "'").replace("&quot;", '"').replace("&#x27;", "'"))
+		.replace("&#39;", "'").replace("&#039;", "'").replace("&quot;", '"').replace("&#x27;", "'")
+		.replace("&ouml;", "ö").replace("&auml;", "ä").replace("&uuml;", "ü").replace("&szlig;", "ß")
+		.replace("&Ouml;", "Ö").replace("&Auml;", "Ä").replace("&Uuml;", "Ü"))
+		
 	# Log(line_ret)		# bei Bedarf
 	return line_ret	
 #----------------------------------------------------------------  	
