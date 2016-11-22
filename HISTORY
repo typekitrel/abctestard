@@ -2,6 +2,12 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------			gelöschte Releases: älter als  1.3		
 
+22.11.2016 2.5.8	Livesender TV ntv: alte Serveradresse nicht mehr erreichbar. Austausch des Direktlinks 
+			zu p.live.fra.n-tv.de gegen lokale m3u8-Datei "liveTV_ntvlive-ipadakamai.m3u8" in
+			livesenderTV.xml 
+			ZDF_Bildgalerie: weitere Bildstrecke am Dokumentfuß integriert, z.B. ZDF-Korrespondenten
+			Vorauswertung in ZDF_get_content + GetZDFVideoSources.
+
 21.11.2016 2.5.7	Überarbeitung in Funktion GetZDFVideoSources (HTTP-Header, Formatierung der json-Ergebnisse,
 			Ermittlung einer alternativen Videoquelle).
 			ZDF_Bildgalerie: Integration von Bildstrecken, die nicht als Galerie deklariert sind.	

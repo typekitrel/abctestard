@@ -1,0 +1,13 @@
+#EXTM3U
+#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=900000
+http://p.live.akamai.n-tv.de/hls-live/ntvlive/ntvlive_800.m3u8
+#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=1550000
+http://p.live.akamai.n-tv.de/hls-live/ntvlive/ntvlive_1500.m3u8
+#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=570000
+http://p.live.akamai.n-tv.de/hls-live/ntvlive/ntvlive_500.m3u8
+#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=300000
+http://p.live.akamai.n-tv.de/hls-live/ntvlive/ntvlive_250.m3u8
+#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=120000
+http://p.live.akamai.n-tv.de/hls-live/ntvlive/ntvlive_80.m3u8
+#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=48000
+http://p.live.akamai.n-tv.de/hls-live/audio-only-aac/ntvlive/ntvlive_80.m3u8

@@ -16,8 +16,8 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.5.7'		
-VDATE = '21.11.2016'
+VERSION =  '2.5.8'		
+VDATE = '22.11.2016'
 
 # 
 #	
@@ -102,6 +102,7 @@ ARD_Suche = '/tv/suche?searchText='				# ergänzt mit Suchbegriff
 ARD_Live = '/tv/live'
 ARD_Einslike = '/einslike'
 
+# Sollten die ARD-ID's geändert werden, dann von http://www.ardmediathek.de/tv holen
 ARD_Rubriken = 'http://www.ardmediathek.de/tv/Rubriken/mehr?documentId=21282550'
 ARD_Themen = 'http://www.ardmediathek.de/tv/Themen/mehr?documentId=21301810'
 ARD_Serien = 'http://www.ardmediathek.de/tv/Serien/mehr?documentId=26402940'
@@ -591,6 +592,7 @@ def Einslike(title):
 @route(PREFIX + '/ARDThemenRubrikenSerien')	# Seiten die mehrere Beiträge pro Eintrag enhalten
 def ARDThemenRubrikenSerien(title):			# leider nicht kompatibel mit PageControl
 	Log('ARDThemenRubrikenSerien');
+	
 	if title.find('Themen') >= 0:
 		title2='Themen in der ARD Mediathek'
 		morepath = ARD_Themen
@@ -606,6 +608,15 @@ def ARDThemenRubrikenSerien(title):			# leider nicht kompatibel mit PageControl
 	oc = home(cont=oc)								# Home-Button
 	page = HTML.ElementFromURL(morepath)
 	doc_txt = HTML.StringFromElement(page)
+	
+	error_txt = '<title>Leider liegt eine Störung vor | ARD Mediathek</title>'
+	if doc_txt.find(error_txt) > 0:
+		error_txt = 'Leider liegt eine Störung vor | ARD Mediathek'			 			 	 
+		msgH = 'Fehler'; msg = error_txt + '| Seite: ' + morepath
+		Log(msg)
+		msg =  msg.decode(encoding="utf-8", errors="ignore")
+		return ObjectContainer(header=msgH, message=msg)
+		
 			
 	# Folgeseiten?:
 	pagenr_path =  re.findall("=page.(\d+)", doc_txt) # Mehrfachseiten?
@@ -2092,7 +2103,7 @@ def ZDF_get_content(oc, page, ref_path, ID=None):	# ID='Search' od. 'VERPASST' -
 		first_rec = img_alt +  stringextract('class=\"item-caption', 'data-tracking=', page) # mit img_alt
 		content.insert(0, first_rec)		# an den Anfang der Liste
 		# Log(content[0]) # bei Bedarf
-	
+		
 	for rec in content:						
 		# Log(rec)  # bei Bedarf
 		teaser_cat=''; actionDetail=''; genre=''; summary=''; duration='';  title=''; airing=''; 
@@ -2222,6 +2233,7 @@ def ZDF_get_content(oc, page, ref_path, ID=None):	# ID='Search' od. 'VERPASST' -
 			#if rec.find('data-plusbar-end-date=\"\"') >= 0:	# kein sicherer Video-Ausschluss
 			#	continue		
 		
+			# Log(rec) # bei Bedarf
 		
 		title = title.strip()
 		title = unescape(title)
@@ -2237,15 +2249,35 @@ def ZDF_get_content(oc, page, ref_path, ID=None):	# ID='Search' od. 'VERPASST' -
 		title = title.decode(encoding="utf-8", errors="ignore")
 		summary = summary.decode(encoding="utf-8", errors="ignore")
 		tagline = tagline.decode(encoding="utf-8", errors="ignore")
+		
 		if multi == True:
 			oc.add(DirectoryObject(key=Callback(ZDF_Sendungen, url=path, title=title, ID=ID), 
-				title=title, thumb=thumb, summary=summary, tagline=tagline))			
-		else:
-			oc.add(DirectoryObject(key=Callback(GetZDFVideoSources, title=title, url=path, tagline=tagline, thumb=thumb), 
 				title=title, thumb=thumb, summary=summary, tagline=tagline))
+		else:							
+			oc.add(DirectoryObject(key=Callback(GetZDFVideoSources, title=title, url=path, tagline=tagline, thumb=thumb), 
+					title=title, thumb=thumb, summary=summary, tagline=tagline))					
+
+	# Bildstrecken am Fuß des Dokuments anhängen (ZDF-Korrespondenten, -Mitarbeiter,...):
+	segment_start='<article class=\"b-group-persons\">'; segment_end = 'class="b-footer">'
+	if page.find(segment_start) > 0:  
+		rec = stringextract(segment_start, segment_end, page)
+		path = ref_path													# aktuelle Seite, Auswertung in Bildgalerie
+		title = stringextract('class="big-headline">', '</h2>', rec)	# 1. Titel
+		thumb = stringextract('data-src=\"', '\"', rec)					# 1. Bild
+		summary = stringextract('class=\"desc-text\">', '</p>', rec)	# 1. Beschr.
+		summary = summary.replace('<p>', '').replace('<br />', '').replace('<br />', '')
+		summary = unescape(summary)
+		tagline = 'Bilder und Lebensläufe'
+		title = title.decode(encoding="utf-8", errors="ignore")
+		tagline = tagline.decode(encoding="utf-8", errors="ignore")
+		summary = summary.decode(encoding="utf-8", errors="ignore")
+		Log(thumb);Log(path);
+		oc.add(DirectoryObject(key=Callback(GetZDFVideoSources, title=title, url=path, tagline=tagline, thumb=thumb,
+			segment_start=segment_start, segment_end=segment_end),  title=title, thumb=thumb, summary=summary,
+			tagline=tagline))	
 
 	return oc
-
+#-------------
 def get_airing(airing_string):		# Datum + Uhrzeit, Bsp. airing_string 2016-11-12T21:45:00.000+01:00
 	Log(airing_string)
 	airing = ''
@@ -2260,12 +2292,14 @@ def get_airing(airing_string):		# Datum + Uhrzeit, Bsp. airing_string 2016-11-12
 		airing = airing_date + ', ' + airing_time + ' Uhr'
 	
 	return airing
-		
+	
+#-------------
+
 ####################################################################################################
 # Subtitles: im Kopf der videodat-Datei enthalten (Endung .vtt). Leider z.Z. keine Möglichkeit
 #	bekannt, diese einzubinden
-@route(PREFIX + '/GetZDFVideoSources')							
-def GetZDFVideoSources(url, title, thumb, tagline):				# 4 Requests bis zu den Quellen erforderlich!			
+@route(PREFIX + '/GetZDFVideoSources')			# 4 Requests bis zu den Quellen erforderlich!				
+def GetZDFVideoSources(url, title, thumb, tagline, segment_start=None, segment_end=None):	
 	Log('GetVideoSources'); Log(url); Log(tagline); 
 	title = title.decode(encoding="utf-8", errors="ignore")					
 	oc = ObjectContainer(title2=title.decode(encoding="utf-8", errors="ignore"), view_group="InfoList")
@@ -2278,14 +2312,24 @@ def GetZDFVideoSources(url, title, thumb, tagline):				# 4 Requests bis zu den Q
 	#etag = stringextract('etag\': ', ',', headers)  # Bsp: 'etag': 'W/"07e11176a095329b326b128fd3528f916"',
 	#etag = stringextract('\'', '\'', etag)			# Verwendung in header von profile_url
 	#Log(etag)
+	
+	# Start Vorauswertungen: Bildgalerie u.ä. 
+	if segment_start and segment_end:						# Vorgabe Ausschnitt durch ZDF_get_content 
+		pos1 = page.find(segment_start); pos2 = page.find(segment_end);  # bisher: b-group-persons
+		Log(pos1);Log(pos2);
+		page = page[pos1:pos2]
+		oc = ZDF_Bildgalerie(oc=oc, page=page, mode=segment_start)
+		return oc
 
 	if page.find('data-module=\"zdfplayer\"') == -1:		# Vorprüfung auf Videos
 		if page.find('class=\"b-group-contentbox\"') > 0:	# keine Bildgalerie, aber ähnlicher Inhalt
 			oc = ZDF_Bildgalerie(oc=oc, page=page, mode='pics_in_accordion-panels')		
 			return oc		
-		if page.find('class=\"content-box gallery-slider-box') >= 0:		# Vorauswertung: Bildgalerie
+		if page.find('class=\"content-box gallery-slider-box') >= 0:		# Bildgalerie
 			oc = ZDF_Bildgalerie(oc=oc, page=page, mode='is_gallery')
 			return oc
+			
+	# Ende Vorauswertungen: 
 			
 	oc = home(cont=oc)		# Home-Button - nach Bildgalerie (PhotoObject nur ohne weitere Medienobjekte)
 	
@@ -2483,12 +2527,15 @@ def ZDFotherSources(url, title, tagline, thumb):
 def ZDF_Bildgalerie(oc, page, mode):	# keine Bildgalerie, aber ähnlicher Inhalt
 	Log('ZDF_Bildgalerie'); Log(mode)
 	
-	if mode == 'is_gallery':				# "echte" Bildgalerie
+	if mode == 'is_gallery':							# "echte" Bildgalerie
 		content =  stringextract('class=\"content-box gallery-slider-box', 'title=\"Bilderserie schließen\"', page)
 		content =  blockextract('class=\"img-container', content)   					# Bild-Datensätze
 	if mode == 'pics_in_accordion-panels':				# Bilder in Klappboxen	
 		content =  stringextract('class=\"b-group-contentbox\"', '</section>', page)
 		content =  blockextract('class=\"accordion-panel\"', content)
+	if mode == '<article class="b-group-persons">':	# ZDF-Korrespondenten, -Mitarbeiter,...	
+		content = page	
+		content =  blockextract('guest-info m-clickarea', content)
 			
 	Log(len(content))
 	# neuer Container mit neuem Titel
@@ -2527,6 +2574,17 @@ def ZDF_Bildgalerie(oc, page, mode):	# keine Bildgalerie, aber ähnlicher Inhalt
 			summ = stringextract('p class=\"text\">', '</p>', rec) 		
 			summ = summ.replace('<br/>', '').replace('<br />', '')
 		
+		if mode == '<article class=\"b-group-persons\">':
+			img_src = stringextract('data-src=\"', '\"', rec)
+			
+			guest_name =  stringextract('trackView\": true}\'>', '</button>', rec)
+			guest_name = guest_name.strip()
+			guest_title =  stringextract('guest-title\"><p>', '</p>', rec)
+			title = guest_name + ': ' + guest_title						
+			summ = stringextract('desc-text\">', '</p>', rec)
+			summ = summ.strip()
+			summ = summ.replace('<p>', '').replace('<br />', '').replace('<br />', '')
+					
 		title = unescape(title)
 		title = title.decode(encoding="utf-8", errors="ignore")
 		summ = unescape(summ)

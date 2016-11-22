@@ -374,7 +374,7 @@
 	</item>
 	<item>
 		<title>n-tv</title>
-		<link>http://p.live.fra.n-tv.de/playlists/ntvlive.m3u8</link>
+		<link>liveTV_ntvlive-ipadakamai.m3u8</link>
 		<thumbnail>tv-ntv.png</thumbnail>
 		<genre>TV</genre>
 		<info>n-tv</info>
@@ -385,7 +385,7 @@
 	</item>
 	<item>
 		<title>RTL 2 YOU</title>
-		<link>cbcyoumain.m3u8</link>
+		<link>liveTV_cbcyoumain.m3u8</link>
 		<thumbnail>tv-rtl2you.png</thumbnail>
 		<genre>TV</genre>
 		<info>RTL 2 YOU</info>
