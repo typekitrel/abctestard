@@ -16,8 +16,8 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.5.8'		
-VDATE = '22.11.2016'
+VERSION =  '2.5.9'		
+VDATE = '23.11.2016'
 
 # 
 #	
@@ -195,7 +195,7 @@ def Main():
 def Main_ARD(name):
 	Log('Funktion Main_ARD'); Log(PREFIX); Log(VERSION); Log(VDATE)	
 	oc = ObjectContainer(view_group="InfoList", art=ObjectContainer.art)	
-	oc = home(cont=oc)							# Home-Button	
+	oc = home(cont=oc, ID=NAME)							# Home-Button	
 	
 	# folgendes DirectoryObject ist Deko für das nicht sichtbare InputDirectoryObject dahinter:
 	oc.add(DirectoryObject(key=Callback(Main_ARD, name=name),title='Suche: im Suchfeld eingeben', 
@@ -233,7 +233,7 @@ def Main_ARD(name):
 def Main_ZDF(name):
 	Log('Funktion Main_ZDF'); Log(PREFIX); Log(VERSION); Log(VDATE)
 	oc = ObjectContainer(view_group="InfoList", art=ObjectContainer.art, title1=name)	
-	oc = home(cont=oc)							# Home-Button	
+	oc = home(cont=oc, ID=NAME)								# Home-Button	
 	
 	# folgendes DirectoryObject ist Deko für das nicht sichtbare InputDirectoryObject dahinter:
 	oc.add(DirectoryObject(key=Callback(Main_ZDF, name=name),title='Suche: im Suchfeld eingeben', 
@@ -257,10 +257,21 @@ def Main_ZDF(name):
 	return oc	
 	
 #----------------------------------------------------------------
-def home(cont):															# Home-Button, Aufruf: oc = home(cont=oc)			
-	title = 'Zurück zum Hauptmenü'.decode(encoding="utf-8", errors="ignore")
-	summary = 'Zurück zum Hauptmenü'.decode(encoding="utf-8", errors="ignore")
-	cont.add(DirectoryObject(key=Callback(Main),title=title, summary=summary, tagline=NAME, thumb=R('home.png')))
+def home(cont, ID):												# Home-Button, Aufruf: oc = home(cont=oc)	
+	title = 'Zurück zum Hauptmenü ' + ID
+	title = title.decode(encoding="utf-8", errors="ignore")
+	summary = title
+	
+	if ID == NAME:
+		cont.add(DirectoryObject(key=Callback(Main),title=title, summary=summary, tagline=NAME, thumb=R('home.png')))
+	if ID == 'ARD':
+		name = "ARD Mediathek"
+		cont.add(DirectoryObject(key=Callback(Main_ARD, name=name),title=title, summary=summary, tagline=name, 
+			thumb=R('home.png')))
+	if ID == 'ZDF':
+		name = "ZDF Mediathek"
+		cont.add(DirectoryObject(key=Callback(Main_ZDF,name=name),title=title, summary=summary, tagline=name, 
+			thumb=R('home.png')))
 
 	return cont
 	
@@ -292,7 +303,7 @@ def Main_Options(title):
 	myprefs = myprefs[2:-1]		# letzte Zeile + Zeilen 1-2 entfernen 
 		
 	oc = ObjectContainer(no_cache=True, view_group="InfoList", title1='Einstellungen')
-	oc = home(cont=oc)				# Home-Button - in den Untermenüs Rücksprung hierher zu Einstellungen 
+	oc = home(cont=oc, ID=NAME)				# Home-Button - in den Untermenüs Rücksprung hierher zu Einstellungen 
 	for i in range (len(myprefs)):
 		do = DirectoryObject()
 		element = myprefs[i]		# Muster: <Setting secure="false" default="true" value="true" label=...
@@ -332,7 +343,7 @@ def Main_Options(title):
 		if mytype == 'enum':
 			do.key = Callback(ListEnum, id=id, label=label, values=values)			# Werte auflisten
 		elif mytype == 'text':														# Eingabefeld für neuen Wert (Player-abhängig)
-			oc = home(cont=oc)							# Home-Button	
+			oc = home(cont=oc, ID=NAME)							# Home-Button	
 			oc.add(InputDirectoryObject(key=Callback(SetText, id=id), title=title), title=title)
 			continue
 			
@@ -432,7 +443,7 @@ def SearchUpdate(title):		#
 def SendungenAZ(name):		# Auflistung 0-9 (1 Eintrag), A-Z (einzeln) 
 	Log('SendungenAZ: ' + name)
 	oc = ObjectContainer(view_group="InfoList", title1=NAME, title2=name, art = ObjectContainer.art)
-	oc = home(cont=oc)								# Home-Button
+	oc = home(cont=oc, ID='ARD')							# Home-Button
 	azlist = list(string.ascii_uppercase)
 	azlist.append('0-9')
 	#next_cbKey = 'SinglePage'	# 
@@ -511,7 +522,7 @@ def Search(query=None, title=L('Search'), s_type='video', offset=0, **kwargs):
 def VerpasstWoche(name):	# Wochenliste zeigen
 	Log('VerpasstWoche: ' + name)
 	oc = ObjectContainer(view_group="InfoList", title1=NAME, title2=name, art = ObjectContainer.art)
-	oc = home(cont=oc)							# Home-Button	
+	oc = home(cont=oc, ID='ARD')						# Home-Button	
 		
 	wlist = range(0,6)
 	now = datetime.datetime.now()
@@ -567,7 +578,7 @@ def Einslike(title):
 	return 	Main_ARD("ARD Mediathek")	# 03.10.2016 Sender von ARD abgeschaltet
 	title2='Einslike - Videos fuer Musik und Lifestyle in der ARD Mediathek'
 	oc = ObjectContainer(view_group="InfoList", title1=NAME, title2=title2, art = ObjectContainer.art)
-	oc = home(cont=oc)								# Home-Button
+	oc = home(cont=oc, ID='ARD')							# Home-Button
 	page = HTML.ElementFromURL(BASE_URL + ARD_Einslike)
 	list = page.xpath("//*[@class='more']")
 	Log(page); Log(list)
@@ -605,7 +616,7 @@ def ARDThemenRubrikenSerien(title):			# leider nicht kompatibel mit PageControl
 	
 	next_cbKey = 'SinglePage'			# mehrere Beiträge  pro Satz
 	oc = ObjectContainer(view_group="InfoList", title1=NAME, title2=title2, art = ObjectContainer.art)
-	oc = home(cont=oc)								# Home-Button
+	oc = home(cont=oc, ID='ARD')							# Home-Button
 	page = HTML.ElementFromURL(morepath)
 	doc_txt = HTML.StringFromElement(page)
 	
@@ -649,7 +660,7 @@ def ARDMore(title):	#
 	Log('ARDMore');
 	title2=title.decode(encoding="utf-8", errors="ignore")
 	oc = ObjectContainer(view_group="InfoList", title1=NAME, title2=title2, art = ObjectContainer.art)
-	oc = home(cont=oc)								# Home-Button
+	oc = home(cont=oc, ID='ARD')							# Home-Button
 	next_cbKey = 'SingleSendung'	#
 	
 	if title.find('Ausgewählte Filme') >= 0:
@@ -698,7 +709,7 @@ def PageControl(cbKey, title, path, offset=0):  #
 	title1='Folgeseiten: ' + title.decode(encoding="utf-8", errors="ignore")
 
 	oc = ObjectContainer(view_group="InfoList", title1=title1, title2=title1, art = ObjectContainer.art)
-	oc = home(cont=oc)								# Home-Button
+	oc = home(cont=oc, ID='ARD')							# Home-Button
 	
 	page = HTML.ElementFromURL(path)
 	path_page1 = path							# Pfad der ersten Seite sichern, sonst gehts mit Seite 2 weiter
@@ -799,7 +810,7 @@ def SinglePage(title, path, next_cbKey, offset=0):	# path komplett
 	Log('Funktion SinglePage: ' + path)
 	title = title.decode(encoding="utf-8", errors="ignore")
 	oc = ObjectContainer(view_group="InfoList", title1=title, art=ICON)
-	oc = home(cont=oc)								# Home-Button
+	oc = home(cont=oc, ID='ARD')					# Home-Button
 	
 	func_path = path								# für Vergleich sichern
 					
@@ -883,7 +894,7 @@ def SingleSendung(path, title, thumb, duration, offset=0):	# -> CreateVideoClipO
 
 	Log('SingleSendung path: ' + path)					# z.B. http://www.ardmediathek.de/play/media/11177770
 	oc = ObjectContainer(view_group="InfoList", title1=title, art=ICON)
-	oc = home(cont=oc)								# Home-Button
+	oc = home(cont=oc, ID='ARD')						# Home-Button
 	# Log(path)
 	page = HTTP.Request(path).content  # als Text, nicht als HTML-Element
 
@@ -1193,7 +1204,7 @@ def SenderLiveListePre(title, offset=0):	# Vorauswahl: Überregional, Regional, 
 	#Log(playlist)		# nur bei Bedarf
 
 	oc = ObjectContainer(view_group="InfoList", title1='TV-Livestreams', title2=title, art = ICON)	
-	oc = home(cont=oc)							# Home-Button	
+	oc = home(cont=oc, ID=NAME)				# Home-Button	
 		
 	doc = HTML.ElementFromString(playlist)		# unterschlägt </link>	
 	liste = doc.xpath('//channels/channel')
@@ -1224,7 +1235,7 @@ def SenderLiveListe(title, listname, offset=0):	#
 	title2 = 'Live-Sender ' + title
 	title2 = title2.decode(encoding="utf-8", errors="ignore")	
 	oc = ObjectContainer(view_group="InfoList", title1='Live-Sender', title2=title2, art = ICON)
-	oc = home(cont=oc)								# Home-Button
+	oc = home(cont=oc, ID=NAME)				# Home-Button
 			
 	playlist = Resource.Load(PLAYLIST)	# muss neu geladen werden, das 'listelement' ist hier sonst nutzlos und die
 	#Log(playlist)						# Übergabe als String kann zu groß  werden (max. URL-Länge beim MIE 2083)
@@ -1471,7 +1482,7 @@ def SenderLiveResolution(path, title, thumb, include_container=False):
 
 	title = title.decode(encoding="utf-8", errors="ignore")
 	oc = ObjectContainer(view_group="InfoList", title1=title + ' Live', art=ICON)
-	oc = home(cont=oc)								# Home-Button
+	oc = home(cont=oc, ID=NAME)					# Home-Button
 	
 	Codecs = 'H.264'	# dummy-Vorgabe für PHT (darf nicht leer sein)										
 	if title.find('Arte') >= 0:
@@ -1634,7 +1645,7 @@ def PlayVideo(url, **kwargs):	# resolution übergeben, falls im  videoclip_obj v
 def RadioLiveListe(path, title):
 	Log('RadioLiveListe');
 	oc = ObjectContainer(view_group="InfoList", title1=title, art=ICON)
-	oc = home(cont=oc)								# Home-Button
+	oc = home(cont=oc, ID=NAME)					# Home-Button
 	
 	#page = HTML.ElementFromURL(path)
 	#Log(page)
@@ -1686,7 +1697,7 @@ def RadioAnstalten(path, title,sender,thumbs):
 	if client == None:
 		client = ''
 	if client.find ('Plex Home Theater'): 
-		oc = home(cont=oc)							# Home-Button macht bei PHT die Trackliste unbrauchbar 
+		oc = home(cont=oc, ID=NAME)							# Home-Button macht bei PHT die Trackliste unbrauchbar 
 			
 	page = HTML.ElementFromURL(path) 
 	entries = page.xpath("//*[@class='teaser']")
@@ -1851,9 +1862,11 @@ def ZDF_Search(query=None, title=L('Search'), s_type=None, pagenr='', **kwargs):
 	query = query.replace(' ', '+')		# Leer-Trennung bei ZDF-Suche mit +
 	Log('ZDF_Search'); Log(query); Log(pagenr); Log(s_type)
 
+	ID='Search'
 	ZDF_Search_PATH	 = 'https://www.zdf.de/suche?q=%s&from=&to=&sender=alle+Sender&attrs=&contentTypes=episode&sortBy=date&page=%s'
 	if s_type == 'Bilderserien':	# 'ganze Sendungen' aus Suchpfad entfernt:
 		ZDF_Search_PATH	 = 'https://www.zdf.de/suche?q=%s&from=&to=&sender=alle+Sender&attrs=&contentTypes=&sortBy=date&page=%s'
+		ID=s_type
 	
 	path = ZDF_Search_PATH % (query, pagenr) 
 	Log(path)	
@@ -1870,9 +1883,9 @@ def ZDF_Search(query=None, title=L('Search'), s_type=None, pagenr='', **kwargs):
 	name = 'Suchergebnisse zu: %s (Gesamt: %s), Seite %s'  % (urllib.unquote(query), searchResult, pagenr)
 	name = name.decode(encoding="utf-8", errors="ignore")
 	oc = ObjectContainer(view_group="InfoList", title1=NAME, title2=name, art = ObjectContainer.art)
-	oc = home(cont=oc)								# Home-Button	
+	oc = home(cont=oc, ID='ZDF')							# Home-Button	
 			
-	oc = ZDF_get_content(oc=oc, page=page, ref_path=path, ID='Search')
+	oc = ZDF_get_content(oc=oc, page=page, ref_path=path, ID=ID)
 	
 	# auf mehr prüfen (Folgeseite auf content-link = Ausschlusskriterum prüfen):
 	pagenr = int(pagenr) + 1
@@ -1892,7 +1905,7 @@ def ZDF_Search(query=None, title=L('Search'), s_type=None, pagenr='', **kwargs):
 def ZDF_Verpasst(title, zdfDate):
 	Log('ZDF_Verpasst'); Log(title); Log(zdfDate)
 	oc = ObjectContainer(title2=title, view_group="List")
-	oc = home(cont=oc)								# Home-Button
+	oc = home(cont=oc, ID='ZDF')							# Home-Button
 
 	path = ZDF_SENDUNG_VERPASST % zdfDate
 	page = HTTP.Request(path).content 
@@ -1907,7 +1920,7 @@ def ZDF_Verpasst(title, zdfDate):
 def ZDFSendungenAZ(name):
 	Log('ZDFSendungenAZ')
 	oc = ObjectContainer(title2=name, view_group="List")
-	oc = home(cont=oc)								# Home-Button
+	oc = home(cont=oc, ID='ZDF')							# Home-Button
 	
 	azlist = list(string.ascii_uppercase)
 	azlist.append('0-9')
@@ -1926,7 +1939,7 @@ def SendungenAZList(title, element):	# Sendungen zm gewählten Buchstaben
 	Log('SendungenAZList')
 	title2='Sendungen mit ' + element
 	oc = ObjectContainer(title2=title2, view_group="List")
-	oc = home(cont=oc)								# Home-Button
+	oc = home(cont=oc, ID='ZDF')							# Home-Button
 
 	group = element	
 	if element == '0-9':
@@ -1951,7 +1964,7 @@ def ZDF_Sendungen(url, title, ID):
 	
 	title = title.decode(encoding="utf-8", errors="ignore")
 	oc = ObjectContainer(title2=title, view_group="List")
-	oc = home(cont=oc)								# Home-Button
+	oc = home(cont=oc, ID='ZDF')							# Home-Button
 	
 	page = HTTP.Request(url).content 
 	oc = ZDF_get_content(oc=oc, page=page, ref_path=url, ID=ID)
@@ -1963,7 +1976,7 @@ def ZDF_Sendungen(url, title, ID):
 def Rubriken(name):
 	Log('Rubriken')
 	oc = ObjectContainer(title2='ZDF: ' + name, view_group="List")
-	oc = home(cont=oc)								# Home-Button
+	oc = home(cont=oc, ID='ZDF')							# Home-Button
 
 	# zuerst holen wir uns die Rubriken von einer der Rubrikseiten:
 	path = 'https://www.zdf.de/doku-wissen'
@@ -1988,7 +2001,7 @@ def Rubriken(name):
 def RubrikSingle(title, path):
 	Log('RubrikSingle'); 
 	oc = ObjectContainer(title2=title, view_group="List")
-	oc = home(cont=oc)								# Home-Button
+	oc = home(cont=oc, ID='ZDF')							# Home-Button
 	
 	page = HTTP.Request(path).content 			
 	oc = ZDF_get_content(oc=oc, page=page, ref_path=path, ID='DEFAULT')	
@@ -2000,7 +2013,7 @@ def RubrikSingle(title, path):
 def MeistGesehen(name):
 	Log('MeistGesehen'); 
 	oc = ObjectContainer(title2=name, view_group="List")
-	oc = home(cont=oc)								# Home-Button
+	oc = home(cont=oc, ID='ZDF')							# Home-Button
 	
 	path = ZDF_SENDUNGEN_MEIST
 	page = HTTP.Request(path).content 			
@@ -2013,7 +2026,7 @@ def MeistGesehen(name):
 def BarriereArm(name):				# Vorauswahl: 1. Infos, 2. Hörfassungen, 3. Videos mit Untertitel
 	Log('BarriereArm')
 	oc = ObjectContainer(title2='ZDF: ' + name, view_group="List")
-	oc = home(cont=oc)								# Home-Button
+	oc = home(cont=oc, ID='ZDF')								# Home-Button
 
 #	title='Barrierefreie Angebote'							# freischalten, falls UT in Plex verfügbar
 #	title=title.decode(encoding="utf-8", errors="ignore")
@@ -2044,7 +2057,7 @@ def BarriereArmSingle(title, ID):			# Aufruf: 1. Infos, 2. Hörfassungen, 3. Vid
 	
 	title = title.decode(encoding="utf-8", errors="ignore")
 	oc = ObjectContainer(title2='ZDF: ' + title, view_group="List")
-	oc = home(cont=oc)								# Home-Button
+	oc = home(cont=oc, ID='ZDF')								# Home-Button
 
 	path = ZDF_BARRIEREARM
 	page = HTTP.Request(path).content 
@@ -2079,11 +2092,10 @@ def ZDF_get_content(oc, page, ref_path, ID=None):	# ID='Search' od. 'VERPASST' -
 	if pos >= 0:
 		page = page[pos:]
 				
-	if ID == 'Search' or ID == 'VERPASST':								# Inhalte -> Liste 
-		content =  blockextract('class=\"content-link\"', page)		
-	if ID == 'DEFAULT':
-		content =  blockextract('class=\"artdirect\"', page)			# Liste Rubriken + A-Z, ...	
-																	
+	#if ID == 'Search' or ID == 'VERPASST':						# Unterscheidung ab 22.11.16 nicht mehr nötig
+	#	content =  blockextract('class=\"content-link\"', page)																			
+	content =  blockextract('class=\"artdirect\"', page)			
+
 	Log(len(page)); Log(len(content));
 	if len(content) == 0:										# kein Ergebnis oder allg. Fehler
 		msg_notfound = 'Leider keine Inhalte' 					# z.B. bei A-Z für best. Buchstaben 
@@ -2104,10 +2116,10 @@ def ZDF_get_content(oc, page, ref_path, ID=None):	# ID='Search' od. 'VERPASST' -
 		content.insert(0, first_rec)		# an den Anfang der Liste
 		# Log(content[0]) # bei Bedarf
 		
-	for rec in content:						
+	for rec in content:	
 		# Log(rec)  # bei Bedarf
 		teaser_cat=''; actionDetail=''; genre=''; summary=''; duration='';  title=''; airing=''; 
-		thumb =''; vid_content=''; video_datum=''; video_duration=''; other_teaser_label='';
+		tagline=''; thumb =''; vid_content=''; video_datum=''; video_duration=''; other_teaser_label='';
 		multi = False			# steuert Mehrfachergebnisse 
 		
 		meta_image = stringextract('<meta itemprop=\"image\"', '>', rec)
@@ -2224,21 +2236,21 @@ def ZDF_get_content(oc, page, ref_path, ID=None):	# ID='Search' od. 'VERPASST' -
 
 		if multi == True:			
 			tagline = 'Folgeseiten'
-		else:
-			tagline = plusbar_title
-			if vid_content:
-				tagline = plusbar_title + ' | ' + vid_content
-			#if path.find('/bilderserie-') >= 0:				# entfällt wg. eigener Suchfunktion 
-			#	tagline = 'Bilderserie'
-			#if rec.find('data-plusbar-end-date=\"\"') >= 0:	# kein sicherer Video-Ausschluss
-			#	continue		
-		
-			# Log(rec) # bei Bedarf
+		else:							# 2 x auf Videos prüfen, weiter falls beide nicht vorhanden
+			if ID != 'Bilderserien': 	# aber Bilderserien aufnehmen
+				if rec.find('title-icon icon-502_play') == -1 and  rec.find('icon-301_clock icon') == -1:	
+					Log('icon-502_play und icon-301_clock nicht gefunden')
+					continue
+				tagline = plusbar_title
+				if vid_content:
+					tagline = plusbar_title + ' | ' + vid_content
 		
 		title = title.strip()
 		title = unescape(title)
 		summary = unescape(summary)
+		summary = cleanhtml(summary)
 		tagline = unescape(tagline)
+		tagline = cleanhtml(tagline)
 		Log(Client.Platform)									# für PHT: Austausch Titel / Tagline
 		if  Client.Platform == 'Plex Home Theater':
 			title, tagline = tagline, title
@@ -2265,9 +2277,9 @@ def ZDF_get_content(oc, page, ref_path, ID=None):	# ID='Search' od. 'VERPASST' -
 		title = stringextract('class="big-headline">', '</h2>', rec)	# 1. Titel
 		thumb = stringextract('data-src=\"', '\"', rec)					# 1. Bild
 		summary = stringextract('class=\"desc-text\">', '</p>', rec)	# 1. Beschr.
-		summary = summary.replace('<p>', '').replace('<br />', '').replace('<br />', '')
 		summary = unescape(summary)
-		tagline = 'Bilder und Lebensläufe'
+		summary = cleanhtml(summary)
+		tagline = 'Bilder und Infos'
 		title = title.decode(encoding="utf-8", errors="ignore")
 		tagline = tagline.decode(encoding="utf-8", errors="ignore")
 		summary = summary.decode(encoding="utf-8", errors="ignore")
@@ -2279,13 +2291,13 @@ def ZDF_get_content(oc, page, ref_path, ID=None):	# ID='Search' od. 'VERPASST' -
 	return oc
 #-------------
 def get_airing(airing_string):		# Datum + Uhrzeit, Bsp. airing_string 2016-11-12T21:45:00.000+01:00
-	Log(airing_string)
+	# Log(airing_string)
 	airing = ''
 	
 	airing_date = airing_string.split('T')[0]	# 2016-11-12
 	airing_time = airing_string.split('T')[1]
 	
-	airing_date = airing_date[9:11] + '.' + airing_date[5:7] +  '.' + airing_date[0:4]  # 12.11.2016
+	airing_date = airing_date[8:10] + '.' + airing_date[5:7] +  '.' + airing_date[0:4]  # 12.11.2016
 	airing_time = airing_time[0:5]  # 21:45
 	
 	if airing_date and airing_time:
@@ -2331,7 +2343,7 @@ def GetZDFVideoSources(url, title, thumb, tagline, segment_start=None, segment_e
 			
 	# Ende Vorauswertungen: 
 			
-	oc = home(cont=oc)		# Home-Button - nach Bildgalerie (PhotoObject nur ohne weitere Medienobjekte)
+	oc = home(cont=oc, ID='ZDF')	# Home-Button - nach Bildgalerie (PhotoObject nur ohne weitere Medienobjekte)
 	
 	zdfplayer = stringextract('data-module=\"zdfplayer\"', 'autoplay', page)			
 	player_id =  stringextract('data-zdfplayer-id=\"', '\"', zdfplayer)		
@@ -2453,7 +2465,7 @@ def ZDFotherSources(url, title, tagline, thumb):
 
 	title = title.decode(encoding="utf-8", errors="ignore")					
 	oc = ObjectContainer(title2=title, view_group="InfoList")
-	oc = home(cont=oc)								# Home-Button
+	oc = home(cont=oc, ID='ZDF')						# Home-Button
 
 	page = HTTP.Request(url).content 					# player-Konfig. ermitteln		
 	# Log(page)    # bei Bedarf
@@ -2572,7 +2584,7 @@ def ZDF_Bildgalerie(oc, page, mode):	# keine Bildgalerie, aber ähnlicher Inhalt
 			img_src =  stringextract('data-srcset=\"', ' ', rec)
 			title =  stringextract('class=\"shorter\">', '<br/>', rec) 
 			summ = stringextract('p class=\"text\">', '</p>', rec) 		
-			summ = summ.replace('<br/>', '').replace('<br />', '')
+			summ = cleanhtml(summ)
 		
 		if mode == '<article class=\"b-group-persons\">':
 			img_src = stringextract('data-src=\"', '\"', rec)
@@ -2583,7 +2595,7 @@ def ZDF_Bildgalerie(oc, page, mode):	# keine Bildgalerie, aber ähnlicher Inhalt
 			title = guest_name + ': ' + guest_title						
 			summ = stringextract('desc-text\">', '</p>', rec)
 			summ = summ.strip()
-			summ = summ.replace('<p>', '').replace('<br />', '').replace('<br />', '')
+			summ = cleanhtml(summ)
 					
 		title = unescape(title)
 		title = title.decode(encoding="utf-8", errors="ignore")
@@ -2613,16 +2625,23 @@ def Parseplaylist(container, url_m3u8, thumb):		# master.m3u8 auswerten, Url mus
 #	versucht die ts-Stücke in Dauerschleife zu laden.
 #	Wir prüfen daher besser auf Pfadbeginne mit http:// und verwerfen Nichtpassendes - auch wenn dabei ein
 #	Sender komplett ausfällt.
-#	aktuelle Lösung (ab April 2016):  Sonderbehandlung Arte in Arteplaylists
+#	Lösung ab April 2016:  Sonderbehandlung Arte in Arteplaylists
 #  2. Besonderheit: fast identische URL's zu einer Auflösung (...av-p.m3u8, ...av-b.m3u8) Unterschied n.b.
 #  3. Besonderheit: für manche Sendungen nur 1 Qual.-Stufe verfügbar (Bsp. Abendschau RBB)
 #  4. Besonderheit: manche Playlists enthalten zusätzlich abgeschaltete Links, gekennzeichnet mit #. Fehler Webplayer:
 #		 crossdomain access denied. Keine Probleme mit OpenPHT und VLC
 
   Log ('Parseplaylist: ' + url_m3u8)
+  playlist = ''
   # seit ZDF-Relaunch 28.10.2016 dort nur noch https
   if url_m3u8.find('http://') == 0 or url_m3u8.find('https://') == 0:		# URL oder lokale Datei?	
-	playlist = HTTP.Request(url_m3u8).content  # als Text, nicht als HTML-Element
+	try:
+		playlist = HTTP.Request(url_m3u8).content  # als Text, nicht als HTML-Element
+	except:
+		if playlist == '':
+			msg = 'Playlist kann nicht geladen werden. URL:\r'
+			msg = msg + url_m3u8
+			return ObjectContainer(message=msg)	  # header=... ohne Wirkung	(?)			
   else:													
 	playlist = Resource.Load(url_m3u8) 
   # Log(playlist)   # bei Bedarf
@@ -2805,10 +2824,16 @@ def unescape(line):	# HTML-Escapezeichen in Text entfernen, bei Bedarf erweitern
 	line_ret = (line.replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">")
 		.replace("&#39;", "'").replace("&#039;", "'").replace("&quot;", '"').replace("&#x27;", "'")
 		.replace("&ouml;", "ö").replace("&auml;", "ä").replace("&uuml;", "ü").replace("&szlig;", "ß")
-		.replace("&Ouml;", "Ö").replace("&Auml;", "Ä").replace("&Uuml;", "Ü"))
+		.replace("&Ouml;", "Ö").replace("&Auml;", "Ä").replace("&Uuml;", "Ü").replace("&apos;", "'"))
 		
 	# Log(line_ret)		# bei Bedarf
 	return line_ret	
+#----------------------------------------------------------------  	
+def cleanhtml(line): # ersetzt alle HTML-Tags zwischen < und > 
+	cleantext = line
+	cleanre = re.compile('<.*?>')
+	cleantext = re.sub(cleanre, '', line)
+	return cleantext
 #----------------------------------------------------------------  	
 def mystrip(line):	# Ersatz für unzuverlässige strip-Funktion
 	line_ret = line	

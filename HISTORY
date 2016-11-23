@@ -2,6 +2,12 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------			gelöschte Releases: älter als  1.3		
 
+23.11.2016 2.5.9	Anpassung Homebutton für ARD + ZDF (2 Ebenen)  
+			ZDF_get_content: zwei Anwesenheitsmerkmale für Videos gefunden + integriert.
+			Hilfsroutine cleanhtml für Beschreibungstexte (insbes. im ZDF-Bereich): löscht HTML-Tags
+			uner Verzicht weiterer Bibliotheken wie z.B. BeautifulSoup.
+			Korrektur get_airing (Stellenzahl airing_date) - Datumstag war falsch
+
 22.11.2016 2.5.8	Livesender TV ntv: alte Serveradresse nicht mehr erreichbar. Austausch des Direktlinks 
 			zu p.live.fra.n-tv.de gegen lokale m3u8-Datei "liveTV_ntvlive-ipadakamai.m3u8" in
 			livesenderTV.xml 
