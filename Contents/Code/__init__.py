@@ -16,8 +16,8 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.5.9'		
-VDATE = '23.11.2016'
+VERSION =  '2.6.0'		
+VDATE = '25.11.2016'
 
 # 
 #	
@@ -1964,9 +1964,17 @@ def ZDF_Sendungen(url, title, ID):
 	
 	title = title.decode(encoding="utf-8", errors="ignore")
 	oc = ObjectContainer(title2=title, view_group="List")
-	oc = home(cont=oc, ID='ZDF')							# Home-Button
+	oc = home(cont=oc, ID='ZDF')						# Home-Button
 	
-	page = HTTP.Request(url).content 
+	try:												# Sicherung, s.a. 
+		page = HTTP.Request(url).content 				# https://www.zdf.de/zdfunternehmen/drei-stufen-test-100.html
+	except:
+		page = ''
+	if page == '':
+			msg = 'Seite kann nicht geladen werden. URL:\r'
+			msg = msg + url
+			return ObjectContainer(message=msg)	  # header=... ohne Wirkung	(?)	
+					
 	oc = ZDF_get_content(oc=oc, page=page, ref_path=url, ID=ID)
 
 	return oc
@@ -2088,15 +2096,30 @@ def ZDF_get_content(oc, page, ref_path, ID=None):	# ID='Search' od. 'VERPASST' -
 	Log('ZDF_get_content'); Log(ID); Log(ref_path)
 	
 	img_alt = teilstring(page, 'class=\"m-desktop', '</picture>') # Bildsätze für b-playerbox
+	
+	if page.find('class=\"content-box gallery-slider-box') >= 0:  # Bildgalerie (hier aus Folgeseiten)
+		title = stringextract('\"big-headline\"  itemprop=\"name\" >', '</h1>', page)
+		title = unescape(title)
+		Log(title)
+		oc = ZDF_Bildgalerie(oc=oc, page=page, mode='is_gallery', title=title)
+		return oc
+	if page.find('name headline mainEntityOfPage') >= 0:  # spez. Bildgalerie, hier Bares für Rares
+		headline = stringextract('name headline mainEntityOfPage\" >', '</h1>', page)
+		if headline[0:7] == 'Objekte':		# Bsp.: Objekte vom 6. Dezember 2016
+			oc = ZDF_Bildgalerie(oc=oc, page=page, mode='pics_in_accordion-panels', title=headline)
+			return oc 
+		 	
+		
 	pos = page.find('class=\"content-box\"')					# ab hier verwertbare Inhalte 
 	if pos >= 0:
 		page = page[pos:]
 				
+				
 	#if ID == 'Search' or ID == 'VERPASST':						# Unterscheidung ab 22.11.16 nicht mehr nötig
 	#	content =  blockextract('class=\"content-link\"', page)																			
 	content =  blockextract('class=\"artdirect\"', page)			
-
 	Log(len(page)); Log(len(content));
+	
 	if len(content) == 0:										# kein Ergebnis oder allg. Fehler
 		msg_notfound = 'Leider keine Inhalte' 					# z.B. bei A-Z für best. Buchstaben 
 			
@@ -2117,7 +2140,11 @@ def ZDF_get_content(oc, page, ref_path, ID=None):	# ID='Search' od. 'VERPASST' -
 		# Log(content[0]) # bei Bedarf
 		
 	for rec in content:	
-		# Log(rec)  # bei Bedarf
+		pos = rec.find('</article>')		# Satz begrenzen - bis nächsten Satz nicht verwertbare Inhalte möglich
+		if pos > 0:
+			rec = rec[0:pos]
+			#Log(rec)  # bei Bedarf
+			
 		teaser_cat=''; actionDetail=''; genre=''; summary=''; duration='';  title=''; airing=''; 
 		tagline=''; thumb =''; vid_content=''; video_datum=''; video_duration=''; other_teaser_label='';
 		multi = False			# steuert Mehrfachergebnisse 
@@ -2147,6 +2174,7 @@ def ZDF_get_content(oc, page, ref_path, ID=None):	# ID='Search' od. 'VERPASST' -
 		if path == '' or path == ref_path:					# kein Pfad oder Selbstreferenz
 			continue
 		plusbar_title = stringextract('plusbar-title=\"', '\"', rec)	# Bereichs-, nicht Einzeltitel, nachrangig
+		plusbar_path = stringextract('plusbar-path=\"', '\"', rec)
 
 		# multi- und Teaser-Behandlung:	
 		teaser_label = stringextract('class=\"teaser-label\"', '</div>', rec)
@@ -2183,8 +2211,8 @@ def ZDF_get_content(oc, page, ref_path, ID=None):	# ID='Search' od. 'VERPASST' -
 				Log(airing_string)
 				airing = get_airing(airing_string)		# Bsp. airing_list 2016-11-12T21:45:00.000+01:00
 				Log(airing)	
-			video_datum = stringextract('video-airing\">', '<', rec)		# Video-Datum		
-			video_duration = stringextract('video-duration', '/dd', rec)	# Video-Länge
+			video_datum = stringextract('video-airing\">', '<', rec)		# Video-Datum, kann fehlen	
+			video_duration = stringextract('video-duration', '/dd', rec)	# Video-Länge,  "      "	
 			duration = stringextract('>', '<', video_duration)
 			if video_datum:
 				vid_content = video_datum
@@ -2195,7 +2223,7 @@ def ZDF_get_content(oc, page, ref_path, ID=None):	# ID='Search' od. 'VERPASST' -
 					vid_content = duration
 				else:
 					vid_content = vid_content + ' | ' + duration
-		#Log(airing); Log(video_datum); Log(video_duration); Log(duration);  
+		Log(airing); Log(video_datum); Log(video_duration); Log(duration);  
 
 		# teaser_cat. div. Bezeichner + Textformate,  Bsp.: <span class="teaser-cat" itemprop="genre">
 		teaser_cat = stringextract('class=\"teaser-cat\"', '</span>', rec)
@@ -2236,15 +2264,29 @@ def ZDF_get_content(oc, page, ref_path, ID=None):	# ID='Search' od. 'VERPASST' -
 
 		if multi == True:			
 			tagline = 'Folgeseiten'
-		else:							# 2 x auf Videos prüfen, weiter falls beide nicht vorhanden
-			if ID != 'Bilderserien': 	# aber Bilderserien aufnehmen
-				if rec.find('title-icon icon-502_play') == -1 and  rec.find('icon-301_clock icon') == -1:	
-					Log('icon-502_play und icon-301_clock nicht gefunden')
-					continue
+		else:							# Videos prüfen + Titel kennzeichnen
+			if rec.find('title-icon icon-502_play') > 0 or  rec.find('icon-301_clock icon') > 0:
+				title = 'Video' + ' | ' + title 
 				tagline = plusbar_title
 				if vid_content:
-					tagline = plusbar_title + ' | ' + vid_content
+					title = title  +  ' | ' + vid_content
+					tagline = plusbar_title 
+			else:	
+				Log('icon-502_play und icon-301_clock nicht gefunden')
+				if ID == 'Bilderserien': 	# aber Bilderserien aufnehmen
+					Log('Bilderserien')
+				if plusbar_title.find(' in Zahlen') > 0:	# Statistik-Seite, voraus. ohne Galeriebilder 
+					continue
+				if plusbar_title.find('Liveticker') > 0:	#   Liveticker und Ergebnisse
+					continue
+				if plusbar_path.find('-livestream-') > 0:	#   Verweis Livestreamseite
+					continue
+					
+				multi = True		# weitere Folgeseiten mit unbekanntem Inhalt, ev. auch Videos
+				tagline = 'Folgeseiten'
 		
+		if title[1] == '|':			# Fehlerkorrektur
+			title = title[2:]
 		title = title.strip()
 		title = unescape(title)
 		summary = unescape(summary)
@@ -2275,6 +2317,7 @@ def ZDF_get_content(oc, page, ref_path, ID=None):	# ID='Search' od. 'VERPASST' -
 		rec = stringextract(segment_start, segment_end, page)
 		path = ref_path													# aktuelle Seite, Auswertung in Bildgalerie
 		title = stringextract('class="big-headline">', '</h2>', rec)	# 1. Titel
+		title = unescape(title)
 		thumb = stringextract('data-src=\"', '\"', rec)					# 1. Bild
 		summary = stringextract('class=\"desc-text\">', '</p>', rec)	# 1. Beschr.
 		summary = unescape(summary)
@@ -2283,7 +2326,7 @@ def ZDF_get_content(oc, page, ref_path, ID=None):	# ID='Search' od. 'VERPASST' -
 		title = title.decode(encoding="utf-8", errors="ignore")
 		tagline = tagline.decode(encoding="utf-8", errors="ignore")
 		summary = summary.decode(encoding="utf-8", errors="ignore")
-		Log(thumb);Log(path);
+		Log('Bildstrecke Footer');Log(thumb);Log(path);
 		oc.add(DirectoryObject(key=Callback(GetZDFVideoSources, title=title, url=path, tagline=tagline, thumb=thumb,
 			segment_start=segment_start, segment_end=segment_end),  title=title, thumb=thumb, summary=summary,
 			tagline=tagline))	
@@ -2330,20 +2373,20 @@ def GetZDFVideoSources(url, title, thumb, tagline, segment_start=None, segment_e
 		pos1 = page.find(segment_start); pos2 = page.find(segment_end);  # bisher: b-group-persons
 		Log(pos1);Log(pos2);
 		page = page[pos1:pos2]
-		oc = ZDF_Bildgalerie(oc=oc, page=page, mode=segment_start)
+		oc = ZDF_Bildgalerie(oc=oc, page=page, mode=segment_start, title=title)
 		return oc
 
 	if page.find('data-module=\"zdfplayer\"') == -1:		# Vorprüfung auf Videos
 		if page.find('class=\"b-group-contentbox\"') > 0:	# keine Bildgalerie, aber ähnlicher Inhalt
-			oc = ZDF_Bildgalerie(oc=oc, page=page, mode='pics_in_accordion-panels')		
+			oc = ZDF_Bildgalerie(oc=oc, page=page, mode='pics_in_accordion-panels', title=title)		
 			return oc		
 		if page.find('class=\"content-box gallery-slider-box') >= 0:		# Bildgalerie
-			oc = ZDF_Bildgalerie(oc=oc, page=page, mode='is_gallery')
+			oc = ZDF_Bildgalerie(oc=oc, page=page, mode='is_gallery', title=title)
 			return oc
 			
 	# Ende Vorauswertungen: 
 			
-	oc = home(cont=oc, ID='ZDF')	# Home-Button - nach Bildgalerie (PhotoObject nur ohne weitere Medienobjekte)
+	oc = home(cont=oc, ID='ZDF')	# Home-Button - nach Bildgalerie (PhotoObject darf keine weiteren Medienobjekte enth.)
 	
 	zdfplayer = stringextract('data-module=\"zdfplayer\"', 'autoplay', page)			
 	player_id =  stringextract('data-zdfplayer-id=\"', '\"', zdfplayer)		
@@ -2536,8 +2579,8 @@ def ZDFotherSources(url, title, tagline, thumb):
 					duration='duration', resolution='unbekannt'))	
 	return oc
 #-------------------------
-def ZDF_Bildgalerie(oc, page, mode):	# keine Bildgalerie, aber ähnlicher Inhalt
-	Log('ZDF_Bildgalerie'); Log(mode)
+def ZDF_Bildgalerie(oc, page, mode, title):	# keine Bildgalerie, aber ähnlicher Inhalt
+	Log('ZDF_Bildgalerie'); Log(mode); Log(title)
 	
 	if mode == 'is_gallery':							# "echte" Bildgalerie
 		content =  stringextract('class=\"content-box gallery-slider-box', 'title=\"Bilderserie schließen\"', page)
@@ -2545,20 +2588,20 @@ def ZDF_Bildgalerie(oc, page, mode):	# keine Bildgalerie, aber ähnlicher Inhalt
 	if mode == 'pics_in_accordion-panels':				# Bilder in Klappboxen	
 		content =  stringextract('class=\"b-group-contentbox\"', '</section>', page)
 		content =  blockextract('class=\"accordion-panel\"', content)
-	if mode == '<article class="b-group-persons">':	# ZDF-Korrespondenten, -Mitarbeiter,...	
+	if mode == '<article class="b-group-persons">':		# ZDF-Korrespondenten, -Mitarbeiter,...	
 		content = page	
 		content =  blockextract('guest-info m-clickarea', content)
 			
 	Log(len(content))
 	# neuer Container mit neuem Titel
-	oc = ObjectContainer(title2='ZDF-Bildgalerie', view_group="InfoList")
+	oc = ObjectContainer(title2=title, view_group="InfoList")
 	
 	image = 1
 	for rec in content:
 		# Log(rec)  # bei Bedarf
 		summ = ''; 
 		if mode == 'is_gallery':				# "echte" Bildgalerie
-			img_src =  stringextract('data-srcset=\"', ' ', rec)
+			img_src =  stringextract('data-srcset=\"', ' ', rec)			
 			item_title = stringextract('class=\"item-title', 'class=\"item-description\">', rec)  
 			teaser_cat =  stringextract('class=\"teaser-cat\">', '</span>', item_title)  
 			teaser_cat = teaser_cat.strip()			# teaser_cat hier ohne itemprop
@@ -2592,10 +2635,17 @@ def ZDF_Bildgalerie(oc, page, mode):	# keine Bildgalerie, aber ähnlicher Inhalt
 			guest_name =  stringextract('trackView\": true}\'>', '</button>', rec)
 			guest_name = guest_name.strip()
 			guest_title =  stringextract('guest-title\"><p>', '</p>', rec)
+			guest_title = unescape(guest_title)
 			title = guest_name + ': ' + guest_title						
 			summ = stringextract('desc-text\">', '</p>', rec)
 			summ = summ.strip()
 			summ = cleanhtml(summ)
+			
+		if img_src == '':									# Sicherung			
+			msgH = 'Error'; msg = 'Problem in Bildgalerie: Bild nicht gefunden'
+			Log(msg)
+			msg =  msg.decode(encoding="utf-8", errors="ignore")
+			return ObjectContainer(header=msgH, message=msg)
 					
 		title = unescape(title)
 		title = title.decode(encoding="utf-8", errors="ignore")
@@ -2777,8 +2827,8 @@ def blockextract(blockmark, mString):  	# extrahiert Blöcke begrenzt durch bloc
 	
 	pos = mString.find(blockmark)
 	if 	mString.find(blockmark) == -1:
-		Log('blockextract: mString nicht in blockmark enthalten')
-		Log(pos); Log(blockmark);Log(len(mString));Log(len(blockmark));
+		Log('blockextract: blockmark nicht in mString enthalten')
+		# Log(pos); Log(blockmark);Log(len(mString));Log(len(blockmark));
 		return rlist
 	pos2 = 1
 	while pos2 > 0:
