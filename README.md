@@ -13,7 +13,6 @@ direkt: rols1@gmx.de
   
 Funktionen ab Version 2.2.0: 
 ===================
-- TV-Live-Streams (z.Z. 30 Sender): ARD- und ZDF-Sender überregional und regional, einige ausgewählte Privatsender
 
 #### ARD Mediathek:  
 - Suche nach Sendungen
@@ -24,8 +23,12 @@ Funktionen ab Version 2.2.0:
 - Sendung Verpasst (Sendungen der letzten 7 Tage)
 - Sendungen A-Z
 - Rubriken
-- Themen
 - MeistGesehen
+- Barrierearm (Hörfassung)
+- Bilderserien
+
+#### TV-Live-Streams (z.Z. 30 Sender): 
+- ARD- und ZDF-Sender überregional und regional, einige ausgewählte Privatsender
 
 #### Radio-Live-Streams der ARD:
 - alle Radiosender von Bayern, HR, mdr, NDR, Radio Bremen, RBB, SR, SWR, WDR, Deutschlandfunk. Insgesamt 10 Stationen, 63 Sender
