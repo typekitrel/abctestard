@@ -13,7 +13,7 @@ direkt: rols1@gmx.de
   
 Funktionen ab Version 2.2.0: 
 ===================
-- TV-Sender Live (z.Z. 30 Sender)
+- TV-Live-Streams (z.Z. 30 Sender): ARD- und ZDF-Sender überregional und regional, einige ausgewählte Privatsender
 
 #### ARD Mediathek:  
 - Suche nach Sendungen
@@ -50,7 +50,5 @@ Beim Aktualisieren einfach den .bundle Ordner löschen und die neue Version an s
 
 Credits:
 ===================  
-- Credits to [Gammel] (https://gmlblog.de/2013/08/xbmc-tv-livestreams/): Playlist http://dl.gmlblog.de/deutschesender.xml 
 - Credits to [coder-alpha] https://forums.plex.tv/discussion/166602/rel-ccloudtv-channel-iptv/p1): (Channel updater, based on Channel updater by sharkone/BitTorrent.bundle)
 - Credits to [Arauco] (https://forums.plex.tv/profile/Arauco): processing of Logos and Icons
-- Credits to [Sender1] (https://github.com/plexinc-plugins/ZDFMediathek.bundle): Plex-Plugin ZDFMediathek
