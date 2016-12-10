@@ -2,6 +2,22 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------			gelöschte Releases: älter als  1.3		
 
+10.12.2016 2.6.1	Umstellung von xpath auf blockextract - beim Webdesign der ARD sind Stringfunktionen
+			pflegeleichter
+			Funktion PageControl: Escapesequenzen im Pfad gefiltert - Folgeseiten von Suchergebnissen
+			führten zur ersten Seite. 
+			Umfangreiche Logausgaben auskommentiert / begrenzt in Funktionen: parseLinks_Mp4_Rtmp,
+			PageControl, SingleSendung
+			Funktion SinglePage: Ausschnittbildung für relevante Inhalte (Steuerung: 'mode=...')
+			Funktionen Search, ARDThemenRubrikenSerien, ARDMore: Test auf Störungsseite der ARD 
+			Menü Einslike entfernt (Sendeformat von ARD eingestellt)
+			Umstellung von xpath auf blockextract - beim Webdesign der ARD sind Stringfunktionen 
+			pflegeleichter
+			Funktion img_urlScheme: Korrekturen, Ermittlung der Bildbeschreibung, Berücksichtigung
+			zweier Orte für die Markierung 'urlScheme'.
+			Funktion transl_umlaute: fehlendes 'ö' ergänzt.
+			Funktion VerpasstWoche: iDate / iWeekday gedreht (besser lesbar)
+
 24.11.2016 2.6.0	ZDF_get_content: weitere Filterung nicht verwertbarer Seiten (Bsp. Liveticker), Erkennung
 			von Bildgalerien in Folgeseiten, eindeutige Kennzeichnung von Video-Beiträgen, Korrekturen 
 			in Titel- und Beschreibungstexten

@@ -16,8 +16,8 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.6.0'		
-VDATE = '25.11.2016'
+VERSION =  '2.6.1'		
+VDATE = '10.12.2016'
 
 # 
 #	
@@ -68,7 +68,6 @@ ICON_PREFS = 'plugin-preferences.png'
 
 ICON_ARD_AZ = 'ard-sendungen-az.png' 			
 ICON_ARD_VERP = 'ard-sendung-verpasst.png'			
-ICON_ARD_EINSLIKE = 'ard-einslike.png' 			
 ICON_ARD_RUBRIKEN = 'ard-rubriken.png' 			
 ICON_ARD_Themen = 'ard-themen.png'	 			
 ICON_ARD_Filme = 'ard-ausgewaehlte-filme.png' 	
@@ -207,9 +206,7 @@ def Main_ARD(name):
 		summary='', tagline='TV', thumb=R(ICON_ARD_VERP)))
 	oc.add(DirectoryObject(key=Callback(SendungenAZ, name='Sendungen 0-9 | A-Z'), title='Sendungen A-Z',
 		summary='', tagline='TV', thumb=R(ICON_ARD_AZ)))
-	oc.add(DirectoryObject(key=Callback(Einslike, title='Einslike'), title='Einslike - abgeschaltet!',
-		summary='Internetseiten sind geschlossen.', tagline='TV', thumb=R(ICON_ARD_EINSLIKE)))
-
+		
 	title = 'Ausgewählte Filme'.decode(encoding="utf-8", errors="ignore")
 	oc.add(DirectoryObject(key=Callback(ARDMore, title=title), title=title,
 		summary='', tagline='TV', thumb=R(ICON_ARD_Filme)))
@@ -444,28 +441,28 @@ def SendungenAZ(name):		# Auflistung 0-9 (1 Eintrag), A-Z (einzeln)
 	Log('SendungenAZ: ' + name)
 	oc = ObjectContainer(view_group="InfoList", title1=NAME, title2=name, art = ObjectContainer.art)
 	oc = home(cont=oc, ID='ARD')							# Home-Button
-	azlist = list(string.ascii_uppercase)
+	
+	azlist = list(string.ascii_uppercase)					# A - Z, 0-9
 	azlist.append('0-9')
-	#next_cbKey = 'SinglePage'	# 
+	
 	next_cbKey = 'PageControl'	# SinglePage zeigt die Sendereihen, PageControl dann die weiteren Seiten
 	
 	path = azPath = BASE_URL + ARD_AZ + 'A'		# A-Seite laden für Prüfung auf inaktive Buchstaben
-	page = HTML.ElementFromURL(path)
-	#s = XML.StringFromElement(page)
-	Log(page)
+	Log(path)
+	page = HTTP.Request(path).content
+	Log(len(page))
 	try:										# inaktive Buchstaben?
-		#liste = page.xpath("//li[@class='inactive']/h3/text()")
-		inactive_list  = page.xpath("//li[@class='inactive']")
+		inactive_range = stringextract('Aktuelle TV Auswahl:', 'subressort collapsed', page)
+		inactive_list = blockextract('class=\"inactive\"', inactive_range)
 		Log(inactive_list)		
 	except:
 		inactive_list = ""
 
 	inactive_char = ""
-	if inactive_list:							# inaktive Buchstaben ermitteln (werden 2 x angegeben)
+	if inactive_list:							# inaktive Buchstaben -> 1 String
 		for element in inactive_list:
-			char = element.xpath("./a/text()")[0]
+			char = stringextract('<a>', '</a>', element)
 			char = char.strip()
-			#inactive_char.append(char)
 			inactive_char =  inactive_char + char
 	Log(inactive_char)							# z.B. XYXY
 	
@@ -479,8 +476,8 @@ def SendungenAZ(name):		# Auflistung 0-9 (1 Eintrag), A-Z (einzeln)
 			oc.add(DirectoryObject(key=Callback(SendungenAZ, name = 'zuletzt: ' + button), 
 					title=title, thumb=R(ICON_WARNING)))
 		else:
-			oc.add(DirectoryObject(key=Callback(SinglePage, title=title, path=azPath, next_cbKey=next_cbKey), 
-					title=title,  thumb=R(ICON_ARD_AZ)))
+			oc.add(DirectoryObject(key=Callback(SinglePage, title=title, path=azPath, next_cbKey=next_cbKey, 
+				mode='Sendereihen'), title=title,  thumb=R(ICON_ARD_AZ)))
 	return oc
    
 ####################################################################################################
@@ -493,12 +490,16 @@ def Search(query=None, title=L('Search'), s_type='video', offset=0, **kwargs):
 	oc = ObjectContainer(view_group="InfoList", title1=NAME, title2=name, art = ObjectContainer.art)
 	next_cbKey = 'SinglePage'	# cbKey = Callback für Container in PageControl
 			
-	path =  BASE_URL +  ARD_Suche + query  
-	page = HTML.ElementFromURL(path)
-	s = XML.StringFromElement(page)
-	Log(page)
+	path =  BASE_URL +  ARD_Suche + query 
+	Log(path) 
+	page = HTTP.Request(path).content
+	Log(len(page))
 	
-	i = s.find('<strong>keine Treffer</strong')
+	err = test_fault(page, path)
+	if err:
+		return err		
+		
+	i = page.find('<strong>keine Treffer</strong')
 	Log(i)
 	if i > 0:
 		msg_notfound = 'Leider kein Treffer.'
@@ -508,10 +509,21 @@ def Search(query=None, title=L('Search'), s_type='video', offset=0, **kwargs):
 			summary=summary, tagline='TV', thumb=R(ICON_MAIN_ARD)))
 		return oc
 	else:
-		oc = PageControl(title=name, path=path, cbKey=next_cbKey) 	# wir springen direkt
+		oc = PageControl(title=name, path=path, cbKey=next_cbKey, mode='Suche') 	# wir springen direkt
 	 
 	return oc
  
+#-----------------------
+def test_fault(page, path):
+ 	error_txt = '<title>Leider liegt eine Störung vor | ARD Mediathek</title>'
+	if page.find(error_txt) >= 0:
+		error_txt = 'Leider liegt eine Störung vor | ARD Mediathek | interne Serverprobleme'			 			 	 
+		msgH = 'Fehler'; msg = error_txt + '| Seite: ' + path
+		Log(msg)
+		msg =  msg.decode(encoding="utf-8", errors="ignore")
+		return ObjectContainer(header=msgH, message=msg)	
+	else:
+		return ''
 ####################################################################################################
 @route(PREFIX + '/VerpasstWoche')	# Liste der Wochentage
 	# Ablauf (ARD): 	
@@ -541,11 +553,11 @@ def VerpasstWoche(name):	# Wochenliste zeigen
 		iWeekday = transl_wtag(iWeekday)
 		Log(iPath); Log(iDate); Log(iWeekday);
 		#title = ("%10s ..... %10s"% (iWeekday, iDate))	 # Formatierung in Plex ohne Wirkung
-		title = iWeekday + ' | ' + iDate	 # Bsp.: Heute........15.05.2015
+		title =	"%s | %s" % (iDate, iWeekday)
 		cbKey = 'SinglePage'	# cbKey = Callback für Container in PageControl
 		if name.find('ARD') == 0 :
-			oc.add(DirectoryObject(key=Callback(PageControl, title=title, path=iPath, cbKey='SinglePage'), 
-				title=title, thumb=R(ICON_ARD_VERP)))				
+			oc.add(DirectoryObject(key=Callback(PageControl, title=title, path=iPath, cbKey='SinglePage', 
+				mode='Verpasst'), title=title, thumb=R(ICON_ARD_VERP)))				
 		else:
 			oc.add(DirectoryObject(key=Callback(ZDF_Verpasst, title=title, zdfDate=zdfDate),	  
 				title=title, thumb=R(ICON_ZDF_VERP)))
@@ -562,43 +574,7 @@ def transl_wtag(tag):	# Wochentage engl./deutsch wg. Problemen mit locale-Settin
 			wt_ret = wt_deutsch[i]
 			break
 	return wt_ret
-	
-####################################################################################################
-@route(PREFIX + '/Einslike')	# Menü Einslike (Rubrik-Liste)
-	# Erweiterung Einslike: http://www.ardmediathek.de/einslike
-	# 	Liste Rubriken (6): Leben, Musik, Netz & Tech, Spaß & Fiktion, Info, Neueste Videos
-	# 	<a class="more" href="/einslike/Spa%C3%9F-Fiktion/mehr?documentId=21301902"
-	#	Folgeseiten: mcontent=page (anders ARD-Mediathek: mcontents=page, stimmt Rest überein?)
-	#
-	# Info zu einslike: http://www.ard.de/home/ard/Gestatten__Einslike_/492028/index.html
-	# Ablauf: 	
-	#			hier: Rubrik-Liste zusammenstellen mit Links zu den "mehr"-Seiten, 
-	#			weiter wie Verpasst Woche (->PageControl -> SinglePage -> Parseplaylist -> CreateVideoClipObject
-def Einslike(title):
-	return 	Main_ARD("ARD Mediathek")	# 03.10.2016 Sender von ARD abgeschaltet
-	title2='Einslike - Videos fuer Musik und Lifestyle in der ARD Mediathek'
-	oc = ObjectContainer(view_group="InfoList", title1=NAME, title2=title2, art = ObjectContainer.art)
-	oc = home(cont=oc, ID='ARD')							# Home-Button
-	page = HTML.ElementFromURL(BASE_URL + ARD_Einslike)
-	list = page.xpath("//*[@class='more']")
-	Log(page); Log(list)
-	#next_cbKey = 'PageControl'	# SinglePage zeigt die Sendereihen, PageControl dann die weiteren Seiten
-	
-	for element in list:	# class='more']
-		s = HTML.StringFromElement(element)
-		Log(element); 	# Log(s)   	# class="more" - nur bei Bedarf
-		path = element.xpath("./@href")[0]
-		path = BASE_URL + path
-		rubrik = element.xpath("./span/text()")[0]	
-		rubrik = title + ' | ' + rubrik
-		Log(path); Log(rubrik)
-		oc.add(DirectoryObject(key=Callback(PageControl, path=path, title=rubrik, cbKey='SingleSendung'), title=rubrik, 
-			tagline=title2, summary='', thumb=R(ICON_ARD_EINSLIKE), art=R(ICON_ARD_EINSLIKE)))
-		#oc.add(DirectoryObject(key=Callback(SinglePage, path=path, title=rubrik, next_cbKey=next_cbKey), title=rubrik, 
-		#	tagline=title2, summary='', thumb='', art=ICON))
 		
-	return oc
-	
 ####################################################################################################
 @route(PREFIX + '/ARDThemenRubrikenSerien')	# Seiten die mehrere Beiträge pro Eintrag enhalten
 def ARDThemenRubrikenSerien(title):			# leider nicht kompatibel mit PageControl
@@ -617,20 +593,13 @@ def ARDThemenRubrikenSerien(title):			# leider nicht kompatibel mit PageControl
 	next_cbKey = 'SinglePage'			# mehrere Beiträge  pro Satz
 	oc = ObjectContainer(view_group="InfoList", title1=NAME, title2=title2, art = ObjectContainer.art)
 	oc = home(cont=oc, ID='ARD')							# Home-Button
-	page = HTML.ElementFromURL(morepath)
-	doc_txt = HTML.StringFromElement(page)
-	
-	error_txt = '<title>Leider liegt eine Störung vor | ARD Mediathek</title>'
-	if doc_txt.find(error_txt) > 0:
-		error_txt = 'Leider liegt eine Störung vor | ARD Mediathek'			 			 	 
-		msgH = 'Fehler'; msg = error_txt + '| Seite: ' + morepath
-		Log(msg)
-		msg =  msg.decode(encoding="utf-8", errors="ignore")
-		return ObjectContainer(header=msgH, message=msg)
-		
+	page = HTTP.Request(morepath).content	
+	err = test_fault(page, morepath)
+	if err:
+		return err		
 			
 	# Folgeseiten?:
-	pagenr_path =  re.findall("=page.(\d+)", doc_txt) # Mehrfachseiten?
+	pagenr_path =  re.findall("=page.(\d+)", page) # Mehrfachseiten?
 	Log(pagenr_path)
 	if pagenr_path:
 		del pagenr_path[-1]						# letzten Eintrag entfernen (Doppel) - OK
@@ -640,18 +609,18 @@ def ARDThemenRubrikenSerien(title):			# leider nicht kompatibel mit PageControl
 		title = 'Weiter zu Seite 1'
 		path = morepath + '&' + 'mcontent=page.1'  # 1. Seite, morepath würde auch reichen
 		Log(path)
-		oc.add(DirectoryObject(key=Callback(SinglePage, path=path, title=title, next_cbKey=next_cbKey), title=title, 
-			tagline='', summary='', thumb='', art=ICON))			
+		oc.add(DirectoryObject(key=Callback(SinglePage, path=path, title=title, next_cbKey=next_cbKey, mode='Sendereihen'),
+			title=title, tagline='', summary='', thumb='', art=ICON))			
 		
 		for page_nr in pagenr_path:				# Folgeseiten
 			path = morepath + '&' + 'mcontent=page.' + page_nr
 			title = 'Weiter zu Seite ' + page_nr
 			Log(path)
-			oc.add(DirectoryObject(key=Callback(SinglePage, path=path, title=title, next_cbKey=next_cbKey), title=title, 
-				tagline='', summary='', thumb='', art=ICON))			
+			oc.add(DirectoryObject(key=Callback(SinglePage, path=path, title=title, next_cbKey=next_cbKey, 
+				mode='Sendereihen'), title=title, tagline='', summary='', thumb='', art=ICON))			
 	else:										# bei nur 1 Seite springen wir direkt, z.Z. bei Rubriken
 		Log(morepath)
-		oc = SinglePage(path=morepath, title=title, next_cbKey=next_cbKey)
+		oc = SinglePage(path=morepath, title=title, next_cbKey=next_cbKey, mode='Sendereihen')
 		
 	return oc
 ####################################################################################################
@@ -672,10 +641,13 @@ def ARDMore(title):	#
 	if title.find('Alle Dokus') >= 0:
 		morepath = ARD_DokusAll
 				 
-	page = HTML.ElementFromURL(morepath)
-	doc_txt = HTML.StringFromElement(page)
+	page = HTTP.Request(morepath).content
+	err = test_fault(page, morepath)
+	if err:
+		return err		
+			
 				
-	pagenr_path =  re.findall("=page.(\d+)", doc_txt) # Mehrfachseiten?
+	pagenr_path =  re.findall("=page.(\d+)", page) # Mehrfachseiten?
 	Log(pagenr_path)
 	if pagenr_path:
 		del pagenr_path[-1]						# letzten Eintrag entfernen (Doppel) - OK
@@ -686,17 +658,17 @@ def ARDMore(title):	#
 		title = 'Weiter zu Seite 1'
 		path = morepath + '&' + 'mcontent=page.1'  # 1. Seite, morepath würde auch reichen
 		Log(path)
-		oc.add(DirectoryObject(key=Callback(SinglePage, path=path, title=title, next_cbKey=next_cbKey), title=title, 
-			tagline='', summary='', thumb='', art=ICON))			
+		oc.add(DirectoryObject(key=Callback(SinglePage, path=path, title=title, next_cbKey=next_cbKey, mode='Sendereihen'), 
+			title=title, tagline='', summary='', thumb='', art=ICON))			
 		
 		for page_nr in pagenr_path:
 			path = morepath + '&' + 'mcontent=page.' + page_nr
 			title = 'Weiter zu Seite ' + page_nr
 			Log(path)
-			oc.add(DirectoryObject(key=Callback(SinglePage, path=path, title=title, next_cbKey=next_cbKey), title=title, 
-				tagline='', summary='', thumb='', art=ICON))			
+			oc.add(DirectoryObject(key=Callback(SinglePage, path=path, title=title, next_cbKey=next_cbKey, 
+				mode='Sendereihen'), title=title, tagline='', summary='', thumb='', art=ICON))			
 	else:										# bei nur 1 Seite springen wir direkt, z.Z. bei Rubriken
-		oc = getOnePage(path=morepath, title=title) 
+		oc = SinglePage(path=path, title=title, next_cbKey=next_cbKey, mode='Sendereihen')
 		
 	return oc
 
@@ -705,33 +677,30 @@ def ARDMore(title):	#
 	# Wir laden beim 1. Zugriff alle Seitenverweise in eine Liste. Bei den Folgezugriffen können die Seiten-
 	# verweise entfallen - der Rückschritt zur Liste ist dem Anwender nach jedem Listenelement  möglich.
 	# Dagegen wird in der Mediathek geblättert.
-def PageControl(cbKey, title, path, offset=0):  # 
+def PageControl(cbKey, title, path, mode, offset=0):  # 
+	Log('PageControl'); Log('cbKey: ' + cbKey); Log(path)
 	title1='Folgeseiten: ' + title.decode(encoding="utf-8", errors="ignore")
+	Log('mode: ' + mode)
 
 	oc = ObjectContainer(view_group="InfoList", title1=title1, title2=title1, art = ObjectContainer.art)
 	oc = home(cont=oc, ID='ARD')							# Home-Button
 	
-	page = HTML.ElementFromURL(path)
-	path_page1 = path							# Pfad der ersten Seite sichern, sonst gehts mit Seite 2 weiter
-	
-	Log('PageControl'); Log(cbKey); Log(path)
-	# doc_txt = lxml.html.tostring(page)			# akzeptiert Plex nicht
-	doc_txt = HTML.StringFromElement(page)
-	#Log(doc_txt)
+	page = HTTP.Request(path).content
+	path_page1 = path							# Pfad der ersten Seite sichern, sonst gehts mit Seite 2 weiter	
 
-	pagenr_suche = re.findall("mresults=page", doc_txt)   
-	pagenr_andere = re.findall("mcontents=page", doc_txt)  
-	pagenr_einslike = re.findall("mcontent=page", doc_txt)  	# auch in ARDThemen
+	pagenr_suche = re.findall("mresults=page", page)   
+	pagenr_andere = re.findall("mcontents=page", page)  
+	pagenr_einslike = re.findall("mcontent=page", page)  	# auch in ARDThemen
 	Log(pagenr_suche); Log(pagenr_andere); Log(pagenr_einslike)
 	if (pagenr_suche) or (pagenr_andere) or (pagenr_einslike):
 		Log('PageControl: Mehrfach-Seite mit Folgeseiten')
 	else:												# keine Folgeseiten -> SinglePage
 		Log('PageControl: Einzelseite, keine Folgeseiten'); Log(cbKey); Log(path); Log(title)
-		oc = SinglePage(title=title, path=path, next_cbKey='SingleSendung') # wir springen direkt, 
-		return oc															# erspart dem Anwender 1 Klick
+		oc = SinglePage(title=title, path=path, next_cbKey='SingleSendung', mode=mode ) # wir springen direkt, 
+		return oc																# erspart dem Anwender 1 Klick
 
-	# pagenr_path =  re.findall("&mresults{0,1}=page.(\d+)", doc_txt) # lange Form funktioniert nicht
-	pagenr_path =  re.findall("=page.(\d+)", doc_txt) # 
+	# pagenr_path =  re.findall("&mresults{0,1}=page.(\d+)", page) # lange Form funktioniert nicht
+	pagenr_path =  re.findall("=page.(\d+)", page) # 
 	Log(pagenr_path)
 	if pagenr_path:
 		# pagenr_path = repl_dop(pagenr_path) 	# Doppel entfernen (z.B. Zif. 2) - Plex verweigert, warum?
@@ -740,10 +709,10 @@ def PageControl(cbKey, title, path, offset=0):  #
 	pagenr_path = pagenr_path[0]	# 1. Seitennummer in der Seite - brauchen wir nicht , wir beginnen bei 1 s.u.
 	Log(pagenr_path)		
 	
-	# ab hier Auflistung der Folgeseiten. letzten Eintrag entfernen (Mediathek: Rückverweis auf vorige Seite)
-	list = page.xpath("//div/div/*[@class='entry']")  # sowohl in A-Z, als auch in Verpasst, 1. Element
-	del list[-1]				# ebenfalls letzten Eintrag entfernen wie in pagenr_path
-	Log(list)
+	# ab hier Liste der Folgeseiten. Letzten Eintrag entfernen (Mediathek: Rückverweis auf vorige Seite)
+	list = blockextract('class=\"entry\"', page)  # sowohl in A-Z, als auch in Verpasst, 1. Element
+	del list[-1]				# letzten Eintrag entfernen - wie in pagenr_path
+	Log(len(list))
 
 
 	first_site = True								# falls 1. Aufruf ohne Seitennr.: im Pfad ergänzen für Liste		
@@ -754,7 +723,7 @@ def PageControl(cbKey, title, path, offset=0):  #
 			path_page1 = path_page1 + '&mresults=page.1'
 		if path_page1.find('searchText=') >= 0:			#  kommt direkt von Suche
 			path_page1 = path + '&source=tv&mresults=page.1'
-		if path_page1.find('mcontent=page') >= 0:			#  einslike
+		if path_page1.find('mcontent=page') >= 0:			#  einslike oder Themen
 			path_page1 = path_page1 + 'mcontent=page.1'
 	else:
 		first_site = False
@@ -766,25 +735,21 @@ def PageControl(cbKey, title, path, offset=0):  #
 		next_cbKey = 'SingleSendung'
 			
 		Log(first_site); Log(path_page1); Log(next_cbKey)
-		oc.add(DirectoryObject(key=Callback(SinglePage, title=title, path=path_page1, next_cbKey=next_cbKey), 
+		oc.add(DirectoryObject(key=Callback(SinglePage, title=title, path=path_page1, next_cbKey=next_cbKey, mode=mode), 
 				title=title, thumb=ICON))
 	else:	# Folgeseite einer Mehrfachseite - keine Liste mehr notwendig
-		Log(first_site)
-		oc = SinglePage(title=title, path=path, next_cbKey='SingleSendung') # wir springen wieder direkt
-	
+		Log(first_site)													# wir springen wieder direkt:
+		oc = SinglePage(title=title, path=path, next_cbKey='SingleSendung', mode=mode) 
 	for element in list:	# [@class='entry'] 
 		pagenr_suche = ''; pagenr_andere = ''; title = ''; href = ''
-		# s = lxml.html.tostring(element)    # nicht in Plex
-		s = HTML.StringFromElement(element)
-		try:
-			href = element.xpath("./a/@href")[0]
-		except:
+		href = stringextract(' href=\"', '\"', element)
+		href = unescape(href)
+		if href == '': 
 			continue							# Satz verwerfen
 			
-		Log(element); 	# Log(s)  # class="entry" - nur bei Bedarf
-		pagenr =  re.findall("=page.(\d+)", s) 	# einzelne Nummer aus dem Pfad s ziehen	
-
-		Log(pagenr); Log(href); #Log(pagenr_andere)
+		# Log(element); 	# Log(s)  # class="entry" - nur bei Bedarf
+		pagenr =  re.findall("=page.(\d+)", element) 	# einzelne Nummer aus dem Pfad s ziehen	
+		Log(pagenr); 
 					
 		if (pagenr):							# fehlt manchmal, z.B. bei Suche
 			if href.find('=page.') >=0:
@@ -797,7 +762,7 @@ def PageControl(cbKey, title, path, offset=0):  #
 			
 		Log('href: ' + href); Log('title: ' + title)
 		next_cbKey = 'SingleSendung'
-		oc.add(DirectoryObject(key=Callback(SinglePage, title=title, path=href, next_cbKey=next_cbKey), 
+		oc.add(DirectoryObject(key=Callback(SinglePage, title=title, path=href, next_cbKey=next_cbKey, mode=mode), 
 				title=title, thumb=ICON))
 	    
 	Log(len(oc))
@@ -806,23 +771,35 @@ def PageControl(cbKey, title, path, offset=0):  #
 ####################################################################################################
 @route(PREFIX + '/SinglePage')	# Liste der Sendungen eines Tages / einer Suche 
 								# durchgehend angezeigt (im Original collapsed)
-def SinglePage(title, path, next_cbKey, offset=0):	# path komplett
+def SinglePage(title, path, next_cbKey, mode, offset=0):	# path komplett
 	Log('Funktion SinglePage: ' + path)
+	Log('mode: ' + mode); Log('next_cbKey. ' + next_cbKey); 
 	title = title.decode(encoding="utf-8", errors="ignore")
 	oc = ObjectContainer(view_group="InfoList", title1=title, art=ICON)
 	oc = home(cont=oc, ID='ARD')					# Home-Button
 	
 	func_path = path								# für Vergleich sichern
 					
-	page = HTML.ElementFromURL(path) 	
+	page = HTTP.Request(path).content
+	sendungen = ''
 	
-	sendungen = page.xpath("//*[@class='teaser']") 	# 1 oder mehrere Sendungen
-	if not sendungen: 								# für A-Z-Ergebnisse + in Verpasst, 1. Element
-		sendungen = page.xpath("//div/div/*[@class='entry']") 
+	if mode == 'Suche':									# relevanten Inhalt ausschneiden, Blöcke bilden
+		page = stringextract('data-ctrl-scorefilterloadableLoader-source', 'class=\"socialMedia\"', page)	
+		sendungen = blockextract('class=\"teaser\"', page) 
+	if mode == 'Verpasst':								
+		page = stringextract('"boxCon isCollapsible', 'class=\"socialMedia\"', page)	
+		sendungen = blockextract('<h3 class="headline"', page) 
+	if mode == 'Sendereihen':							# auch A-Z, 
+		page = stringextract('data-ctrl-layoutable', 'class=\"socialMedia\"', page)	
+		sendungen = blockextract('class=\"teaser\"', page) 
 		
-	#Log(sendungen)
+		
+	if len(sendungen) == 0:								# Fallback 	
+		sendungen = blockextract('class=\"entry\"', page) 
+				
+	Log(len(sendungen))
 	send_arr = get_sendungen(oc, sendungen)	# send_arr enthält pro Satz 8 Listen 
-	# Rückgabe end_arr = (send_path, send_headline, send_img_src, send_millsec_duration)
+	# Rückgabe send_arr = (send_path, send_headline, send_img_src, send_millsec_duration)
 	#Log(send_arr); Log('Länge send_arr: ' + str(len(send_arr)))
 	send_path = send_arr[0]; send_headline = send_arr[1]; send_subtitel = send_arr[2];
 	send_img_src = send_arr[3]; send_img_alt = send_arr[4]; send_millsec_duration = send_arr[5]
@@ -836,22 +813,25 @@ def SinglePage(title, path, next_cbKey, offset=0):	# path komplett
 		subtitel = send_subtitel[i]
 		img_src = send_img_src[i]
 		img_alt = send_img_alt[i]
+		img_alt = unescape(img_alt)
 		millsec_duration = send_millsec_duration[i]
 		if not millsec_duration:
 			millsec_duration = "leer"
 		dachzeile = send_dachzeile[i]
 		Log(dachzeile)
 		sid = send_sid[i]
-		summary = img_alt
+		summary = ''
 		if dachzeile != "":
 			summary = dachzeile 
 		if  subtitel != "":
-			subtitel = subtitel.decode(encoding="utf-8", errors="ignore")
 			summary = subtitel
 			if  dachzeile != "":
 				summary = dachzeile + ' | ' + subtitel
 		summary = unescape(summary)
 		summary = summary.decode(encoding="utf-8", errors="ignore")
+		summary = cleanhtml(summary)
+		subtitel = subtitel.decode(encoding="utf-8", errors="ignore")
+		subtitel = cleanhtml(subtitel)
 		Log(subtitel); Log(dachzeile)
 		
 		Log('path: ' + path); Log(title); Log(headline); Log(img_src); Log(millsec_duration);
@@ -863,21 +843,24 @@ def SinglePage(title, path, next_cbKey, offset=0):	# path komplett
 				continue
 			if subtitel == '':	# ohne subtitel verm. keine EinzelSendung, sondern Verweis auf Serie o.ä.
 				continue
+			if subtitel == summary or subtitel == '':
+				subtitel = img_alt.decode(encoding="utf-8", errors="ignore")
 			
 			path = BASE_URL + '/play/media/' + sid			# -> *.mp4 (Quali.-Stufen) + master.m3u8-Datei (Textform)
 			oc.add(DirectoryObject(key=Callback(SingleSendung, path=path, title=headline, thumb=img_src, 
 				duration=millsec_duration), title=headline, tagline=subtitel, summary=summary, thumb=img_src, art=ICON))
-		if next_cbKey == 'SinglePage':		# Callback verweigert den Funktionsnamen als Variable
+		if next_cbKey == 'SinglePage':						# mit neuem path nochmal durchlaufen
 			path = BASE_URL + path
 			Log('path: ' + path);
-			oc.add(DirectoryObject(key=Callback(SinglePage, path=path, title=headline, next_cbKey='SingleSendung'), 
-				title=headline, tagline=subtitel, summary=summary, thumb=img_src, art=ICON))
-		if next_cbKey == 'PageControl':		# Callback verweigert den Funktionsnamen als Variable
+			oc.add(DirectoryObject(key=Callback(SinglePage, path=path, title=headline, next_cbKey='SingleSendung', 
+				mode=mode), title=headline, tagline=subtitel, summary=summary, thumb=img_src, art=ICON))
+		if next_cbKey == 'PageControl':		
 			path = BASE_URL + path
 			Log('path: ' + path);
-			oc.add(DirectoryObject(key=Callback(PageControl, path=path, title=headline, cbKey='SingleSendung'), title=headline, 
-				tagline=subtitel, summary=summary, thumb=img_src, art=ICON))
-					
+			Log('next_cbKey: PageControl in SinglePage')
+			oc.add(DirectoryObject(key=Callback(PageControl, path=path, title=headline, cbKey='SingleSendung', 
+				mode='Sendereihen'), title=headline, tagline=subtitel, summary=summary, thumb=img_src, art=ICON))
+
 	Log(len(oc))	# Anzahl Einträge
 						
 	return oc
@@ -899,7 +882,7 @@ def SingleSendung(path, title, thumb, duration, offset=0):	# -> CreateVideoClipO
 	page = HTTP.Request(path).content  # als Text, nicht als HTML-Element
 
 	link_path,link_img, m3u8_master = parseLinks_Mp4_Rtmp(page)	# link_img kommt bereits mit thumb,  hier auf Vorrat						
-	Log(link_path); Log(link_img); Log(m3u8_master);  
+	Log(link_img); Log(m3u8_master); # Log(link_path);  
 
  	if link_path == []:	      		# keine Videos gefunden		
 		Log('link_path == []') 		 
@@ -1017,6 +1000,7 @@ def parseLinks_Mp4_Rtmp(page):		# extrahiert aus Textseite .mp4- und rtmp-Links 
 					#Log(s2)				# nur bei Bedarf
 					
 			#Log(s2); Log(len(s2))				# nur bei Bedarf
+			
 			if len(s2) > 9:						# schon url gefunden? Dann Markierung ermitteln
 				if s1.find('auto') >= 0:
 					mark = 'auto' + '|'					
@@ -1026,9 +1010,9 @@ def parseLinks_Mp4_Rtmp(page):		# extrahiert aus Textseite .mp4- und rtmp-Links 
 								
 				link = mark + s2				# Qualität voranstellen			
 				link_path.append(link)
-				Log(mark); Log(s2); Log(link); Log(link_path)
+				Log(mark); Log(s2); Log(link); # Log(link_path)
 			
-	Log(link_path)				
+	#Log(link_path)				
 	link_path = list(set(link_path))			# Doppel entfernen (gesehen: 0, 1, 2 doppelt)
 	link_path.sort()							# Sortierung - Original Bsp.: 0,1,2,0,1,2,3
 	Log(link_path); Log(len(link_path))					
@@ -1043,41 +1027,38 @@ def get_sendungen(container, sendungen): # Sendungen ausgeschnitten mit class='t
 	#	nur linklist fehlt )
 	# Die Rückgabe-Liste send_arr nimmt die Datensätze auf (path, headline usw.)
 	
-	Log('get_sendungen'); Log(sendungen)
+	Log('get_sendungen'); 
 	# send_arr nimmt die folgenden Listen auf (je 1 Datensatz pro Sendung)
 	send_path = []; send_headline = []; send_subtitel = []; send_img_src = [];
 	send_img_alt = []; send_millsec_duration = []; send_dachzeile = []; send_sid = []; 
 	arr_ind = 0
-	img_alt = ""	# fehlt manchmal
-	for sendung in sendungen:				 
-		#s = lxml.html.tostring(sendung)
-		s = XML.StringFromElement(sendung)	# XML.StringFromElement Plex-Framework
-		#Log(s)							#  class="teaser" - umfangreiche Ausgabe (nur bei Bedarf)						
+	for s in sendungen:	
+		# Log(s)				# bei Bedarf
 		found_sendung = False
 		if s.find('<div class="linklist">') == -1:
 			if  s.find('subtitle') >= 0: 
 				found_sendung = True
 			if  s.find('dachzeile') >= 0: # subtitle in ARDThemen nicht vorhanden
 				found_sendung = True
-			if  s.find('headline') >= 0:  # in Rubriken weder subtitle noch dachzeile vorhanden
+			if  s.find('<h4 class=\"headline\">') >= 0:  # in Rubriken weder subtitle noch dachzeile vorhanden
 				found_sendung = True
 				
 		Log(found_sendung)
-		if found_sendung:
+		if found_sendung:				
 			dachzeile = re.search("<p class=\"dachzeile\">(.*?)</p>\s+?", s)  # Bsp. <p class="dachzeile">Weltspiegel</p>
 			if dachzeile:									# fehlt komplett bei ARD_SENDUNG_VERPASST
 				dachzeile = dachzeile.group(1)
 			else:
 				dachzeile = ''
-				
-			headline = re.search("<h4 class=\"headline\">(.*?)</h4>\s+?", s) # Bsp. <h4 class="headline">Mit Armin ...</h4>
-			headline = headline.group(1)					# group(1) liefert bereits den Ausschnitt
-			#headline = stringextract('>', '<', s)
+			headline = stringextract('<h4 class=\"headline\">', '</h4>', s)
+			if headline == '':
+				continue
+		
+			#if headline.find('- Hörfassung') >= 0:			# nicht unterdrücken - keine reine Hörfassung gesehen 
+			#	continue
+			if headline.find('Diese Seite benötigt') >= 0:	# Vorspann - irrelevant
+				continue
 			headline = headline .decode('utf-8')			# tagline-Attribute verlangt Unicode
-			if headline.find('- Hörfassung') >= 0:			# Hörfassung unterdrücken
-				continue
-			if headline.find('Diese Seite benötigt') >= 0:	# bei Rubriken im Error-Teaser
-				continue
 			hupper = headline.upper()
 			if hupper.find(str.upper('Livestream')) >= 0:			# Livestream hier unterdrücken (mehrfach in Rubriken)
 				continue
@@ -1087,10 +1068,14 @@ def get_sendungen(container, sendungen): # Sendungen ausgeschnitten mit class='t
 				subtitel = subtitel.replace('<br>', ' | ')				
 			else:
 				subtitel =""
-				
-			send_duration = subtitel
-			send_date = ''
-				
+								
+			Log(headline)
+			send_duration = subtitel						
+			send_date = stringextract('class=\"date\">', '</span>', s) # auch Uhrzeit möglich
+			Log(subtitel)
+			Log(send_date)
+			if send_date and subtitel:
+				subtitel = send_date + ' Uhr | ' + subtitel				
 				
 			if send_duration.find('Min.') >= 0:			# Bsp. 20 Min. | UT
 				send_duration = send_duration.split('Min.')[0]
@@ -1102,31 +1087,31 @@ def get_sendungen(container, sendungen): # Sendungen ausgeschnitten mit class='t
 				millsec_duration = CalculateDuration(duration)
 			else:
 				millsec_duration = ''
-				
-			img_src = ""
-			if s.find('urlScheme') >= 0:					# Bildaddresse versteckt im img-Knoten
-				img_src = img_urlScheme(s,320)				# ausgelagert - s.u.
-
+			
 			try:
-				extr_path = sendung.xpath("./div/div/a/@href")[0]   	# ohne Pfad weiter (mehrere teaser am Seitenanfang)				
-				Log(extr_path)
+				extr_path = stringextract('class=\"media mediaA\"', '/noscript', s)
+				id_path = stringextract('href=\"', '\"', extr_path)
+				# Log(extr_path); Log(id_path)
 				sid = ""
-				if extr_path.find('documentId=') >= 0:
-					sid = extr_path.split('documentId=')[1]
+				if id_path.find('documentId=') >= 0:		# documentId
+					sid = id_path.split('documentId=')[1]
 				Log(sid)
-				path = extr_path	# korrigiert in SinglePage für Einzelsendungen in  '/play/media/' + sid
-				Log(path)
-				#path = BASE_URL + '/play/media/' + sid			# -> *.mp4 (Quali.-Stufen) + master.m3u8-Datei
-				#path = BASE_URL + path.split('documentId=')[0] + sid + '&documentId=' + sid			
-				img_alt = sendung.xpath("./div/div/a/img/@alt")[0] 
-				Log(img_alt)
-							
+				path = id_path	# korrigiert in SinglePage für Einzelsendungen in  '/play/media/' + sid
+				# Log(path)							
 			except:
 				Log('xpath-Fehler in Liste class=teaserbox, sendung: ' + s )	# Satz überspringen
 				continue
+				
+			pos = s.find('urlScheme')						# Bild ermitteln, versteckt im img-Knoten
+			if  pos >= 0:									
+				text = stringextract('urlScheme', '/noscript', s)
+				img_src, img_alt = img_urlScheme(text, 320)
+			else:
+				img_src=''; img_alt=''				
+				
 		
 			Log('neuer Satz')
-			Log(sid); Log(extr_path); Log(path); Log(img_src); Log(img_alt); Log(headline);  
+			Log(sid); Log(id_path); Log(path); Log(img_src); Log(img_alt); Log(headline);  
 			Log(subtitel); Log(send_duration); Log(millsec_duration); Log(dachzeile); 
 
 			send_path.append(path)			# erst die Listen füllen
@@ -1146,15 +1131,32 @@ def get_sendungen(container, sendungen): # Sendungen ausgeschnitten mit class='t
 #-------------------
 # def img_urlScheme: img-Url ermitteln für get_sendungen, ARDRubriken. text = string, dim = Dimension
 def img_urlScheme(text, dim):
-	Log('img_urlScheme')
-	#text = text.split('urlScheme&#039;:&#039;')[0]	#	zwischen beiden split-strings
-	text = text.split('urlScheme')[1]					#	klappt wg. Sonderz. nur so	
-	img_src = text.split('##width##')[0]
-	img_src  = img_src [3:]						# 	vorne ':' abschneiden
-	img_src = BASE_URL + img_src + str(dim)			# Größe nicht in Quelle, getestet: 160,265,320,640
-	Log('img_urlScheme: ' + img_src)
+	Log('img_urlScheme: ' + text[0:40])
+	Log(dim)
+	pos = text.find('class=\"mediaCon\">')				# img erst danach
+	if pos >= 0:
+		text = text[pos:]
+		img_src = stringextract("urlScheme':'", '##width', text)
+	else:
+		img_src = stringextract(':&#039;', '##width', text)
 		
-	return img_src
+	img_alt = stringextract('title=\"', '\"', text)
+	if img_alt == '':
+		img_alt = stringextract('alt=\"', '\"', text)
+	img_alt = img_alt.replace('- Standbild', '')
+	img_alt = 'Bild: ' + img_alt
+	
+		
+	if img_src and img_alt:
+		img_src = BASE_URL + img_src + str(dim)			# dim getestet: 160,265,320,640
+		Log('img_urlScheme: ' + img_src)
+		img_alt = img_alt.decode(encoding="utf-8", errors="ignore")	 # kommt vor:  utf8-decode-error bate 0xc3
+		Log('img_urlScheme: ' + img_alt[0:40])
+		return img_src, img_alt
+	else:
+		Log('img_urlScheme: leer')
+		return '', ''		
+	
 ####################################################################################################
 @route(PREFIX + '/CreateVideoClipObject')	# <- SingleSendung Qualitätsstufen
 	# Plex-Warnung: Media part has no streams - attempting to synthesize | keine Auswirkung
@@ -1709,7 +1711,7 @@ def RadioAnstalten(path, title,sender,thumbs):
 		s = XML.StringFromElement(element)	# XML.StringFromElement Plex-Framework
 		Log(s[0:80])						#  nur bei Bedarf)						
 		
-		img_src = ""
+		img_src = ""						# img_src = Sender-Icon, thumbs = lokale Icons
 		if s.find('urlScheme') >= 0:					# Bildaddresse versteckt im img-Knoten
 			img_src = img_urlScheme(s,320)				# ausgelagert - s.u.
 			
@@ -2856,6 +2858,7 @@ def transl_umlaute(line):	# Umlaute übersetzen, wenn decode nicht funktioniert
 	line_ret = line_ret.replace("Ü", "Ue", len(line_ret))
 	line_ret = line_ret.replace('ü', 'ue', len(line_ret))
 	line_ret = line_ret.replace("Ö", "Oe", len(line_ret))
+	line_ret = line_ret.replace("ö", "oe", len(line_ret))
 	line_ret = line_ret.replace("ß", "ss", len(line_ret))	
 	return line_ret
 #----------------------------------------------------------------  

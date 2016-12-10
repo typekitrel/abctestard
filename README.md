@@ -18,8 +18,14 @@ Funktionen ab Version 2.2.0:
 - Suche nach Sendungen
 - Sendung Verpasst (Sendungen der letzten 7 Tage)
 - Sendungen A-Z
+- Filme
+- Dokus
+- Serien
+- Themen
+- Rubriken
 
 #### ZDF Mediathek: 
+- Suche nach Sendungen
 - Sendung Verpasst (Sendungen der letzten 7 Tage)
 - Sendungen A-Z
 - Rubriken
