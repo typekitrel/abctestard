@@ -339,12 +339,12 @@
 		<fanart></fanart>
 	</item>
 	<item>
-		<title>Joiz</title>
-		<link>http://ooyalahd2-f.akamaihd.net/i/joizgerm01_delivery@324125/index_2528_av-p.m3u8</link>
-		<thumbnail>tv-joiz.png</thumbnail>
+		<title>ServusTV</title>
+		<link>http://hdiosstv-f.akamaihd.net/i/servustvhdde_1@75540/master.m3u8</link>
+		<thumbnail>tv-servus.png</thumbnail>
 		<genre>TV</genre>
-		<info>joiz</info>
-		<date>08.10.2014</date>
+		<info>ServusTV</info>
+		<date>11.12.2016</date>
 		<epg></epg>
 		<epg_schema></epg_schema>
 		<fanart></fanart>

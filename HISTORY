@@ -2,6 +2,18 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------			gelöschte Releases: älter als  1.3		
 
+12.12.2016 2.6.2	TV-Live-Sender: Ersatz für insolventen Sender Joiz: ServusTV
+			ARD-Menü 'Meist Gesehen' hinzugefügt
+			ARD-Menü 'neueste Videos' hinzugefügt
+			ARD-Menü 'am besten bewertet' hinzugefügt
+			Funktion ARDThemenRubrikenSerien in ARDMore integriert
+			ARD-Bereich: Aktualsierung der Zugriffspfade beim Pluginstart - neue Funktion 
+			Update_ARD_Path- die ARD ändert offensichtlich ab und zu die in den Pfaden enthaltene 
+			documentId, z.B. für ARD_FilmeAll oder ARD_DokusAll
+			Menüs Themen / Serien vertauscht (ARD-Reihenfolge)
+			Funktion cleanhtml: HTML-Tags werden nun durch Leerzeichen ersetzt statt durch Leerstring - 
+			das verhindert Wortverklebungen 
+
 10.12.2016 2.6.1	Umstellung von xpath auf blockextract - beim Webdesign der ARD sind Stringfunktionen
 			pflegeleichter
 			Funktion PageControl: Escapesequenzen im Pfad gefiltert - Folgeseiten von Suchergebnissen
@@ -11,8 +23,6 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 			Funktion SinglePage: Ausschnittbildung für relevante Inhalte (Steuerung: 'mode=...')
 			Funktionen Search, ARDThemenRubrikenSerien, ARDMore: Test auf Störungsseite der ARD 
 			Menü Einslike entfernt (Sendeformat von ARD eingestellt)
-			Umstellung von xpath auf blockextract - beim Webdesign der ARD sind Stringfunktionen 
-			pflegeleichter
 			Funktion img_urlScheme: Korrekturen, Ermittlung der Bildbeschreibung, Berücksichtigung
 			zweier Orte für die Markierung 'urlScheme'.
 			Funktion transl_umlaute: fehlendes 'ö' ergänzt.

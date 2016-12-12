@@ -16,8 +16,8 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.6.1'		
-VDATE = '10.12.2016'
+VERSION =  '2.6.2'		
+VDATE = '12.12.2016'
 
 # 
 #	
@@ -75,6 +75,9 @@ ICON_ARD_FilmeAll = 'ard-alle-filme.png'
 ICON_ARD_Dokus = 'ard-ausgewaehlte-dokus.png'			
 ICON_ARD_DokusAll = 'ard-alle-dokus.png'		
 ICON_ARD_Serien = 'ard-serien.png'				
+ICON_ARD_MEIST = 'ard-meist-gesehen.png' 	
+ICON_ARD_NEUESTE = 'ard-neueste-videos.png' 	
+ICON_ARD_BEST = 'ard-am-besten-bewertet.png' 	
 
 ICON_ZDF_AZ = 'zdf-sendungen-az.png' 		
 ICON_ZDF_VERP = 'zdf-sendung-verpasst.png'	
@@ -99,16 +102,18 @@ ARD_VERPASST = '/tv/sendungVerpasst?tag='		# ergänzt mit 0, 1, 2 usw.
 ARD_AZ = '/tv/sendungen-a-z?buchstabe='			# ergänzt mit 0-9, A, B, usw.
 ARD_Suche = '/tv/suche?searchText='				# ergänzt mit Suchbegriff
 ARD_Live = '/tv/live'
-ARD_Einslike = '/einslike'
 
-# Sollten die ARD-ID's geändert werden, dann von http://www.ardmediathek.de/tv holen
+# Aktualisierung der ARD-ID's in Update_ARD_Path
 ARD_Rubriken = 'http://www.ardmediathek.de/tv/Rubriken/mehr?documentId=21282550'
 ARD_Themen = 'http://www.ardmediathek.de/tv/Themen/mehr?documentId=21301810'
 ARD_Serien = 'http://www.ardmediathek.de/tv/Serien/mehr?documentId=26402940'
 ARD_Dokus = 'http://www.ardmediathek.de/tv/Ausgew%C3%A4hlte-Dokus/mehr?documentId=33649086'
-ARD_DokusAll = 'http://www.ardmediathek.de/tv/Alle-Dokus-Reportagen/mehr?documentId=29897596'
+ARD_DokusAll = 'http://www.ardmediathek.de/tv/Alle-Dokus-Reportagen/mehr?documentId=29897594'
 ARD_Filme = 'http://www.ardmediathek.de/tv/Ausgew%C3%A4hlte-Filme/mehr?documentId=33649088'
-ARD_FilmeAll = 'http://www.ardmediathek.de/tv/Alle-Filme/mehr?documentId=33594630'
+ARD_FilmeAll = 'http://www.ardmediathek.de/tv/Alle-Filme/mehr?documentId=31610076'
+ARD_Meist = 'http://www.ardmediathek.de/tv/Meistabgerufene-Videos/mehr?documentId=23644244'
+ARD_Neu = 'http://www.ardmediathek.de/tv/Neueste-Videos/mehr?documentId=21282466'
+ARD_Best = 'http://www.ardmediathek.de/tv/Am-besten-bewertet/mehr?documentId=21282468'
 ARD_RadioAll = 'http://www.ardmediathek.de/radio/live?genre=Alle+Genres&kanal=Alle'
 
 
@@ -202,27 +207,44 @@ def Main_ARD(name):
 	oc.add(InputDirectoryObject(key=Callback(Search,  channel='ARD', s_type='video', title=u'%s' % L('Search Video')),
 		title=u'%s' % L('Search'), prompt=u'%s' % L('Search Video'), thumb=R(ICON_SEARCH)))
 		
-	oc.add(DirectoryObject(key=Callback(VerpasstWoche, name=name), title=" Sendung Verpasst (1 Woche)",
-		summary='', tagline='TV', thumb=R(ICON_ARD_VERP)))
+	title = 'Sendung Verpasst (1 Woche)'
+	oc.add(DirectoryObject(key=Callback(VerpasstWoche, name=name), title=title,
+		summary=title, tagline='TV', thumb=R(ICON_ARD_VERP)))
+	title = 'Sendungen A-Z'
 	oc.add(DirectoryObject(key=Callback(SendungenAZ, name='Sendungen 0-9 | A-Z'), title='Sendungen A-Z',
-		summary='', tagline='TV', thumb=R(ICON_ARD_AZ)))
+		summary=title, tagline='TV', thumb=R(ICON_ARD_AZ)))
+						
 		
 	title = 'Ausgewählte Filme'.decode(encoding="utf-8", errors="ignore")
-	oc.add(DirectoryObject(key=Callback(ARDMore, title=title), title=title,
-		summary='', tagline='TV', thumb=R(ICON_ARD_Filme)))
-	oc.add(DirectoryObject(key=Callback(ARDMore, title='Alle Filme'), title='Alle Filme',
-		summary='', tagline='TV', thumb=R(ICON_ARD_FilmeAll)))
+	oc.add(DirectoryObject(key=Callback(ARDMore, title=title, morepath=ARD_Filme, next_cbKey='SingleSendung'),
+		title=title,summary=title, tagline='TV', thumb=R(ICON_ARD_Filme)))
+	title = 'Alle Filme'
+	oc.add(DirectoryObject(key=Callback(ARDMore, title=title, morepath=ARD_FilmeAll, next_cbKey='SingleSendung'),
+		title=title,summary=title, tagline='TV', thumb=R(ICON_ARD_FilmeAll)))
 	title = 'Ausgewählte Dokus'.decode(encoding="utf-8", errors="ignore")
-	oc.add(DirectoryObject(key=Callback(ARDMore, title=title), title=title,
-		summary='', tagline='TV', thumb=R(ICON_ARD_Dokus)))
-	oc.add(DirectoryObject(key=Callback(ARDMore, title='Alle Dokus'), title='Alle Dokus',
-		summary='', tagline='TV', thumb=R(ICON_ARD_DokusAll)))
-	oc.add(DirectoryObject(key=Callback(ARDThemenRubrikenSerien, title='Serien'), title='Serien',
-		summary='', tagline='TV', thumb=R(ICON_ARD_Serien)))
-	oc.add(DirectoryObject(key=Callback(ARDThemenRubrikenSerien, title='Themen'), title='Themen',
-		summary='', tagline='TV', thumb=R(ICON_ARD_Themen)))
-	oc.add(DirectoryObject(key=Callback(ARDThemenRubrikenSerien, title='Rubriken'), title='Rubriken',
-		summary='', tagline='TV', thumb=R(ICON_ARD_RUBRIKEN)))
+	oc.add(DirectoryObject(key=Callback(ARDMore, title=title, morepath=ARD_Dokus, next_cbKey='SingleSendung'), 
+		title=title,summary=title, tagline='TV', thumb=R(ICON_ARD_Dokus)))
+	title = 'Alle Dokus'
+	oc.add(DirectoryObject(key=Callback(ARDMore, title=title, morepath=ARD_DokusAll, next_cbKey='SingleSendung'),
+		title=title,summary=title, tagline='TV', thumb=R(ICON_ARD_DokusAll)))
+	title = 'Themen'
+	oc.add(DirectoryObject(key=Callback(ARDMore, title=title, morepath=ARD_Themen, next_cbKey='SinglePage'),
+		 title=title, summary=title, tagline='TV', thumb=R(ICON_ARD_Themen)))
+	title = 'Serien'
+	oc.add(DirectoryObject(key=Callback(ARDMore, title=title, morepath=ARD_Serien, next_cbKey='SinglePage'), 
+		title=title, summary=title, tagline='TV', thumb=R(ICON_ARD_Serien)))
+	title = 'Rubriken'
+	oc.add(DirectoryObject(key=Callback(ARDMore, title=title, morepath=ARD_Rubriken, next_cbKey='SinglePage'),
+		 title=title, summary=title, tagline='TV', thumb=R(ICON_ARD_RUBRIKEN)))
+	title = 'Meist Gesehen'
+	oc.add(DirectoryObject(key=Callback(ARDMore, title=title, morepath=ARD_Meist, next_cbKey='SingleSendung'), 
+		title=title, summary=title, tagline='TV', thumb=R(ICON_ARD_MEIST)))
+	title = 'neueste Videos'
+	oc.add(DirectoryObject(key=Callback(ARDMore, title=title, morepath=ARD_Neu, next_cbKey='SingleSendung'), 
+		title=title, summary=title, tagline='TV', thumb=R(ICON_ARD_NEUESTE)))
+	title = 'am besten bewertet'
+	oc.add(DirectoryObject(key=Callback(ARDMore, title=title, morepath=ARD_Best, next_cbKey='SingleSendung'),
+		 title=title, summary=title, tagline='TV', thumb=R(ICON_ARD_BEST)))
 	return oc	
 	
 #---------------------------------------------------------------- 
@@ -576,89 +598,31 @@ def transl_wtag(tag):	# Wochentage engl./deutsch wg. Problemen mit locale-Settin
 	return wt_ret
 		
 ####################################################################################################
-@route(PREFIX + '/ARDThemenRubrikenSerien')	# Seiten die mehrere Beiträge pro Eintrag enhalten
-def ARDThemenRubrikenSerien(title):			# leider nicht kompatibel mit PageControl
-	Log('ARDThemenRubrikenSerien');
-	
-	if title.find('Themen') >= 0:
-		title2='Themen in der ARD Mediathek'
-		morepath = ARD_Themen
-	if title.find('Rubriken') >= 0:
-		title2='Rubriken in der ARD Mediathek'
-		morepath = ARD_Rubriken
-	if title.find('Serien') >= 0:
-		title2='Serien in der ARD Mediathek'
-		morepath = ARD_Serien
-	
-	next_cbKey = 'SinglePage'			# mehrere Beiträge  pro Satz
-	oc = ObjectContainer(view_group="InfoList", title1=NAME, title2=title2, art = ObjectContainer.art)
-	oc = home(cont=oc, ID='ARD')							# Home-Button
-	page = HTTP.Request(morepath).content	
-	err = test_fault(page, morepath)
-	if err:
-		return err		
-			
-	# Folgeseiten?:
-	pagenr_path =  re.findall("=page.(\d+)", page) # Mehrfachseiten?
-	Log(pagenr_path)
-	if pagenr_path:
-		del pagenr_path[-1]						# letzten Eintrag entfernen (Doppel) - OK
-	Log(pagenr_path)	
-	
-	if pagenr_path:	 							# bei Mehrfachseiten Liste weiter bauen, beginnend mit 1. Seite
-		title = 'Weiter zu Seite 1'
-		path = morepath + '&' + 'mcontent=page.1'  # 1. Seite, morepath würde auch reichen
-		Log(path)
-		oc.add(DirectoryObject(key=Callback(SinglePage, path=path, title=title, next_cbKey=next_cbKey, mode='Sendereihen'),
-			title=title, tagline='', summary='', thumb='', art=ICON))			
-		
-		for page_nr in pagenr_path:				# Folgeseiten
-			path = morepath + '&' + 'mcontent=page.' + page_nr
-			title = 'Weiter zu Seite ' + page_nr
-			Log(path)
-			oc.add(DirectoryObject(key=Callback(SinglePage, path=path, title=title, next_cbKey=next_cbKey, 
-				mode='Sendereihen'), title=title, tagline='', summary='', thumb='', art=ICON))			
-	else:										# bei nur 1 Seite springen wir direkt, z.Z. bei Rubriken
-		Log(morepath)
-		oc = SinglePage(path=morepath, title=title, next_cbKey=next_cbKey, mode='Sendereihen')
-		
-	return oc
-####################################################################################################
 @route(PREFIX + '/ARDMore')	# Seiten die nur 1 Beitrag pro Eintrag enhalten
-def ARDMore(title):	#
-	Log('ARDMore');
+def ARDMore(title, morepath, next_cbKey):	# next_cbKey: Vorgabe für nächsten Callback in SinglePage
+	Log('ARDMore'); Log(morepath)
 	title2=title.decode(encoding="utf-8", errors="ignore")
 	oc = ObjectContainer(view_group="InfoList", title1=NAME, title2=title2, art = ObjectContainer.art)
 	oc = home(cont=oc, ID='ARD')							# Home-Button
-	next_cbKey = 'SingleSendung'	#
-	
-	if title.find('Ausgewählte Filme') >= 0:
-		morepath = ARD_Filme
-	if title.find('Alle Filme') >= 0:
-		morepath = ARD_FilmeAll
-	if title.find('Ausgewählte Dokus') >= 0:
-		morepath = ARD_Dokus
-	if title.find('Alle Dokus') >= 0:
-		morepath = ARD_DokusAll
-				 
+					 
+	path = Update_ARD_Path(morepath)			# Pfad aktualisieren
 	page = HTTP.Request(morepath).content
 	err = test_fault(page, morepath)
 	if err:
 		return err		
-			
-				
+							
 	pagenr_path =  re.findall("=page.(\d+)", page) # Mehrfachseiten?
 	Log(pagenr_path)
 	if pagenr_path:
 		del pagenr_path[-1]						# letzten Eintrag entfernen (Doppel) - OK
 	Log(pagenr_path)	
-
 	
+	mode = 'Sendereihen'						# steuert Ausschnittbildung in SinglePage 
 	if pagenr_path:	 							# bei Mehrfachseiten Liste Weiter bauen, beginnend mit 1. Seite
 		title = 'Weiter zu Seite 1'
 		path = morepath + '&' + 'mcontent=page.1'  # 1. Seite, morepath würde auch reichen
 		Log(path)
-		oc.add(DirectoryObject(key=Callback(SinglePage, path=path, title=title, next_cbKey=next_cbKey, mode='Sendereihen'), 
+		oc.add(DirectoryObject(key=Callback(SinglePage, path=path, title=title, next_cbKey=next_cbKey, mode=mode), 
 			title=title, tagline='', summary='', thumb='', art=ICON))			
 		
 		for page_nr in pagenr_path:
@@ -666,12 +630,38 @@ def ARDMore(title):	#
 			title = 'Weiter zu Seite ' + page_nr
 			Log(path)
 			oc.add(DirectoryObject(key=Callback(SinglePage, path=path, title=title, next_cbKey=next_cbKey, 
-				mode='Sendereihen'), title=title, tagline='', summary='', thumb='', art=ICON))			
+				mode=mode), title=title, tagline='', summary='', thumb='', art=ICON))			
 	else:										# bei nur 1 Seite springen wir direkt, z.Z. bei Rubriken
 		oc = SinglePage(path=path, title=title, next_cbKey=next_cbKey, mode='Sendereihen')
 		
 	return oc
 
+#------------------------	
+def Update_ARD_Path(path):		# aktualisiert den Zugriffspfad fallls mötig, z.B. für "Alle Filme"
+	try:
+		Log('Update_ARD_Path old: ' + path)	
+		search_path = stringextract(BASE_URL, '?', path) 	# Base + documentId abschneiden
+		#Log(search_path)
+		page = HTTP.Request(BASE_URL).content
+		pos = page.find(search_path)
+		if pos >= 0:	# Pfad (einschl. http://) + Länge documentId (20) + 10 Reserve:
+			new_path = page[pos-6:pos + len(search_path) + 30]	
+			#Log(new_path)	
+			new_path =  stringextract('\"', '\"',  new_path)
+			#Log(new_path)	
+			new_path = BASE_URL + new_path
+			#Log(new_path)	
+			if new_path == path:
+				Log('Update_ARD_Path new=old: ' + path)	
+				return path
+			else:
+				Log('Update_ARD_Path new: ' + path)	
+				return new_path
+			
+	except:						# bei Zugriffsproblemen mit altem Pfad arbeiten
+		Log('Update_ARD_Path: Zugriffsproblem')	
+		return path
+	
 ####################################################################################################
 @route(PREFIX + '/PageControl')	# kontrolliert auf Folgeseiten. Mehrfache Verwendung.
 	# Wir laden beim 1. Zugriff alle Seitenverweise in eine Liste. Bei den Folgezugriffen können die Seiten-
@@ -834,7 +824,7 @@ def SinglePage(title, path, next_cbKey, mode, offset=0):	# path komplett
 		subtitel = cleanhtml(subtitel)
 		Log(subtitel); Log(dachzeile)
 		
-		Log('path: ' + path); Log(title); Log(headline); Log(img_src); Log(millsec_duration);
+		Log('neuer Satz'); Log('path: ' + path); Log(title); Log(headline); Log(img_src); Log(millsec_duration);
 		Log('next_cbKey: ' + next_cbKey); Log('summary: ' + summary);
 		if next_cbKey == 'SingleSendung':		# Callback verweigert den Funktionsnamen als Variable
 			Log('path: ' + path); Log('func_path: ' + func_path); Log('subtitel: ' + subtitel); Log(sid)
@@ -1500,7 +1490,8 @@ def SenderLiveResolution(path, title, thumb, include_container=False):
 		
 	# alle übrigen (i.d.R. http-Links)
 	if url_m3u8.find('.m3u8') >= 0:					# häufigstes Format
-		if url_m3u8.find('http://') == 0:			# URL oder lokale Datei? (lokal entfällt Eintrag "autom.")			
+		Log(url_m3u8)
+		if url_m3u8.find('http') == 0:		# URL (auch https) oder lokale Datei? (lokal entfällt Eintrag "autom.")			
 			oc.add(CreateVideoStreamObject(url=url_m3u8, title=title + ' | Bandbreite und Auflösung automatisch', 
 				summary='automatische Auflösung | Auswahl durch den Player', tagline=title,
 				meta=Codecs, thumb=thumb, rtmp_live='nein', resolution=''))
@@ -1574,6 +1565,7 @@ def CreateVideoStreamObject(url, title, summary, tagline, meta, thumb, rtmp_live
   #				Die CRITICAL Meldung CreateVideoStreamObject() takes at least 7 arguments (7 given) führt
   #				nicht zum Abbruch des Streams.
   
+	url = url.replace('%40', '@')	# Url kann Zeichen @ enthalten
 	Log('CreateVideoStreamObject: '); Log(url); Log(rtmp_live) 
 	Log('include_container: '); Log(include_container)
 	Log(Client.Platform)
@@ -1638,7 +1630,7 @@ def CreateVideoStreamObject(url, title, summary, tagline, meta, thumb, rtmp_live
 @route(PREFIX + '/PlayVideo')  
 #def PlayVideo(url, resolution, **kwargs):	# resolution übergeben, falls im  videoclip_obj verwendet
 def PlayVideo(url, **kwargs):	# resolution übergeben, falls im  videoclip_obj verwendet
-	Log('PlayVideo: ' + url); # Log('PlayVideo: ' + resolution)	 		
+	Log('PlayVideo: ' + url); 		# Log('PlayVideo: ' + resolution)
 	HTTP.Request(url).content
 	return Redirect(url)
 
@@ -2882,10 +2874,10 @@ def unescape(line):	# HTML-Escapezeichen in Text entfernen, bei Bedarf erweitern
 	# Log(line_ret)		# bei Bedarf
 	return line_ret	
 #----------------------------------------------------------------  	
-def cleanhtml(line): # ersetzt alle HTML-Tags zwischen < und > 
+def cleanhtml(line): # ersetzt alle HTML-Tags zwischen < und >  mit 1 Leerzeichen
 	cleantext = line
 	cleanre = re.compile('<.*?>')
-	cleantext = re.sub(cleanre, '', line)
+	cleantext = re.sub(cleanre, ' ', line)
 	return cleantext
 #----------------------------------------------------------------  	
 def mystrip(line):	# Ersatz für unzuverlässige strip-Funktion
