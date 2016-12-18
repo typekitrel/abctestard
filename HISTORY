@@ -4,8 +4,8 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 
 18.12.2016 2.6.3	Downloadfunktion (zunächst nur ARD-Bereich, nur mp4-Videos): Einstellungen (ein/aus), Button 
 			in der Liste der Videoformate, Ablage im Pluginverzeichnis (../Contents/Downloads). Aus der
-			Liste wird die höchste verfügbare Qualität verwendet.
-			RadioAnstalten: Umstellung von xpath auf blockextract (fehlte noch in v2.6.1).
+			Liste wird die höchste verfügbare Qualität verwendet
+			RadioAnstalten: Umstellung von xpath auf blockextract (fehlte noch in v2.6.1)
 			Neue Funktion get_page: Fehlermeldung bei Connect-Problemen	
 
 12.12.2016 2.6.2	TV-Live-Sender: Ersatz für insolventen Sender Joiz: ServusTV

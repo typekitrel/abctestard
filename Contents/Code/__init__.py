@@ -1007,9 +1007,11 @@ def Download(url, title, dest_path, dfname):
 		return err	
 
 	try:										# läuft nach HTTP-Timeout weiter
-		Core.storage.save(dest_path + dfname, data)
+		fullpath = os.path.join(dest_path, dfname)
+		Log(fullpath)
+		Core.storage.save(fullpath, data)
 		error_txt = dfname + ' erfolgreich gespeichert'			 			 	 
-		msgH = 'Hinweis'; msg = error_txt + ' | Ablage: ' + dest_path
+		msgH = 'Hinweis'; msg = error_txt + ' | ' + fullpath
 		msg =  msg.decode(encoding="utf-8", errors="ignore")
 		return ObjectContainer(header=msgH, message=msg)
 	except Exception as exception:
