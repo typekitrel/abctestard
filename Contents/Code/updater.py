@@ -77,7 +77,8 @@ def update(url, ver):
 					continue
 				# Verwendung 'Core' problembehaftet, bei Fehler 'Core ist not defined!' ist 
 				# 	Elevated in Info.plist erforderlich  - s.a.
-				# 	https://forums.plex.tv/discussion/34771/nameerror-global-name-core-is-not-defined
+				# 	https://forums.plex.tv/discussion/34771/nameerror-global-name-core-is-not-defined,
+				#	Code intern: ../Framework/components/storage.py
 				
 				if name.endswith('/'):	
 					Core.storage.ensure_dirs(full)   

@@ -2,6 +2,12 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------			gelöschte Releases: älter als  1.3		
 
+18.12.2016 2.6.3	Downloadfunktion (zunächst nur ARD-Bereich, nur mp4-Videos): Einstellungen (ein/aus), Button 
+			in der Liste der Videoformate, Ablage im Pluginverzeichnis (../Contents/Downloads). Aus der
+			Liste wird die höchste verfügbare Qualität verwendet.
+			RadioAnstalten: Umstellung von xpath auf blockextract (fehlte noch in v2.6.1).
+			Neue Funktion get_page: Fehlermeldung bei Connect-Problemen	
+
 12.12.2016 2.6.2	TV-Live-Sender: Ersatz für insolventen Sender Joiz: ServusTV
 			ARD-Menü 'Meist Gesehen' hinzugefügt
 			ARD-Menü 'neueste Videos' hinzugefügt

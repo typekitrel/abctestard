@@ -3,7 +3,7 @@
 #import requests	# u.a. Einlesen HTML-Seite, Methode außerhalb Plex-Framework 
 import string
 import urllib		# urllib.quote()
-import os 			# u.a. Behandlung von Pfadnamen
+import os, subprocess 	# u.a. Behandlung von Pfadnamen
 import re			# u.a. Reguläre Ausdrücke, z.B. in CalculateDuration
 import time
 import datetime
@@ -16,8 +16,8 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.6.2'		
-VDATE = '12.12.2016'
+VERSION =  '2.6.3'		
+VDATE = '18.12.2016'
 
 # 
 #	
@@ -95,6 +95,8 @@ ICON_WARNING = "icon-warning.png"
 ICON_NEXT = "icon-next.png"
 ICON_CANCEL = "icon-error.png"
 ICON_MEHR = "icon-mehr.png"
+ICON_SAVE = "icon-save.png"
+ICON_DELETE = "icon-delete.png"
 
 
 BASE_URL = 'http://www.ardmediathek.de'
@@ -536,16 +538,33 @@ def Search(query=None, title=L('Search'), s_type='video', offset=0, **kwargs):
 	return oc
  
 #-----------------------
-def test_fault(page, path):
+def test_fault(page, path):	# testet ARD-Seite auf ARD-spezif. Error-Test
  	error_txt = '<title>Leider liegt eine Störung vor | ARD Mediathek</title>'
 	if page.find(error_txt) >= 0:
 		error_txt = 'Leider liegt eine Störung vor | ARD Mediathek | interne Serverprobleme'			 			 	 
-		msgH = 'Fehler'; msg = error_txt + '| Seite: ' + path
+		msgH = 'Fehler'; msg = error_txt + ' | Seite: ' + path
 		Log(msg)
 		msg =  msg.decode(encoding="utf-8", errors="ignore")
 		return ObjectContainer(header=msgH, message=msg)	
 	else:
 		return ''
+#-----------------------
+def get_page(path):		# holt kontrolliert raw-Content
+	try:
+		page = HTTP.Request(path).content
+		err = ''
+	except:
+		page = ''
+		
+	if page == '':	
+		error_txt = 'Seite nicht erreichbar'			 			 	 
+		msgH = 'Fehler'; msg = error_txt + ' | Seite: ' + path
+		Log(msg)
+		msg =  msg.decode(encoding="utf-8", errors="ignore")
+		err = ObjectContainer(header=msgH, message=msg)
+
+	return page, err	
+
 ####################################################################################################
 @route(PREFIX + '/VerpasstWoche')	# Liste der Wochentage
 	# Ablauf (ARD): 	
@@ -863,7 +882,8 @@ def SinglePage(title, path, next_cbKey, mode, offset=0):	# path komplett
 #		werden
 #  
 def SingleSendung(path, title, thumb, duration, offset=0):	# -> CreateVideoClipObject
-	title = title.decode(encoding="utf-8", errors="ignore")	# ohne: Exception All strings must be XML compatible 
+	title = title.decode(encoding="utf-8", errors="ignore")	# ohne: Exception All strings must be XML compatible
+	title_org = title	# Backup 
 
 	Log('SingleSendung path: ' + path)					# z.B. http://www.ardmediathek.de/play/media/11177770
 	oc = ObjectContainer(view_group="InfoList", title1=title, art=ICON)
@@ -939,12 +959,88 @@ def SingleSendung(path, title, thumb, duration, offset=0):	# -> CreateVideoClipO
 					summary=summary, tagline=title, meta=path, thumb=thumb, duration=duration, rtmp_live='nein', 
 					resolution=''))					
 			else:
+				download_url = url			# letzte (höchste Qualität) = Url für Download 
 				summary='Video-Format: MP4'	# 3. mp4-Links:	
 				oc.add(CreateVideoClipObject(url=url, title=title, 
 					summary=summary, meta=path, thumb=thumb, tagline='', duration=duration, resolution=''))
-						
+					
+	Log(Prefs['pref_use_downloads']) 							# Voreinstellung: False 
+	if Prefs['pref_use_downloads'] == True:
+		if download_url.find('.m3u8') == -1 and download_url.find('rtmp://') == -1:
+			now = datetime.datetime.now()
+			mydate = now.strftime("%Y-%m-%d_%H:%M:%S")				
+			dfname = 'Download_' + mydate + '.mp4'   			# Bsp.: Download_2016-12-18_09:15:45.mp4
+			tagline = 'Hinweis: Download läuft bei Timeout weiter!'
+			title = 'Download Video: ' + title_org + ' --> ' + dfname
+			dest_path = Core.bundle_path + '/Contents/Downloads/'
+			summary = 'Ablage: ' + dest_path
+			summary=summary.decode(encoding="utf-8", errors="ignore")
+			tagline=tagline.decode(encoding="utf-8", errors="ignore")
+			title=title.decode(encoding="utf-8", errors="ignore")
+			oc.add(DirectoryObject(key=Callback(Download, url=download_url, title=title, dest_path=dest_path,
+				dfname=dfname), title=title, summary=summary, thumb=R(ICON_SAVE), tagline=tagline))
+
+			title = 'Downloadverzeichnis löschen'
+			tagline = 'Löschen erfolgt ohne Rückfrage!'
+			tagline=tagline.decode(encoding="utf-8", errors="ignore")
+			title=title.decode(encoding="utf-8", errors="ignore")			
+			summary = 'alle Dateien aus dem Downloadverzeichnis entfernen'
+			oc.add(DirectoryObject(key=Callback(DownloadsDelete, url=dest_path),
+				title=title, summary=summary, thumb=R(ICON_DELETE), tagline=tagline))
+			
 	return oc
-#--------------------------			 		
+
+####################################################################################################
+@route(PREFIX + '/Download')	# einzelne Sendung, path in neuer Mediathek führt zur 
+# s.a. https://forums.plex.tv/discussion/34771/nameerror-global-name-core-is-not-defined
+# Code intern: ../Framework/components/storage.py
+# Speicherort ohne Pfadangabe (hier n.b.):
+# 	../Plex Media Server/Plug-in Support/Data/com.plexapp.plugins.ardmediathek2016
+# Verwendung von curl verworfen (zusätzl. Aufwand, wenig Nutzen)
+# 		 		
+def Download(url, title, dest_path, dfname):
+	Log('Download: ' + title + ' -> ' + dfname)
+	Log(url); 
+
+	data, err = get_page(path=url)				# Absicherung gegen Connect-Probleme
+	if err:
+		return err	
+
+	try:										# läuft nach HTTP-Timeout weiter
+		Core.storage.save(dest_path + dfname, data)
+		error_txt = dfname + ' erfolgreich gespeichert'			 			 	 
+		msgH = 'Hinweis'; msg = error_txt + ' | Ablage: ' + dest_path
+		msg =  msg.decode(encoding="utf-8", errors="ignore")
+		return ObjectContainer(header=msgH, message=msg)
+	except Exception as exception:
+		error_txt = 'Download fehlgeschlagen | ' + str(exception)			 			 	 
+		msgH = 'Fehler'; msg = error_txt
+		msg =  msg.decode(encoding="utf-8", errors="ignore")
+		Log(msg)
+		return ObjectContainer(header=msgH, message=msg)
+
+#---------------------------
+@route(PREFIX + '/DownloadsDelete')	# 			# Downloadverzeichnis leeren / löschen / neu anlegen
+def DownloadsDelete(url):
+	Log('DownloadsDelete: ' + url)
+	try:
+		for i in os.listdir(url):		# Verz. leeren
+			fullpath = os.path.join(url, i)
+			os.remove(fullpath)
+		os.rmdir(url)					# entfernen
+		os.makedirs(url)			# neu anlegen
+		error_txt = 'Downloadverzeichnis geleert'			 			 	 
+		msgH = 'Hinweis'; msg = error_txt + ' | Downloadverzeichnis: ' + url
+		msg =  msg.decode(encoding="utf-8", errors="ignore")
+		return ObjectContainer(header=msgH, message=msg)
+	except Exception as exception:
+		error_txt = 'Downloadverzeichnis konnte nicht gelöscht werden | ' + str(exception)			 			 	 
+		msgH = 'Fehler'; msg = error_txt
+		msg =  msg.decode(encoding="utf-8", errors="ignore")
+		Log(msg)
+		return ObjectContainer(header=msgH, message=msg)
+
+####################################################################################################
 def parseLinks_Mp4_Rtmp(page):		# extrahiert aus Textseite .mp4- und rtmp-Links (Aufrufer SingleSendung)
 									# akt. Bsp. rtmp: http://www.ardmediathek.de/play/media/35771780
 	Log('parseLinks_Mp4_Rtmp')		# akt. Bsp. m3u8: 
@@ -1692,30 +1788,34 @@ def RadioAnstalten(path, title,sender,thumbs):
 		client = ''
 	if client.find ('Plex Home Theater'): 
 		oc = home(cont=oc, ID=NAME)							# Home-Button macht bei PHT die Trackliste unbrauchbar 
-			
-	page = HTML.ElementFromURL(path) 
-	entries = page.xpath("//*[@class='teaser']")
+				
+	page, err = get_page(path=path)				# Absicherung gegen Connect-Probleme
+	if err:
+		return err	
+	entries = blockextract('class=\"teaser\"', page)	
 	
 	del entries[0:2]								# "Javascript-Fehler" überspringen (2 Elemente)
-	Log(entries)
+	Log(len(entries))
 
 	for element in entries:
-		s = XML.StringFromElement(element)	# XML.StringFromElement Plex-Framework
-		Log(s[0:80])						#  nur bei Bedarf)						
+		pos = element.find('class=\"socialMedia\"')			# begrenzen
+		if pos >= 0:
+			element = element[0:pos]
+		# Log(element[0:80])						#  nur bei Bedarf)	
 		
 		img_src = ""						# img_src = Sender-Icon, thumbs = lokale Icons
-		if s.find('urlScheme') >= 0:					# Bildaddresse versteckt im img-Knoten
-			img_src = img_urlScheme(s,320)				# ausgelagert - s.u.
+		if element.find('urlScheme') >= 0:					# Bildaddresse versteckt im img-Knoten
+			img_src = img_urlScheme(element,320)				# ausgelagert - s.u.
 			
 		headline = ''; subtitel = ''		# nicht immer beide enthalten
-		if s.find('headline') >= 0:			# h4 class="headline" enthält den Sendernamen
-			headline = stringextract('\"headline\">', '</h4>', s)
+		if element.find('headline') >= 0:			# h4 class="headline" enthält den Sendernamen
+			headline = stringextract('\"headline\">', '</h4>', element)
 			headline = headline .decode('utf-8')		# tagline-Attribute verlangt Unicode
-		if s.find('subtitle') >= 0:	
-			subtitel = stringextract('\"subtitle\">', '</p>', s)
-		Log(headline); Log(subtitel);					
+		if element.find('subtitle') >= 0:	
+			subtitel = stringextract('\"subtitle\">', '</p>', element)
+		Log(headline); Log(subtitel);				
 			
-		href = element.xpath("./div/div/a/@href")[0]
+		href = stringextract('<a href=\"', '\"', element)
 		sid = href.split('documentId=')[1]
 		
 		path = BASE_URL + '/play/media/' + sid + '?devicetype=pc&features=flash'	# -> Textdatei mit Streamlink
