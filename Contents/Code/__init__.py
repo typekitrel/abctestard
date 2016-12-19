@@ -16,8 +16,8 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.6.3'		
-VDATE = '18.12.2016'
+VERSION =  '2.6.5'		
+VDATE = '19.12.2016'
 
 # 
 #	
@@ -968,11 +968,12 @@ def SingleSendung(path, title, thumb, duration, offset=0):	# -> CreateVideoClipO
 	if Prefs['pref_use_downloads'] == True:
 		if download_url.find('.m3u8') == -1 and download_url.find('rtmp://') == -1:
 			now = datetime.datetime.now()
-			mydate = now.strftime("%Y-%m-%d_%H:%M:%S")				
-			dfname = 'Download_' + mydate + '.mp4'   			# Bsp.: Download_2016-12-18_09:15:45.mp4
+			mydate = now.strftime("%Y-%m-%d_%H-%M-%S")				
+			dfname = 'Download_' + mydate + '.mp4'   			# Bsp.: Download_2016-12-18_09-15-00.mp4
 			tagline = 'Hinweis: Download läuft bei Timeout weiter!'
 			title = 'Download Video: ' + title_org + ' --> ' + dfname
 			dest_path = Core.bundle_path + '/Contents/Downloads/'
+			Log(dest_path)
 			summary = 'Ablage: ' + dest_path
 			summary=summary.decode(encoding="utf-8", errors="ignore")
 			tagline=tagline.decode(encoding="utf-8", errors="ignore")
