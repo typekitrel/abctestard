@@ -16,8 +16,8 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.6.5'		
-VDATE = '19.12.2016'
+VERSION =  '2.6.6'		
+VDATE = '20.12.2016'
 
 # 
 #	
@@ -857,7 +857,8 @@ def SinglePage(title, path, next_cbKey, mode, offset=0):	# path komplett
 			
 			path = BASE_URL + '/play/media/' + sid			# -> *.mp4 (Quali.-Stufen) + master.m3u8-Datei (Textform)
 			oc.add(DirectoryObject(key=Callback(SingleSendung, path=path, title=headline, thumb=img_src, 
-				duration=millsec_duration), title=headline, tagline=subtitel, summary=summary, thumb=img_src, art=ICON))
+				duration=millsec_duration, tagline=subtitel, summary=summary), title=headline, tagline=subtitel, 
+				summary=summary, thumb=img_src, art=ICON))
 		if next_cbKey == 'SinglePage':						# mit neuem path nochmal durchlaufen
 			path = BASE_URL + path
 			Log('path: ' + path);
@@ -881,9 +882,10 @@ def SinglePage(title, path, next_cbKey, mode, offset=0):	# path komplett
 #	2. Text-Seite mit rtmp-Streams (Listenformat ähnlich Zif. 1, rtmp-Pfade müssen zusammengesetzt
 #		werden
 #  
-def SingleSendung(path, title, thumb, duration, offset=0):	# -> CreateVideoClipObject
+def SingleSendung(path, title, thumb, duration, summary, tagline, offset=0):	# -> CreateVideoClipObject
 	title = title.decode(encoding="utf-8", errors="ignore")	# ohne: Exception All strings must be XML compatible
 	title_org = title	# Backup 
+	detailtxt = title_org + '\n' + summary + '\n' + tagline + '\n'	# Verwendung in Download
 
 	Log('SingleSendung path: ' + path)					# z.B. http://www.ardmediathek.de/play/media/11177770
 	oc = ObjectContainer(view_group="InfoList", title1=title, art=ICON)
@@ -979,7 +981,8 @@ def SingleSendung(path, title, thumb, duration, offset=0):	# -> CreateVideoClipO
 			tagline=tagline.decode(encoding="utf-8", errors="ignore")
 			title=title.decode(encoding="utf-8", errors="ignore")
 			oc.add(DirectoryObject(key=Callback(Download, url=download_url, title=title, dest_path=dest_path,
-				dfname=dfname), title=title, summary=summary, thumb=R(ICON_SAVE), tagline=tagline))
+				dfname=dfname, detailtxt=detailtxt), title=title, summary=summary, thumb=R(ICON_SAVE), 
+				tagline=tagline))
 
 			title = 'Downloadverzeichnis löschen'
 			tagline = 'Löschen erfolgt ohne Rückfrage!'
@@ -992,25 +995,40 @@ def SingleSendung(path, title, thumb, duration, offset=0):	# -> CreateVideoClipO
 	return oc
 
 ####################################################################################################
-@route(PREFIX + '/Download')	# einzelne Sendung, path in neuer Mediathek führt zur 
+@route(PREFIX + '/Download')	
 # s.a. https://forums.plex.tv/discussion/34771/nameerror-global-name-core-is-not-defined
-# Code intern: ../Framework/components/storage.py
-# Speicherort ohne Pfadangabe (hier n.b.):
+# 	Code intern: ../Framework/components/storage.py
+# Speicherort ohne Pfadangabe (u.a. Cache-Daten):
 # 	../Plex Media Server/Plug-in Support/Data/com.plexapp.plugins.ardmediathek2016
-# Verwendung von curl verworfen (zusätzl. Aufwand, wenig Nutzen)
+# Verwendung von curl zunächst verworfen (zusätzl. Aufwand, wenig Nutzen)
+# Timeout-Problem: Veränderung der Timeout-Parameter wirkt sich nicht auf den Timeout zwischen
+#	PM-Server + Plugin aus (ca. 15 sec. bis zur Meldung "Dieser Kanal reagiert nicht")
 # 		 		
-def Download(url, title, dest_path, dfname):
+def Download(url, title, dest_path, dfname, detailtxt):
 	Log('Download: ' + title + ' -> ' + dfname)
 	Log(url); 
 
-	data, err = get_page(path=url)				# Absicherung gegen Connect-Probleme
-	if err:
-		return err	
+	#data, err = get_page(path=url)				# Absicherung gegen Connect-Probleme, hier
+	#if err:									# nicht verwendet
+	#	return err	
 
 	try:										# läuft nach HTTP-Timeout weiter
+		# Log(Network.Timeout)					# Default: 20.0  - aus api/networkkit.py
+		# Network.Timeout = 6000				# 
+		# data = HTTP.Request(url, timeout=float(1800)).content # 30 min Timeout - keine Veränderung
+		data = HTTP.Request(url, timeout=None).content
+		data = Core.networking.http_request(url) # direkte Core-Verwendung - keine Verbesserung
 		fullpath = os.path.join(dest_path, dfname)
 		Log(fullpath)
-		Core.storage.save(fullpath, data)
+		Core.storage.save(fullpath, data)		# Video speichern
+		
+		textfile = dfname.split('.mp4')[0]		# Textfile zum Video
+		textfile = textfile + '.txt'
+		pathtextfile = os.path.join(dest_path, textfile)
+		Log(pathtextfile)
+		detailtxt = 'Details zum Video ' +  dfname + ':\n\n' + detailtxt
+		Core.storage.save(pathtextfile, detailtxt, binary=True)
+			
 		error_txt = dfname + ' erfolgreich gespeichert'			 			 	 
 		msgH = 'Hinweis'; msg = error_txt + ' | ' + fullpath
 		msg =  msg.decode(encoding="utf-8", errors="ignore")
@@ -1030,8 +1048,8 @@ def DownloadsDelete(url):
 		for i in os.listdir(url):		# Verz. leeren
 			fullpath = os.path.join(url, i)
 			os.remove(fullpath)
-		os.rmdir(url)					# entfernen
-		os.makedirs(url)			# neu anlegen
+		# os.rmdir(url)					# entfernen entf.
+		# os.makedirs(url)				# neu anlegen entf.
 		error_txt = 'Downloadverzeichnis geleert'			 			 	 
 		msgH = 'Hinweis'; msg = error_txt + ' | Downloadverzeichnis: ' + url
 		msg =  msg.decode(encoding="utf-8", errors="ignore")
@@ -2969,6 +2987,7 @@ def repl_char(cut_char, line):	# problematische Zeichen in Text entfernen, wenn 
 	return line_ret
 #----------------------------------------------------------------  	
 def unescape(line):	# HTML-Escapezeichen in Text entfernen, bei Bedarf erweitern. ARD auch &#039; statt richtig &#39;
+#					# s.a.  ../Framework/api/utilkit.py
 	line_ret = (line.replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">")
 		.replace("&#39;", "'").replace("&#039;", "'").replace("&quot;", '"').replace("&#x27;", "'")
 		.replace("&ouml;", "ö").replace("&auml;", "ä").replace("&uuml;", "ü").replace("&szlig;", "ß")

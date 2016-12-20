@@ -2,6 +2,9 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------			gelöschte Releases: älter als  1.3		
 
+20.12.2016 2.6.6	Downloadfunktion: zusätzliche Textdatei mit Details zum Video (Ablage Downloadverz. im Plugin),
+			Verlegung des HTTP-Requests in die Download-Funktion (vorher in get_page)
+
 19.12.2016 2.6.5	Downloadfunktion: Fehler in Dateinamen abgestellt (unter Windows kein : erlaubt)
 
 18.12.2016 2.6.4	Downloadfunktion: Fehler in Pfadbehandlung beim Speichern abgestellt
