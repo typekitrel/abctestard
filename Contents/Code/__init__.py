@@ -4,6 +4,8 @@
 import string
 import urllib		# urllib.quote()
 import os, subprocess 	# u.a. Behandlung von Pfadnamen
+import sys				# Plattformerkennung
+import shutil			# Dateioperationen
 import re			# u.a. Reguläre Ausdrücke, z.B. in CalculateDuration
 import time
 import datetime
@@ -13,11 +15,10 @@ import locale
 
 import updater
 
-
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.6.6'		
-VDATE = '20.12.2016'
+VERSION =  '2.6.8'		
+VDATE = '29.12.2016'
 
 # 
 #	
@@ -95,8 +96,21 @@ ICON_WARNING = "icon-warning.png"
 ICON_NEXT = "icon-next.png"
 ICON_CANCEL = "icon-error.png"
 ICON_MEHR = "icon-mehr.png"
-ICON_SAVE = "icon-save.png"
+ICON_DOWNL = "icon-downl.png"
+ICON_DOWNL_DIR = "icon-downl-dir.png"
 ICON_DELETE = "icon-delete.png"
+
+ICON_DIR_CURL = "Dir-curl.png"
+ICON_DIR_FOLDER = "Dir-folder.png"
+ICON_DIR_PRG = "Dir-prg.png"
+ICON_DIR_IMG = "Dir-img.png"
+ICON_DIR_TXT = "Dir-text.png"
+ICON_DIR_MOVE = "Dir-move.png"
+ICON_DIR_BACK = "Dir-back.png"
+ICON_DIR_SAVE = "Dir-save.png"
+ICON_DIR_VIDEO = "Dir-video.png"
+ICON_MOVEDIR_DIR = "Dir-moveDir.png"
+
 
 
 BASE_URL = 'http://www.ardmediathek.de'
@@ -130,7 +144,6 @@ ZDF_BARRIEREARM		= 'https://www.zdf.de/barrierefreiheit-im-zdf'
 REPO_NAME = 'Plex-Plugin-ARDMediathek2016'
 GITHUB_REPOSITORY = 'rols1/' + REPO_NAME
 myhost = 'http://127.0.0.1:32400'
-
 
 ''' 
 ####################################################################################################
@@ -186,6 +199,11 @@ def Main():
 	oc.add(DirectoryObject(key=Callback(RadioLiveListe, path=ARD_RadioAll, title='Radio-Livestreams'), 
 		title='Radio-Livestreams', summary='', tagline='Radio', thumb=R(ICON_MAIN_RADIOLIVE)))
 
+	if Prefs['pref_use_downloads'] == True:	# Downloadverz. zeigen, falls Downloads eingeschaltet
+		summary = 'Downloadverzeichnis: Videos und Einstellungen bearbeiten'
+		oc.add(DirectoryObject(key = Callback(DownloadsDir), title = 'Downloadverzeichnis', 
+			summary=summary, thumb = R(ICON_DOWNL_DIR)))
+								
 	repo_url = 'https://github.com/{0}/releases/'.format(GITHUB_REPOSITORY)
 	oc.add(DirectoryObject(key=Callback(SearchUpdate, title='Plugin-Update'), 
 		title='Plugin-Update | akt. Version: ' + VERSION + ' vom ' + VDATE,
@@ -193,6 +211,7 @@ def Main():
 		
 	oc.add(DirectoryObject(key = Callback(Main_Options, title='Einstellungen'), title = 'Einstellungen', 
 		summary = 'Live-TV-Sender: EPG-Daten verwenden, verfuegbare Bandbreiten anzeigen', 
+		tagline = 'Die Downloadeinstellungen bitte im Webplayer vornehmen',
 		thumb = R(ICON_PREFS)))
 	return oc
 	
@@ -283,7 +302,7 @@ def home(cont, ID):												# Home-Button, Aufruf: oc = home(cont=oc)
 	title = title.decode(encoding="utf-8", errors="ignore")
 	summary = title
 	
-	if ID == NAME:
+	if ID == NAME:		# 'ARD Mediathek 2016'
 		cont.add(DirectoryObject(key=Callback(Main),title=title, summary=summary, tagline=NAME, thumb=R('home.png')))
 	if ID == 'ARD':
 		name = "ARD Mediathek"
@@ -299,7 +318,8 @@ def home(cont, ID):												# Home-Button, Aufruf: oc = home(cont=oc)
 ####################################################################################################
 @route(PREFIX + '/Main_Options')
 # DumbTools (https://github.com/coder-alpha/DumbTools-for-Plex) getestet, aber nicht verwendet - wiederholte 
-#	Aussetzer bei Aufrufen nach längeren Pausen (mit + ohne secure-Funktion)
+#	Aussetzer bei Aufrufen nach längeren Pausen (mit + ohne secure-Funktion) - Textfelder werden daher hier in
+#		den Main_Options nicht unterstützt (Eingabe aber Plex-intern z.B. im Web-Player möglich)
 #	Framework: code/preferences.py
 
 def Main_Options(title):
@@ -327,6 +347,7 @@ def Main_Options(title):
 	oc = home(cont=oc, ID=NAME)				# Home-Button - in den Untermenüs Rücksprung hierher zu Einstellungen 
 	for i in range (len(myprefs)):
 		do = DirectoryObject()
+		summary = ''
 		element = myprefs[i]		# Muster: <Setting secure="false" default="true" value="true" label=...
 		Log(element)
 		secure = stringextract('secure=\"', '\"', element)		# nicht verwendet
@@ -352,10 +373,14 @@ def Main_Options(title):
 			oc_type = '|  für Liste klicken | aktuell: '
 			oc_wert = pref_value
 		if mytype == 'text':
-			oc_type = '| Texteingabe | aktuell: '
+			oc_type = '| aktuell: '
 			oc_wert = pref_value
 		title = u'%s  %s  %s' % (label, oc_type, oc_wert)
 		title = title.decode(encoding="utf-8", errors="ignore")
+		summary = 'zum Ändern bitte Webplayer benutzen (Zahnradsymbol)'
+		summary = summary.decode(encoding="utf-8", errors="ignore")
+		tagline = 'an dieser Stelle ist keine Texteingabe möglich'
+		tagline = tagline.decode(encoding="utf-8", errors="ignore")
 		Log(title); Log(mytype)
 
 		if mytype == 'bool':
@@ -363,12 +388,14 @@ def Main_Options(title):
 			do.key = Callback(Set, key=id, value=not Prefs[id], oc_wert=not Prefs[id]) 	# Wert direkt setzen (groß/klein egal)		
 		if mytype == 'enum':
 			do.key = Callback(ListEnum, id=id, label=label, values=values)			# Werte auflisten
-		elif mytype == 'text':														# Eingabefeld für neuen Wert (Player-abhängig)
-			oc = home(cont=oc, ID=NAME)							# Home-Button	
-			oc.add(InputDirectoryObject(key=Callback(SetText, id=id), title=title), title=title)
-			continue
+		elif mytype == 'text':
+			Log(title); Log(id)									# Eingabefeld für neuen Wert (Player-abhängig)
+			#continue											# Textfelder hier nicht unterstützt			
+			do.key = Callback(Main_Options, title='Einstellungen')  # nur Anzeige
+			do.summary = summary
+			do.tagline = tagline
 			
-		do.title = title
+		do.title = title		
 		oc.add(do)			
 		
 	return oc
@@ -393,7 +420,9 @@ def ListEnum(id, label, values):
 #------------
 @route(PREFIX + '/SetText')
 def SetText(query, id):
-	return Set(key=id, value=query, oc_wert=oc_wert)
+	if query == None:
+		query=''
+	return Set(key=id, value=query, oc_wert=query)
 #------------
 @route(PREFIX + '/Set')
 def Set(key, value, oc_wert):
@@ -417,7 +446,7 @@ def Set(key, value, oc_wert):
 #--------------------------------
 def ValidatePrefs():
 	Log('ValidatePrefs')
-	#Dict.Save()	# n.b. - Plex speichert in Funktion Set, benötigt trotzdem Funktion ValidatePrefs im Plugin
+	# Dict.Save()	# n.b. - Plex speichert in Funktion Set, benötigt trotzdem Funktion ValidatePrefs im Plugin
 	return
 	
 ####################################################################################################
@@ -884,8 +913,7 @@ def SinglePage(title, path, next_cbKey, mode, offset=0):	# path komplett
 #  
 def SingleSendung(path, title, thumb, duration, summary, tagline, offset=0):	# -> CreateVideoClipObject
 	title = title.decode(encoding="utf-8", errors="ignore")	# ohne: Exception All strings must be XML compatible
-	title_org = title	# Backup 
-	detailtxt = title_org + '\n' + summary + '\n' + tagline + '\n'	# Verwendung in Download
+	title_org=title; summary_org=summary; tagline_org=tagline	# Backup 
 
 	Log('SingleSendung path: ' + path)					# z.B. http://www.ardmediathek.de/play/media/11177770
 	oc = ObjectContainer(view_group="InfoList", title1=title, art=ICON)
@@ -898,7 +926,7 @@ def SingleSendung(path, title, thumb, duration, summary, tagline, offset=0):	# -
 
  	if link_path == []:	      		# keine Videos gefunden		
 		Log('link_path == []') 		 
-		msgH = 'keine Videoquelle gefunden - Abbruch'; msg = '.keine Videoquelle gefunden - Abbruch. Seite: ' + path;
+		msgH = 'keine Videoquelle gefunden - Abbruch'; msg = 'keine Videoquelle gefunden - Abbruch. Seite: ' + path;
 		return ObjectContainer(header=msgH, message=msg)
   
 	# *.m3u8-Datei vorhanden -> auswerten, falls ladefähig. die Alternative 'Client wählt selbst' (master.m3u8)
@@ -966,101 +994,325 @@ def SingleSendung(path, title, thumb, duration, summary, tagline, offset=0):	# -
 				oc.add(CreateVideoClipObject(url=url, title=title, 
 					summary=summary, meta=path, thumb=thumb, tagline='', duration=duration, resolution=''))
 					
+	oc = test_downloads(oc,download_url,title_org,summary_org,tagline_org,thumb)  # Downloadbutton
+	return oc
+
+#-----------------------
+def MakeDetailText(title, summary,tagline,thumb,url):	# Textdatei für Downloadvideo
+	Log('MakeDetailText')
+		
+	detailtxt = ''
+	detailtxt = detailtxt + "%15s" % 'Titel: ' + "'"  + title + "'"  + '\r\n' 
+	detailtxt = detailtxt + "%15s" % 'Beschreibung1: ' + "'" + tagline + "'" + '\r\n' 
+	detailtxt = detailtxt + "%15s" % 'Beschreibung2: ' + "'" + summary + "'"  + '\r\n' 
+	detailtxt = detailtxt + "%15s" % 'Bildquelle: ' + "'" + thumb + "'"  + '\r\n' 
+	detailtxt = detailtxt + "%15s" % 'Adresse: ' + "'" + url + "'"  + '\r\n' 
+	
+	return detailtxt
+	
+#-----------------------
+# test_downloads: prüft ob Curl-Downloads freigeschaltet sind + erstellt den Downloadbutton
+def test_downloads(oc,download_url,title_org,summary_org,tagline_org,thumb):  # Downloadbutton (ARD + ZDF)
+	Log(test_downloads)
 	Log(Prefs['pref_use_downloads']) 							# Voreinstellung: False 
 	if Prefs['pref_use_downloads'] == True:
 		if download_url.find('.m3u8') == -1 and download_url.find('rtmp://') == -1:
+			# detailtxt =  Begleitdatei mit Textinfos zum video
+			detailtxt = MakeDetailText(title=title_org,thumb=thumb,summary=summary_org,
+				tagline=tagline_org,url=download_url)
 			now = datetime.datetime.now()
 			mydate = now.strftime("%Y-%m-%d_%H-%M-%S")				
 			dfname = 'Download_' + mydate + '.mp4'   			# Bsp.: Download_2016-12-18_09-15-00.mp4
-			tagline = 'Hinweis: Download läuft bei Timeout weiter!'
-			title = 'Download Video: ' + title_org + ' --> ' + dfname
-			dest_path = Core.bundle_path + '/Contents/Downloads/'
-			Log(dest_path)
-			summary = 'Ablage: ' + dest_path
+			title = 'Curl-Download Video: ' + title_org + ' --> ' + dfname
+			dest_path = Prefs['pref_curl_download_path'] 
+			tagline = 'Der Download erfolgt durch Curl im Hintergrund '
+			summary = 'Video >' + dfname + '< wird in ' + dest_path + ' gespeichert' 				
 			summary=summary.decode(encoding="utf-8", errors="ignore")
 			tagline=tagline.decode(encoding="utf-8", errors="ignore")
 			title=title.decode(encoding="utf-8", errors="ignore")
-			oc.add(DirectoryObject(key=Callback(Download, url=download_url, title=title, dest_path=dest_path,
-				dfname=dfname, detailtxt=detailtxt), title=title, summary=summary, thumb=R(ICON_SAVE), 
-				tagline=tagline))
+			oc.add(DirectoryObject(key=Callback(DownloadExtern, url=download_url, title=title, dest_path=dest_path,
+				dfname=dfname, detailtxt=detailtxt), title=title, summary=summary, thumb=R(ICON_DOWNL), 
+				tagline=tagline))		
+	return oc
+	
+#-------------------------
+####################################################################################################
+@route(PREFIX + '/DownloadExtern')	#  Verwendung von Curl mittels Phytons subprocess-Funktionen
+# Wegen des Timeout-Problems (PMS bricht nach ca. 15 sec die Verbindung zum Plugin ab) macht es
+#	keinen Sinn, auf die Beendigung von Curl mittels Pipes + communicate zu warten. Daher erfolgt
+#	der Start von Curl unter Verzicht auf dessen Output.
+# Die experimentelle interne Download-Variante mit Bordmitteln wurde wieder entfernt, da nach ca. 15 
+#	sec der Server die Verbindung zum Client mit timeout abbricht (unter Linux wurde der Download 
+#	trotzdem weiter fortgesetzt).
+#	url=Videoquelle, dest_path=Downloadverz.
+#
+def DownloadExtern(url, title, dest_path, dfname, detailtxt):  # Anzeige 
+	Log('DownloadExtern: ' + title + ' -> ' + dfname)
+	Log(url); Log(dest_path); 
+	# title=title.decode(encoding="utf-8", errors="ignore")	 # Titel zu lang 
+	title='Curl-Download Video'		
+	oc = ObjectContainer(view_group="InfoList", title1=title, art=ICON)
+	oc = home(cont=oc, ID='ARD')					# Home-Button	
 
-			title = 'Downloadverzeichnis löschen'
-			tagline = 'Löschen erfolgt ohne Rückfrage!'
-			tagline=tagline.decode(encoding="utf-8", errors="ignore")
-			title=title.decode(encoding="utf-8", errors="ignore")			
-			summary = 'alle Dateien aus dem Downloadverzeichnis entfernen'
-			oc.add(DirectoryObject(key=Callback(DownloadsDelete, url=dest_path),
-				title=title, summary=summary, thumb=R(ICON_DELETE), tagline=tagline))
+	summary = 'Downloadverzeichnis: Videos und Einstellungen bearbeiten'	# wie in Main()
+	oc.add(DirectoryObject(key = Callback(DownloadsDir), title = 'Downloadverzeichnis', 
+		summary = summary, thumb = R(ICON_DOWNL_DIR)))		
+	
+	try:												
+		textfile = dfname.split('.mp4')[0]			# Textfile zum Video
+		textfile = textfile + '.txt'
+		pathtextfile = os.path.join(dest_path, textfile)	# kompl. Speicherpfad für Textfile
+		Log(pathtextfile)
+		storetxt = 'Details zum Video ' +  dfname + ':\r\n\r\n' + detailtxt		
+		Core.storage.save(pathtextfile, storetxt)			# Text speichern
+		
+		AppPath = Prefs['pref_curl_path']
+		i = os.path.exists(AppPath)					# Existenz Curl prüfen
+		Log(AppPath); Log(i)
+		if AppPath == '' or i == False:
+			msg='Pfad zu curl fehlt oder curl nicht gefunden'
+			return ObjectContainer(header='Error', message=msg)
+			
+		# i = os.access(curl_dest_path, os.W_OK)		# Zielverz. prüfen - nicht relevant für curl
+														# 	Anwender muss Schreibrecht sicherstellen
+		curl_fullpath = os.path.join(dest_path, dfname)	# kompl. Speicherpfad für Video
+		Log(curl_fullpath)
+
+		# http://stackoverflow.com/questions/3516007/run-process-and-dont-wait
+		#	creationflags=DETACHED_PROCESS nur unter Windows
+		Log('%s %s %s %s' % (AppPath, url, "-o", curl_fullpath))
+		sp = subprocess.Popen([AppPath, url, "-o", curl_fullpath])	# OK, wartet nicht (ohne p.communicate())
+
+		msgH = 'curl: Download erfolgreich gestartet'
+		Log('sp = ' + str(sp))
+	
+		if str(sp).find('object at') > 0:  				# subprocess.Popen object OK
+			tagline = 'Zusatz-Infos in Textdatei gespeichert:' + textfile
+			summary = 'Ablage: ' + curl_fullpath
+			summary = summary.decode(encoding="utf-8", errors="ignore")
+			oc.add(DirectoryObject(key=Callback(DownloadExtern, url=url, title='Erfolg', dest_path=dest_path,
+				dfname=dfname, detailtxt=detailtxt), title=msgH, summary=summary, thumb=R(ICON_OK), 
+				tagline=tagline))
+			return oc
+		else:
+			raise Exception('Start von curl fehlgeschlagen')
+			
+	except Exception as exception:
+		msgH = 'Fehler'; 
+		summary = str(exception)
+		summary = summary.decode(encoding="utf-8", errors="ignore")
+		Log(summary)		
+		tagline='Download fehlgeschlagen'
+		oc.add(DirectoryObject(key=Callback(DownloadExtern, url=url, title='Fehler', dest_path=dest_path,
+			dfname=dfname, detailtxt=detailtxt), title=msgH, summary=summary, thumb=R(ICON_CANCEL), 
+			tagline=tagline))
+		return oc
+	
+#---------------------------
+@route(PREFIX + '/DownloadsDir')	
+# Videos im Downloadverzeichnis listen, Einstellungen bearbeiten.
+#	Vorgabe 'pref_curl_download_path' wird geprüft: Abbruch bei falschem Verz., weiter wenn leer
+#
+def DownloadsDir():
+	Log('DownloadsDir'); Log(Prefs['pref_curl_download_path'])
+
+	path = Prefs['pref_curl_download_path']
+	if path:										# Existenz Verz. prüfen, falls vorbelegt
+		if os.path.isdir(path)	== False:			
+			msg='Downloadverzeichnis nicht gefunden: ' + path
+			return ObjectContainer(header='Error', message=msg)
+	else:
+		title1 = 'Downloadverzeichnis noch nicht festgelegt'
+		dirlist = []
+			
+	dirlist = os.listdir(path)						# Größe Inhalt? 		
+	Log(len(dirlist))
+	mp4cnt=0; vidsize=0
+	for entry in dirlist:
+		if entry.find('.mp4') > 0:
+			mp4cnt = mp4cnt + 1	
+			fname = os.path.join(path, entry)					
+			vidsize = vidsize + os.path.getsize(fname) 
+	vidsize	= vidsize / 1000000
+	title1 = 'Downloadverzeichnis: %s Video(s), %s MBytes' % (mp4cnt, str(vidsize))
+		
+	oc = ObjectContainer(view_group="InfoList", title1=title1, art=ICON)
+	oc = home(cont=oc, ID='ARD')								# Home-Button	
+	
+	s = Prefs['pref_curl_path']											# Einstellungen: Pfad Curl
+	title = 'Einstellungen: Pfad zum Downloadprogramm Curl festlegen/ändern (%s)' %s	
+	title=title.decode(encoding="utf-8", errors="ignore")
+	tagline = 'Hier wird der Pfad zum Downloadprogramm Curl eingestellt.'
+	summary = 'Dies kann auch manuell im Webplayer erfolgen (Zahnradsymbol) '
+	oc.add(DirectoryObject(key=Callback(DirectoryNavigator,settingKey = 'pref_curl_path', fileFilter='curl'),
+		 title = title, tagline=tagline, summary=summary, thumb = R(ICON_DIR_CURL)))
+
+	s =  Prefs['pref_curl_download_path']								# Einstellungen: Pfad Downloaderz.
+	title = 'Einstellungen: Downloadverzeichnisses festlegen/ändern (%s)' %s			
+	title=title.decode(encoding="utf-8", errors="ignore")
+	tagline = 'Das Curl-Downloadverzeichnis muss für Plex beschreibbar sein.'
+	tagline=tagline.decode(encoding="utf-8", errors="ignore")
+	# summary =    # s.o.
+	oc.add(DirectoryObject(key=Callback(DirectoryNavigator,settingKey = 'pref_curl_download_path', fileFilter='DIR'),
+		 title = title, tagline=tagline, summary=summary, thumb = R(ICON_DOWNL_DIR)))
+
+	Log(Prefs['pref_VideoDest_path'])
+	if Prefs['pref_VideoDest_path'] == None:			# Vorgabe Medienverzeichnis (Movieverz), falls leer
+		data = HTTP.Request("%s/library/sections" % (myhost), immediate=True).content # . ermitteln 
+		s = stringextract('type=\"movie\"', '/Directory>', data)					 
+		movie_path = stringextract('path=\"', '\"', s)
+	else:
+		movie_path = Prefs['pref_VideoDest_path']
+				
+	if os.path.isdir(movie_path)	== False:			# Sicherung gegen Fehleinträge
+		movie_path = None								# wird ROOT_DIRECTORY in DirectoryNavigator
+	Log(movie_path)	
+	s = Prefs['pref_VideoDest_path']									# Einstellungen: Pfad Verschiebe-Verz.
+	title = 'Einstellungen: Zielverzeichnis zum Verschieben festlegen/ändern (%s)' %s	
+	title=title.decode(encoding="utf-8", errors="ignore")
+	tagline = 'Zum Beispiel das Medienverzeichnis. Das Zielverzeichnis muss außerhalb des Plugins liegen.' 
+	tagline=tagline.decode(encoding="utf-8", errors="ignore")
+	# summary =    # s.o.
+	oc.add(DirectoryObject(key=Callback(DirectoryNavigator,settingKey = 'pref_VideoDest_path', fileFilter='DIR',
+		newDirectory=movie_path), title = title, tagline=tagline, summary=summary, thumb = R(ICON_MOVEDIR_DIR)))
+
+	if dirlist:
+		tagline = 'Leeren erfolgt ohne Rückfrage!'							# Button Leeren
+		tagline=tagline.decode(encoding="utf-8", errors="ignore")
+		title = 'Curl-Downloadverzeichnis leeren'
+		summary = 'alle Dateien aus dem Curl-Downloadverzeichnis entfernen'
+		dlpath = Prefs['pref_curl_download_path'] 								
+		oc.add(DirectoryObject(key=Callback(DownloadsDelete, dlpath=dlpath, single='False'),
+			title=title, summary=summary, thumb=R(ICON_DELETE), tagline=tagline))
+			
+		# Videos listen:
+		for entry in dirlist:							# Video + Beschreibung -> DirectoryObject
+			if entry.find('.mp4') > 0:
+				localpath = entry
+				title = ''; tagline = ''; summary = ''
+				txtfile = entry.split('.mp4')[0] + '.txt'
+				txtpath = os.path.join(path, txtfile)
+				txt = Core.storage.load(txtpath)		# Beschreibung laden
+				if txt != None:			
+					title = stringextract("Titel: '", "'", txt)
+					tagline = stringextract("ung1: '", "'", txt)
+					summary = stringextract("ung2: '", "'", txt)
+					thumb = stringextract("Bildquelle: '", "'", txt)
+					httpurl = stringextract("Adresse: '", "'", txt)
+				# Log(txt); Log(url)
+				if title == '' or httpurl == '':			# könnte manuell entfernt worden sein
+					continue
+				
+				summary=summary.decode(encoding="utf-8", errors="ignore")
+				tagline=tagline.decode(encoding="utf-8", errors="ignore")
+				title=title.decode(encoding="utf-8", errors="ignore")
+
+				oc.add(DirectoryObject(key=Callback(DownloadsTools, httpurl=httpurl, path=localpath, dlpath=dlpath, 
+					txtpath=txtpath, title=title,summary=summary, thumb=thumb, tagline=tagline), 
+					title='Bearbeiten: ' + title, summary=summary, thumb=thumb, tagline=tagline))			
+	return oc
+	
+#---------------------------
+@route(PREFIX + '/DownloadsTools')	# 			# Videos im Downloadverzeichnis ansehen, löschen, verschieben
+#	zum  Ansehen muss das Video  erneut angefordert werden - CreateVideoClipObject verweigert die Wiedergabe
+#		lokaler Videos: networking.py line 224, in load ... 'file' object has no attribute '_sock'
+#	httpurl=HTTP-Videoquelle, path=Videodatei (Name), dlpath=Downloadverz., txtpath=Textfile (kompl. Pfad)
+#
+def DownloadsTools(httpurl,path,dlpath,txtpath,title,summary,thumb,tagline):
+	Log('DownloadsTools: ' + path)
+	
+	title=title.decode(encoding="utf-8", errors="ignore") 
+	title_org = title
+	title1 = 'Bearbeiten: ' + title
+	oc = ObjectContainer(view_group="InfoList", title1=title1, art=ICON)
+	oc = home(cont=oc, ID='ARD')					# Home-Button	
+	
+	title = title_org + ' | Ansehen' 												# 1. Ansehen
+	title=title.decode(encoding="utf-8", errors="ignore")
+	oc.add(CreateVideoClipObject(url=httpurl, title=title , 		
+		summary=summary, meta=httpurl, thumb=thumb, tagline=tagline, duration='leer', resolution='leer'))
+		
+	title = title_org + ' | löschen ohne Rückfrage' 								# 2. Löschen
+	title=title.decode(encoding="utf-8", errors="ignore")
+	tagline = 'Videodatei: ' + path 
+	dest_path = Prefs['pref_curl_download_path']	
+	fullpath = os.path.join(dest_path, path)
+	oc.add(DirectoryObject(key=Callback(DownloadsDelete, dlpath=fullpath, single='True'),
+		title=title, tagline=tagline, summary=summary, thumb=R(ICON_DELETE)))
+		
+	if Prefs['pref_VideoDest_path']:							# 3. Verschieben nur mit Zielpfad
+		textname = os.path.basename(txtpath)
+		title = title_org + ' | verschieben nach: '	+ Prefs['pref_VideoDest_path']									
+		title=title.decode(encoding="utf-8", errors="ignore")
+		summary = title
+		tagline = 'Das Zielverzeichnis kann im Menü Downloadverzeichnis geändert werden'
+		tagline=tagline.decode(encoding="utf-8", errors="ignore")
+		oc.add(DirectoryObject(key=Callback(DownloadsMove, dfname=path, textname=textname, dlpath=dlpath, 
+			destpath=Prefs['pref_VideoDest_path']), title=title, tagline=tagline, summary=summary, 
+			thumb=R(ICON_DIR_MOVE)))
 			
 	return oc
-
-####################################################################################################
-@route(PREFIX + '/Download')	
-# s.a. https://forums.plex.tv/discussion/34771/nameerror-global-name-core-is-not-defined
-# 	Code intern: ../Framework/components/storage.py
-# Speicherort ohne Pfadangabe (u.a. Cache-Daten):
-# 	../Plex Media Server/Plug-in Support/Data/com.plexapp.plugins.ardmediathek2016
-# Verwendung von curl zunächst verworfen (zusätzl. Aufwand, wenig Nutzen)
-# Timeout-Problem: Veränderung der Timeout-Parameter wirkt sich nicht auf den Timeout zwischen
-#	PM-Server + Plugin aus (ca. 15 sec. bis zur Meldung "Dieser Kanal reagiert nicht")
-# 		 		
-def Download(url, title, dest_path, dfname, detailtxt):
-	Log('Download: ' + title + ' -> ' + dfname)
-	Log(url); 
-
-	#data, err = get_page(path=url)				# Absicherung gegen Connect-Probleme, hier
-	#if err:									# nicht verwendet
-	#	return err	
-
-	try:										# läuft nach HTTP-Timeout weiter
-		# Log(Network.Timeout)					# Default: 20.0  - aus api/networkkit.py
-		# Network.Timeout = 6000				# 
-		# data = HTTP.Request(url, timeout=float(1800)).content # 30 min Timeout - keine Veränderung
-		data = HTTP.Request(url, timeout=None).content
-		data = Core.networking.http_request(url) # direkte Core-Verwendung - keine Verbesserung
-		fullpath = os.path.join(dest_path, dfname)
-		Log(fullpath)
-		Core.storage.save(fullpath, data)		# Video speichern
-		
-		textfile = dfname.split('.mp4')[0]		# Textfile zum Video
-		textfile = textfile + '.txt'
-		pathtextfile = os.path.join(dest_path, textfile)
-		Log(pathtextfile)
-		detailtxt = 'Details zum Video ' +  dfname + ':\n\n' + detailtxt
-		Core.storage.save(pathtextfile, detailtxt, binary=True)
-			
-		error_txt = dfname + ' erfolgreich gespeichert'			 			 	 
-		msgH = 'Hinweis'; msg = error_txt + ' | ' + fullpath
+	
+#---------------------------
+@route(PREFIX + '/DownloadsDelete')	# 			# Downloadverzeichnis leeren (einzeln/komplett)
+def DownloadsDelete(dlpath, single):
+	Log('DownloadsDelete: ' + dlpath)
+	try:
+		if single == 'False':
+			for i in os.listdir(url):		# Verz. leeren
+				fullpath = os.path.join(url, i)
+				os.remove(fullpath)
+			error_txt = 'Downloadverzeichnis geleert'
+		else:
+			txturl = url.split('.mp4')[0] + '.txt' # url hier kompl. Pfad
+			os.remove(url)					# Video löschen
+			os.remove(txturl)				# Textdatei löschen
+			error_txt = 'Video gelöscht: ' + url
+					 			 	 
+		msgH = 'Hinweis'; msg = error_txt 
 		msg =  msg.decode(encoding="utf-8", errors="ignore")
 		return ObjectContainer(header=msgH, message=msg)
 	except Exception as exception:
-		error_txt = 'Download fehlgeschlagen | ' + str(exception)			 			 	 
+		error_txt = 'Löschen fehlgeschlagen | ' + str(exception)			 			 	 
 		msgH = 'Fehler'; msg = error_txt
 		msg =  msg.decode(encoding="utf-8", errors="ignore")
 		Log(msg)
 		return ObjectContainer(header=msgH, message=msg)
 
 #---------------------------
-@route(PREFIX + '/DownloadsDelete')	# 			# Downloadverzeichnis leeren / löschen / neu anlegen
-def DownloadsDelete(url):
-	Log('DownloadsDelete: ' + url)
+@route(PREFIX + '/DownloadsMove')	# 			# # Video + Textdatei verschieben
+# dfname=Videodatei, textname=Textfile,  dlpath=Downloadverz., destpath=Zielverz.
+#
+def DownloadsMove(dfname, textname, dlpath, destpath):
+	Log('DownloadsMove: ');Log(dfname);Log(textname);Log(dlpath);Log(destpath);
+
+	if  os.access(destpath, os.W_OK) == False:
+		msgH = 'Hinweis'; msg = 'Kein Schreibrecht im Zielverzeichnis ' + destpath
+		msg =  msg.decode(encoding="utf-8", errors="ignore")
+		return ObjectContainer(header=msgH, message=msg)
+	
 	try:
-		for i in os.listdir(url):		# Verz. leeren
-			fullpath = os.path.join(url, i)
-			os.remove(fullpath)
-		# os.rmdir(url)					# entfernen entf.
-		# os.makedirs(url)				# neu anlegen entf.
-		error_txt = 'Downloadverzeichnis geleert'			 			 	 
-		msgH = 'Hinweis'; msg = error_txt + ' | Downloadverzeichnis: ' + url
+		textsrc = os.path.join(dlpath, textname)
+		textdest = os.path.join(destpath, textname)	
+		videosrc = os.path.join(dlpath, dfname)
+		videodest = os.path.join(destpath, dfname)		
+			
+		shutil.copy(textsrc, textdest)		
+		shutil.copy(videosrc, videodest)				
+		os.remove(videosrc)				# Videodatei löschen
+		os.remove(textsrc)				# Textdatei löschen
+		
+		error_txt = 'Video + Textdatei verschoben: ' + 	dfname				 			 	 
+		msgH = 'Hinweis'; msg = error_txt 
 		msg =  msg.decode(encoding="utf-8", errors="ignore")
 		return ObjectContainer(header=msgH, message=msg)
 	except Exception as exception:
-		error_txt = 'Downloadverzeichnis konnte nicht gelöscht werden | ' + str(exception)			 			 	 
+		error_txt = 'Verschieben fehlgeschlagen | ' + str(exception)			 			 	 
 		msgH = 'Fehler'; msg = error_txt
 		msg =  msg.decode(encoding="utf-8", errors="ignore")
 		Log(msg)
 		return ObjectContainer(header=msgH, message=msg)
-
+		
 ####################################################################################################
 def parseLinks_Mp4_Rtmp(page):		# extrahiert aus Textseite .mp4- und rtmp-Links (Aufrufer SingleSendung)
 									# akt. Bsp. rtmp: http://www.ardmediathek.de/play/media/35771780
@@ -2610,9 +2862,12 @@ def GetZDFVideoSources(url, title, thumb, tagline, segment_start=None, segment_e
 						oc.add(CreateVideoStreamObject(url=url, title=title, rtmp_live='nein', summary=summary, 
 							tagline=tagline, meta= Plugin.Identifier + str(i), thumb=thumb, resolution='unbekannt'))	
 	
+	title='weitere Video-Formate'
+	if Prefs['pref_use_downloads']:	
+		title=title + ' und Download'
 	# oc = Parseplaylist(oc, videoURL, thumb)	# hier nicht benötigt - das ZDF bietet bereits 3 Auflösungsbereiche
 	oc.add(DirectoryObject(key=Callback(ZDFotherSources, url=urlSource, title=title_call, tagline=tagline, thumb=thumb),
-		title='weitere Video-Formate', summary='', thumb=R(ICON_MEHR)))
+		title=title, summary='', thumb=R(ICON_MEHR)))
 
 	return oc	
 	
@@ -2620,6 +2875,9 @@ def GetZDFVideoSources(url, title, thumb, tagline, segment_start=None, segment_e
 @route(PREFIX + '/ZDFotherSources')		# weitere Videoquellen - Quellen werden erneut geladen
 def ZDFotherSources(url, title, tagline, thumb):
 	Log('OtherSources:' + url); 
+	title_org = title		# Backup für Textdatei zum Video
+	summary_org = tagline	# Tausch summary mit tagline (summary erstrangig bei Wiedergabe)
+	tagline_org = ''
 
 	title = title.decode(encoding="utf-8", errors="ignore")					
 	oc = ObjectContainer(title2=title, view_group="InfoList")
@@ -2684,6 +2942,8 @@ def ZDFotherSources(url, title, tagline, thumb):
 			url = stringextract('\"uri\": \"',  '\"', audiorec)			# URL
 			url = url.replace('https', 'http')
 			quality = stringextract('\"quality\": \"',  '\"', audiorec)
+			if i == 0:					# 1. Video bisher höchste Qualität:  [progressive] veryhigh
+				download_url = url
 			Log(url); Log(quality);
 			i = i +1
 			if url:			
@@ -2691,8 +2951,11 @@ def ZDFotherSources(url, title, tagline, thumb):
 				summary = summary.decode(encoding="utf-8", errors="ignore")
 				oc.add(CreateVideoClipObject(url=url, title=str(i) + '. ' + title + ' | ' + quality,
 					summary=summary, meta= Plugin.Identifier + str(i), tagline=tagline, thumb=thumb, 
-					duration='duration', resolution='unbekannt'))	
+					duration='duration', resolution='unbekannt'))
+				
+	oc = test_downloads(oc,download_url,title_org,summary_org,tagline_org,thumb)  # Downloadbutton
 	return oc
+	
 #-------------------------
 def ZDF_Bildgalerie(oc, page, mode, title):	# keine Bildgalerie, aber ähnlicher Inhalt
 	Log('ZDF_Bildgalerie'); Log(mode); Log(title)
@@ -3008,9 +3271,110 @@ def mystrip(line):	# Ersatz für unzuverlässige strip-Funktion
 	line_ret = line_ret.strip()	
 	# Log(line_ret)		# bei Bedarf
 	return line_ret
+#----------------------------------------------------------------  	
+####################################################################################################
+# Directory-Browser - Verzeichnis-Listing
+#	Vorlage: Funktion DirectoryNavigator aus Caster (https://github.com/MrHistamine/Caster)
+#	Blättert in Verzeichnissen, filtert optional nach PRG, Bildern + Textdateien
+#	Filterung bisher nur unter Windows. Für Linux ev Filterung nach Mimetypen nachrüsten (file- Kommando).
+#		S. http://stackoverflow.com/questions/10263436/better-more-accurate-mime-type-detection-in-python
+#	 	Die plattformübergreifende Python-Lösung mimetypes steht unter Plex nicht zur Verfügung. 
+#	fileFilter = 'DIR'  = Verzeichnissuche	(alle Plattformen)
+#	fileFilter = 'Muster' = Suche nach Muster im Dateinamen (z.B. 'curl') 
+#	 
+@route(PREFIX + '/DirectoryNavigator')
+def DirectoryNavigator(settingKey, newDirectory = None, fileFilter=None):
+	Log('settingKey: ' + settingKey); Log('newDirectory: ' + str(newDirectory)); 
+	Log('fileFilter: ' + str(fileFilter))
 
+	ROOT_DIRECTORY = os.path.abspath(os.sep)		# s. http://stackoverflow.com/questions/12041525
+	ROOT_DIRECTORY = get_sys_exec_root_or_drive()   # - " -
+	Log(ROOT_DIRECTORY)
+	containerTitle = ROOT_DIRECTORY
+	if(newDirectory is not None):
+		containerTitle = newDirectory
 
+	dir = ObjectContainer(view_group = 'InfoList', art = R(ART), title1 = containerTitle, no_cache = True)
+	dir = home(cont=dir, ID=NAME)		# Home-Button - Rücksprung Pluginstart 
 
+		
+	# newDirectory ohne Wert (dto. / oder c:\) =  ROOT_DIRECTORY 
+	# sonst: newDirectory wird auf Verzeichnispfad gekürzt
+	# 
+	if((newDirectory is not "") and (newDirectory is not None)):
+		cleanedPath = newDirectory.rstrip('/')
+		splitIndex = cleanedPath.rfind('/')
+		if(splitIndex < 0):
+			cleanedPath = None
+		else:
+			cleanedPath = cleanedPath[:(splitIndex + 1)]
+		Log.Debug('Zusatz-Eintrag Back: ' + str(cleanedPath))
+		title = 'Zurück'.decode(encoding="utf-8", errors="ignore")
+		summary = 'zum vorherigen Ordner zurückkehren'.decode(encoding="utf-8", errors="ignore")
+		dir.add(DirectoryObject(key = Callback(DirectoryNavigator, settingKey = settingKey, newDirectory = cleanedPath, 
+			fileFilter = fileFilter), title =title, summary=summary, thumb = R(ICON_DIR_BACK)))
+	else:
+		newDirectory = ROOT_DIRECTORY
+    
+	basePath = newDirectory
+	subItems = os.listdir(basePath)					# Verzeichnis auslesen
+	
+	# Beim Filter 'DIR' wird ein Button zum Speichern des akt. Verz. voran gestellt, 
+	#	die emthaltenen Unterverz. gelistet. Jedes Unterverz erhält einen Callback.
+	# Bei den übrigen Filtern 
+	Log(fileFilter)
+	if fileFilter == 'DIR':			# bei Verzeichnissuche akt. Verz. zum Speichern anbieten
+		summary = 'Klicken zum Speichern | Verzeichnis: ' + basePath
+		title = summary
+		Log(summary);Log(basePath);
+		dir.add(DirectoryObject(key = Callback(SetPrefValue, key = settingKey, value = basePath),
+			title=title, summary=summary, thumb = R(ICON_DIR_SAVE)))
+	
+	for item in subItems:							# Verzeichniseinträge mit Filter listen
+		fullpath = os.path.join(basePath, item)
+		isDir = os.path.isdir(fullpath)
+		# Log(isDir)
+		if fileFilter != 'DIR':						# nicht Verzeichnissuche
+			if isDir == False:						# und kein Unterverzeichnis, Suche nach Eintrag
+				Log.Debug('Suche nach: ' + fileFilter + ' in ' + basePath + item)
+				if item.find(fileFilter) >= 0:			# Filter passt
+					summary = 'Klicken zum Speichern | Eintrag: ' + item
+					title = summary
+					value = os.path.join(basePath, item) 
+					dir.add(DirectoryObject(key = Callback(SetPrefValue, key = settingKey, value = value),
+						title = item, summary=summary, thumb = R(ICON_DIR_SAVE)))
+			else:
+				# Log.Debug('Setze Verzeichniseintrag:  ' + basePath + item + '/')
+				newDirectory = os.path.join(basePath, item)  # + '/'
+				dir.add(DirectoryObject(key = Callback(DirectoryNavigator, settingKey = settingKey, 
+					newDirectory = newDirectory, fileFilter=fileFilter), title=item, 
+					thumb =R(ICON_DIR_FOLDER)))			
+						
+		else:										# Verzeichnissuche: Unterverzeichnis -> neuer Button
+			if isDir == True:	
+				# Log.Debug('Setze Verzeichniseintrag:  ' + basePath + item + '/')
+				newDirectory = os.path.join(basePath, item)  # + '/'
+				dir.add(DirectoryObject(key = Callback(DirectoryNavigator, settingKey = settingKey, 
+					newDirectory = newDirectory, fileFilter = fileFilter), title = item, 
+					thumb = R(ICON_DIR_FOLDER)))			
+	return dir
 
-
+#-------------------
+def get_sys_exec_root_or_drive():
+    path = sys.executable
+    while os.path.split(path)[1]:
+        path = os.path.split(path)[0]
+    return path
+    
+####################################################################################################
+# allgemeine Funktion zum Setzen von Einstellungen
+#
+@route(PREFIX + '/SetPrefValue')
+def SetPrefValue(key, value):
+    if((key is not "") and (value is not "")):
+		# Dict[key] = value
+		# Dict.Save() 		# funktioniert nicht
+		HTTP.Request("%s/:/plugins/%s/prefs/set?%s=%s" % (myhost, Plugin.Identifier, key, value), immediate=True)
+		Log.Debug('Einstellung  >' + key  + '< gespeichert. Neuer Wert: ' + value)
+    return Main()
 

@@ -2,6 +2,17 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------			gelöschte Releases: älter als  1.3		
 
+24.12.2016 2.6.8	Downloadoption auf ZDF-Bereich erweitert
+			Zusätzl. Modul Directory (Blättern in Verzeichnissen)
+			Menü Bearbeiten (Videos): Ansehen, Löschen, Verschieben
+			Menü Downloadverzeichnis: Pfade Curl-PRG + Downloadverz., Downloadverz. leeren,
+			Videos bearbeiten
+			Downloadfunktion: Code für internen Download wieder entfernt (Timeout-Problem
+			nichts abstellbar)
+
+22.12.2016 2.6.7	Nicht auf Github - Downloadfunktion: Info- und Fehlermeldungen optisch verbessert
+			Downloadfunktion: Option Download mittels Curl in externes Verzeichnis
+
 20.12.2016 2.6.6	Downloadfunktion: zusätzliche Textdatei mit Details zum Video (Ablage Downloadverz. im Plugin),
 			Verlegung des HTTP-Requests in die Download-Funktion (vorher in get_page)
 
