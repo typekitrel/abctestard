@@ -17,7 +17,7 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.6.9'		
+VERSION =  '2.7.0'		
 VDATE = '30.12.2016'
 
 # 
@@ -945,6 +945,7 @@ def SingleSendung(path, title, thumb, duration, summary, tagline, offset=0):	# -
 	# Format: 0|http://mvideos.daserste.de/videoportal/Film/c_610000/611560/format706220.mp4
 	# 	oder: rtmp://vod.daserste.de/ardfs/mp4:videoportal/mediathek/...
 	href_quality_S 	= ''; href_quality_M 	= ''; href_quality_L 	= ''; href_quality_XL 	= ''
+	download_url = ''
 	for i in range(len(link_path)):
 		s = link_path[i]
 		#Log(s)
@@ -993,8 +994,8 @@ def SingleSendung(path, title, thumb, duration, summary, tagline, offset=0):	# -
 				summary='Video-Format: MP4'	# 3. mp4-Links:	
 				oc.add(CreateVideoClipObject(url=url, title=title, 
 					summary=summary, meta=path, thumb=thumb, tagline='', duration=duration, resolution=''))
-					
-	oc = test_downloads(oc,download_url,title_org,summary_org,tagline_org,thumb)  # Downloadbutton
+	if 	download_url:			
+		oc = test_downloads(oc,download_url,title_org,summary_org,tagline_org,thumb)  # Downloadbutton
 	return oc
 
 #-----------------------
@@ -3287,9 +3288,11 @@ def mystrip(line):	# Ersatz für unzuverlässige strip-Funktion
 def DirectoryNavigator(settingKey, newDirectory = None, fileFilter=None):
 	Log('settingKey: ' + settingKey); Log('newDirectory: ' + str(newDirectory)); 
 	Log('fileFilter: ' + str(fileFilter))
+	Log('Plattform: ' + sys.platform)
 
-	ROOT_DIRECTORY = os.path.abspath(os.sep)		# s. http://stackoverflow.com/questions/12041525
-	ROOT_DIRECTORY = get_sys_exec_root_or_drive()   # - " -
+	ROOT_DIRECTORY = os.path.abspath(os.sep)	# s. http://stackoverflow.com/questions/12041525
+	if sys.platform.startswith('win'):			# http://stackoverflow.com/questions/1325581/how-do-i-check-if-im-running-on-windows-in-python
+		ROOT_DIRECTORY = get_sys_exec_root_or_drive()  
 	Log(ROOT_DIRECTORY)
 	containerTitle = ROOT_DIRECTORY
 	if(newDirectory is not None):

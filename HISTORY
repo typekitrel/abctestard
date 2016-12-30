@@ -2,6 +2,10 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------			gelöschte Releases: älter als  1.3		
 
+30.12.2016 2.7.0	Funktion SingleSendung: Variable download_url leer vorbelegt (erforderlich bei
+			nicht für den Download geeigneten Videos)
+			Funktion DirectoryNavigator: Drive-Ermittlung bei Windows-Systemen, wenn Pfad=leer
+
 30.12.2016 2.6.9	Funktion DownloadsDelete: fehlerhafte Variable ausgestauscht (url/dlpath)
 
 29.12.2016 2.6.8	Downloadoption auf ZDF-Bereich erweitert
