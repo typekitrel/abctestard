@@ -17,8 +17,8 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.6.8'		
-VDATE = '29.12.2016'
+VERSION =  '2.6.9'		
+VDATE = '30.12.2016'
 
 # 
 #	
@@ -1257,17 +1257,18 @@ def DownloadsTools(httpurl,path,dlpath,txtpath,title,summary,thumb,tagline):
 @route(PREFIX + '/DownloadsDelete')	# 			# Downloadverzeichnis leeren (einzeln/komplett)
 def DownloadsDelete(dlpath, single):
 	Log('DownloadsDelete: ' + dlpath)
+	Log('single=' + single)
 	try:
 		if single == 'False':
-			for i in os.listdir(url):		# Verz. leeren
-				fullpath = os.path.join(url, i)
+			for i in os.listdir(dlpath):		# Verz. leeren
+				fullpath = os.path.join(dlpath, i)
 				os.remove(fullpath)
 			error_txt = 'Downloadverzeichnis geleert'
 		else:
-			txturl = url.split('.mp4')[0] + '.txt' # url hier kompl. Pfad
-			os.remove(url)					# Video löschen
+			txturl = dlpath.split('.mp4')[0] + '.txt' # url hier kompl. Pfad
+			os.remove(dlpath)					# Video löschen
 			os.remove(txturl)				# Textdatei löschen
-			error_txt = 'Video gelöscht: ' + url
+			error_txt = 'Video gelöscht: ' + dlpath
 					 			 	 
 		msgH = 'Hinweis'; msg = error_txt 
 		msg =  msg.decode(encoding="utf-8", errors="ignore")
