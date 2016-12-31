@@ -2,6 +2,17 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------			gelöschte Releases: älter als  1.3		
 
+31.12.2016 2.7.1	DirectoryNavigator: Verzeichnis-Separator korrigiert (plattformunabhängig),
+			fehlerhafte Verzeichnispfade vor dem Auslesen abgefangen
+			Downloadoption: Verschieben aller Dateien ins Verschiebe-Verzeichnis
+			Downloadoption: Tools zum Bearbeiten der Videos getrennt von den Einstellungen:
+			Menü DownloadsDir umbenannt-> DownloadsTools, neues Menü DownloadsList listet die
+			Videos zum Bearbeiten in neuer Funktion VideoTools
+			Downloadoption: Vorbelegung für DirectoryNavigator mit den voreingestellten
+			Pfaden für Curl-Pfad und Downloadverzeichnis-Pfad
+			Funktion DownloadsDir: data.strip() für /library/sections - unter Windows fehlt
+			sonst alles nach erstem Linefeed
+
 30.12.2016 2.7.0	Funktion SingleSendung: Variable download_url leer vorbelegt (erforderlich bei
 			nicht für den Download geeigneten Videos)
 			Funktion DirectoryNavigator: Drive-Ermittlung bei Windows-Systemen, wenn Pfad=leer

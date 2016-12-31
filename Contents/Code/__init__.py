@@ -17,8 +17,8 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.7.0'		
-VDATE = '30.12.2016'
+VERSION =  '2.7.1'		
+VDATE = '31.12.2016'
 
 # 
 #	
@@ -106,9 +106,12 @@ ICON_DIR_PRG = "Dir-prg.png"
 ICON_DIR_IMG = "Dir-img.png"
 ICON_DIR_TXT = "Dir-text.png"
 ICON_DIR_MOVE = "Dir-move.png"
+ICON_DIR_MOVE_SINGLE = "Dir-move-single.png"
+ICON_DIR_MOVE_ALL = "Dir-move-all.png"
 ICON_DIR_BACK = "Dir-back.png"
 ICON_DIR_SAVE = "Dir-save.png"
 ICON_DIR_VIDEO = "Dir-video.png"
+ICON_DIR_WORK = "Dir-work.png"
 ICON_MOVEDIR_DIR = "Dir-moveDir.png"
 
 
@@ -199,9 +202,9 @@ def Main():
 	oc.add(DirectoryObject(key=Callback(RadioLiveListe, path=ARD_RadioAll, title='Radio-Livestreams'), 
 		title='Radio-Livestreams', summary='', tagline='Radio', thumb=R(ICON_MAIN_RADIOLIVE)))
 
-	if Prefs['pref_use_downloads'] == True:	# Downloadverz. zeigen, falls Downloads eingeschaltet
-		summary = 'Downloadverzeichnis: Videos und Einstellungen bearbeiten'
-		oc.add(DirectoryObject(key = Callback(DownloadsDir), title = 'Downloadverzeichnis', 
+	if Prefs['pref_use_downloads'] == True:	# Download-Tools. zeigen, falls Downloads eingeschaltet
+		summary = 'Download-Tools: Videos und Einstellungen bearbeiten'
+		oc.add(DirectoryObject(key = Callback(DownloadsTools), title = 'Download-Tools', 
 			summary=summary, thumb = R(ICON_DOWNL_DIR)))
 								
 	repo_url = 'https://github.com/{0}/releases/'.format(GITHUB_REPOSITORY)
@@ -1055,8 +1058,8 @@ def DownloadExtern(url, title, dest_path, dfname, detailtxt):  # Anzeige
 	oc = ObjectContainer(view_group="InfoList", title1=title, art=ICON)
 	oc = home(cont=oc, ID='ARD')					# Home-Button	
 
-	summary = 'Downloadverzeichnis: Videos und Einstellungen bearbeiten'	# wie in Main()
-	oc.add(DirectoryObject(key = Callback(DownloadsDir), title = 'Downloadverzeichnis', 
+	summary = 'Download-Tools: Videos und Einstellungen bearbeiten'	# wie in Main()
+	oc.add(DirectoryObject(key = Callback(DownloadsTools), title = 'Download-Tools', 
 		summary = summary, thumb = R(ICON_DOWNL_DIR)))		
 	
 	try:												
@@ -1110,23 +1113,25 @@ def DownloadExtern(url, title, dest_path, dfname, detailtxt):  # Anzeige
 		return oc
 	
 #---------------------------
-@route(PREFIX + '/DownloadsDir')	
-# Videos im Downloadverzeichnis listen, Einstellungen bearbeiten.
+@route(PREFIX + '/DownloadsTools')	
+# Videos im Download-Tools - Einstellungen...
 #	Vorgabe 'pref_curl_download_path' wird geprüft: Abbruch bei falschem Verz., weiter wenn leer
 #
-def DownloadsDir():
-	Log('DownloadsDir'); Log(Prefs['pref_curl_download_path'])
+def DownloadsTools():
+	Log('DownloadsTools');
 
 	path = Prefs['pref_curl_download_path']
-	if path:										# Existenz Verz. prüfen, falls vorbelegt
+	Log(path)
+	dirlist = []
+	if path == None or path == '':									# Existenz Verz. prüfen, falls vorbelegt
+		title1 = 'Downloadverzeichnis noch nicht festgelegt'
+	else:
 		if os.path.isdir(path)	== False:			
 			msg='Downloadverzeichnis nicht gefunden: ' + path
 			return ObjectContainer(header='Error', message=msg)
-	else:
-		title1 = 'Downloadverzeichnis noch nicht festgelegt'
-		dirlist = []
+		else:
+			dirlist = os.listdir(path)						# Größe Inhalt? 		
 			
-	dirlist = os.listdir(path)						# Größe Inhalt? 		
 	Log(len(dirlist))
 	mp4cnt=0; vidsize=0
 	for entry in dirlist:
@@ -1145,8 +1150,8 @@ def DownloadsDir():
 	title=title.decode(encoding="utf-8", errors="ignore")
 	tagline = 'Hier wird der Pfad zum Downloadprogramm Curl eingestellt.'
 	summary = 'Dies kann auch manuell im Webplayer erfolgen (Zahnradsymbol) '
-	oc.add(DirectoryObject(key=Callback(DirectoryNavigator,settingKey = 'pref_curl_path', fileFilter='curl'),
-		 title = title, tagline=tagline, summary=summary, thumb = R(ICON_DIR_CURL)))
+	oc.add(DirectoryObject(key=Callback(DirectoryNavigator,settingKey = 'pref_curl_path', fileFilter='curl',
+		newDirectory=s),title = title, tagline=tagline, summary=summary, thumb = R(ICON_DIR_CURL)))
 
 	s =  Prefs['pref_curl_download_path']								# Einstellungen: Pfad Downloaderz.
 	title = 'Einstellungen: Downloadverzeichnisses festlegen/ändern (%s)' %s			
@@ -1154,73 +1159,122 @@ def DownloadsDir():
 	tagline = 'Das Curl-Downloadverzeichnis muss für Plex beschreibbar sein.'
 	tagline=tagline.decode(encoding="utf-8", errors="ignore")
 	# summary =    # s.o.
-	oc.add(DirectoryObject(key=Callback(DirectoryNavigator,settingKey = 'pref_curl_download_path', fileFilter='DIR'),
-		 title = title, tagline=tagline, summary=summary, thumb = R(ICON_DOWNL_DIR)))
+	oc.add(DirectoryObject(key=Callback(DirectoryNavigator,settingKey = 'pref_curl_download_path', fileFilter='DIR',
+		newDirectory=s), title = title, tagline=tagline, summary=summary, thumb = R(ICON_DOWNL_DIR)))
 
 	Log(Prefs['pref_VideoDest_path'])
 	if Prefs['pref_VideoDest_path'] == None:			# Vorgabe Medienverzeichnis (Movieverz), falls leer
 		data = HTTP.Request("%s/library/sections" % (myhost), immediate=True).content # . ermitteln 
-		s = stringextract('type=\"movie\"', '/Directory>', data)					 
+		data = data.strip() 							# ohne strip fehlt unter Windows alles nach erstem /r/n
+		s = stringextract('resources/movie.png', '/Directory>', data)					 
 		movie_path = stringextract('path=\"', '\"', s)
 	else:
 		movie_path = Prefs['pref_VideoDest_path']
 				
 	if os.path.isdir(movie_path)	== False:			# Sicherung gegen Fehleinträge
 		movie_path = None								# wird ROOT_DIRECTORY in DirectoryNavigator
+	else:
+		movie_path = True
 	Log(movie_path)	
-	s = Prefs['pref_VideoDest_path']									# Einstellungen: Pfad Verschiebe-Verz.
-	title = 'Einstellungen: Zielverzeichnis zum Verschieben festlegen/ändern (%s)' %s	
+	videst = Prefs['pref_VideoDest_path']				# Einstellungen: Pfad Verschiebe-Verz.
+	title = 'Einstellungen: Zielverzeichnis zum Verschieben festlegen/ändern (%s)' % (videst)	
 	title=title.decode(encoding="utf-8", errors="ignore")
 	tagline = 'Zum Beispiel das Medienverzeichnis. Das Zielverzeichnis muss außerhalb des Plugins liegen.' 
 	tagline=tagline.decode(encoding="utf-8", errors="ignore")
 	# summary =    # s.o.
 	oc.add(DirectoryObject(key=Callback(DirectoryNavigator,settingKey = 'pref_VideoDest_path', fileFilter='DIR',
-		newDirectory=movie_path), title = title, tagline=tagline, summary=summary, thumb = R(ICON_MOVEDIR_DIR)))
+		newDirectory=videst), title = title, tagline=tagline, summary=summary, thumb = R(ICON_MOVEDIR_DIR)))
+
+	title = 'Videos bearbeiten' 						# Button Bearbeiten
+	summary = 'Videos im Downloadverzeichnis ansehen, löschen, verschieben'
+	summary=summary.decode(encoding="utf-8", errors="ignore")
+	oc.add(DirectoryObject(key=Callback(DownloadsList),title = title, summary=summary, thumb = R(ICON_DIR_WORK)))
 
 	if dirlist:
-		tagline = 'Leeren erfolgt ohne Rückfrage!'							# Button Leeren
-		tagline=tagline.decode(encoding="utf-8", errors="ignore")
-		title = 'Curl-Downloadverzeichnis leeren'
-		summary = 'alle Dateien aus dem Curl-Downloadverzeichnis entfernen'
 		dlpath = Prefs['pref_curl_download_path'] 								
+		if movie_path:
+			title = 'alle Videos verschieben' 				# Button Verschieben (alle)
+			tagline = 'Verschieben erfolgt ohne Rückfrage!' 
+			tagline=tagline.decode(encoding="utf-8", errors="ignore")			
+			summary = 'alle Videos verschieben nach: %s'  % (videst)
+			summary=summary.decode(encoding="utf-8", errors="ignore")
+			oc.add(DirectoryObject(key=Callback(DownloadsMove, dfname='', textname='', dlpath=dlpath, 
+				destpath=videst, single=False), title=title, tagline=tagline, summary=summary, 
+				thumb=R(ICON_DIR_MOVE_ALL)))		
+		
+		tagline = 'Leeren erfolgt ohne Rückfrage!'			# Button Leeren (alle)
+		tagline=tagline.decode(encoding="utf-8", errors="ignore")
+		title = 'Curl-Downloadverzeichnis leeren: %s Video(s)' % (mp4cnt)
+		summary = 'alle Dateien aus dem Curl-Downloadverzeichnis entfernen'
 		oc.add(DirectoryObject(key=Callback(DownloadsDelete, dlpath=dlpath, single='False'),
 			title=title, summary=summary, thumb=R(ICON_DELETE), tagline=tagline))
 			
-		# Videos listen:
-		for entry in dirlist:							# Video + Beschreibung -> DirectoryObject
-			if entry.find('.mp4') > 0:
-				localpath = entry
-				title = ''; tagline = ''; summary = ''
-				txtfile = entry.split('.mp4')[0] + '.txt'
-				txtpath = os.path.join(path, txtfile)
-				txt = Core.storage.load(txtpath)		# Beschreibung laden
-				if txt != None:			
-					title = stringextract("Titel: '", "'", txt)
-					tagline = stringextract("ung1: '", "'", txt)
-					summary = stringextract("ung2: '", "'", txt)
-					thumb = stringextract("Bildquelle: '", "'", txt)
-					httpurl = stringextract("Adresse: '", "'", txt)
-				# Log(txt); Log(url)
-				if title == '' or httpurl == '':			# könnte manuell entfernt worden sein
-					continue
-				
-				summary=summary.decode(encoding="utf-8", errors="ignore")
-				tagline=tagline.decode(encoding="utf-8", errors="ignore")
-				title=title.decode(encoding="utf-8", errors="ignore")
-
-				oc.add(DirectoryObject(key=Callback(DownloadsTools, httpurl=httpurl, path=localpath, dlpath=dlpath, 
-					txtpath=txtpath, title=title,summary=summary, thumb=thumb, tagline=tagline), 
-					title='Bearbeiten: ' + title, summary=summary, thumb=thumb, tagline=tagline))			
 	return oc
 	
 #---------------------------
-@route(PREFIX + '/DownloadsTools')	# 			# Videos im Downloadverzeichnis ansehen, löschen, verschieben
+@route(PREFIX + '/DownloadsList')	 	# Videos im Downloadverzeichnis zur Bearbeitung listen
+def DownloadsList():
+	Log('DownloadsList')	
+	path = Prefs['pref_curl_download_path']
+	
+	dirlist = []
+	if path == None or path == '':									# Existenz Verz. prüfen, falls vorbelegt
+		title1 = 'Downloadverzeichnis noch nicht festgelegt'
+	else:
+		if os.path.isdir(path)	== False:			
+			msg='Downloadverzeichnis nicht gefunden: ' + path
+			return ObjectContainer(header='Error', message=msg)
+		else:
+			dirlist = os.listdir(path)						# Größe Inhalt? 		
+	dlpath = path
+
+	Log(len(dirlist))
+	mp4cnt=0; vidsize=0
+	for entry in dirlist:
+		if entry.find('.mp4') > 0:
+			mp4cnt = mp4cnt + 1	
+			fname = os.path.join(path, entry)					
+			vidsize = vidsize + os.path.getsize(fname) 
+	vidsize	= vidsize / 1000000
+	title1 = 'Downloadverzeichnis: %s Video(s), %s MBytes' % (mp4cnt, str(vidsize))
+		
+	oc = ObjectContainer(view_group="InfoList", title1=title1, art=ICON)
+	oc = home(cont=oc, ID='ARD')								# Home-Button	
+	# Videos listen:
+	for entry in dirlist:							# Video + Beschreibung -> DirectoryObject
+		if entry.find('.mp4') > 0:
+			localpath = entry
+			title = ''; tagline = ''; summary = ''
+			txtfile = entry.split('.mp4')[0] + '.txt'
+			txtpath = os.path.join(path, txtfile)
+			txt = Core.storage.load(txtpath)		# Beschreibung laden
+			if txt != None:			
+				title = stringextract("Titel: '", "'", txt)
+				tagline = stringextract("ung1: '", "'", txt)
+				summary = stringextract("ung2: '", "'", txt)
+				thumb = stringextract("Bildquelle: '", "'", txt)
+				httpurl = stringextract("Adresse: '", "'", txt)
+			# Log(txt); Log(url)
+			if title == '' or httpurl == '':			# könnte manuell entfernt worden sein
+				continue
+			
+			summary=summary.decode(encoding="utf-8", errors="ignore")
+			tagline=tagline.decode(encoding="utf-8", errors="ignore")
+			title=title.decode(encoding="utf-8", errors="ignore")
+
+			oc.add(DirectoryObject(key=Callback(VideoTools, httpurl=httpurl, path=localpath, dlpath=dlpath, 
+				txtpath=txtpath, title=title,summary=summary, thumb=thumb, tagline=tagline), 
+				title='Bearbeiten: ' + title, summary=summary, thumb=thumb, tagline=tagline))	
+	return oc				
+
+#---------------------------
+@route(PREFIX + '/VideoTools')	# 			# Videos im Downloadverzeichnis ansehen, löschen, verschieben
 #	zum  Ansehen muss das Video  erneut angefordert werden - CreateVideoClipObject verweigert die Wiedergabe
 #		lokaler Videos: networking.py line 224, in load ... 'file' object has no attribute '_sock'
 #	httpurl=HTTP-Videoquelle, path=Videodatei (Name), dlpath=Downloadverz., txtpath=Textfile (kompl. Pfad)
 #
-def DownloadsTools(httpurl,path,dlpath,txtpath,title,summary,thumb,tagline):
-	Log('DownloadsTools: ' + path)
+def VideoTools(httpurl,path,dlpath,txtpath,title,summary,thumb,tagline):
+	Log('VideoTools: ' + path)
 	
 	title=title.decode(encoding="utf-8", errors="ignore") 
 	title_org = title
@@ -1241,16 +1295,16 @@ def DownloadsTools(httpurl,path,dlpath,txtpath,title,summary,thumb,tagline):
 	oc.add(DirectoryObject(key=Callback(DownloadsDelete, dlpath=fullpath, single='True'),
 		title=title, tagline=tagline, summary=summary, thumb=R(ICON_DELETE)))
 		
-	if Prefs['pref_VideoDest_path']:							# 3. Verschieben nur mit Zielpfad
+	if Prefs['pref_VideoDest_path']:							# 3. Verschieben nur mit Zielpfad, 1 Video
 		textname = os.path.basename(txtpath)
 		title = title_org + ' | verschieben nach: '	+ Prefs['pref_VideoDest_path']									
 		title=title.decode(encoding="utf-8", errors="ignore")
 		summary = title
-		tagline = 'Das Zielverzeichnis kann im Menü Downloadverzeichnis geändert werden'
+		tagline = 'Das Zielverzeichnis kann im Menü Download-Tools geändert werden'
 		tagline=tagline.decode(encoding="utf-8", errors="ignore")
 		oc.add(DirectoryObject(key=Callback(DownloadsMove, dfname=path, textname=textname, dlpath=dlpath, 
-			destpath=Prefs['pref_VideoDest_path']), title=title, tagline=tagline, summary=summary, 
-			thumb=R(ICON_DIR_MOVE)))
+			destpath=Prefs['pref_VideoDest_path'], single=True), title=title, tagline=tagline, summary=summary, 
+			thumb=R(ICON_DIR_MOVE_SINGLE)))
 			
 	return oc
 	
@@ -1285,8 +1339,9 @@ def DownloadsDelete(dlpath, single):
 @route(PREFIX + '/DownloadsMove')	# 			# # Video + Textdatei verschieben
 # dfname=Videodatei, textname=Textfile,  dlpath=Downloadverz., destpath=Zielverz.
 #
-def DownloadsMove(dfname, textname, dlpath, destpath):
+def DownloadsMove(dfname, textname, dlpath, destpath, single):
 	Log('DownloadsMove: ');Log(dfname);Log(textname);Log(dlpath);Log(destpath);
+	Log('single=' + single)
 
 	if  os.access(destpath, os.W_OK) == False:
 		msgH = 'Hinweis'; msg = 'Kein Schreibrecht im Zielverzeichnis ' + destpath
@@ -1294,17 +1349,28 @@ def DownloadsMove(dfname, textname, dlpath, destpath):
 		return ObjectContainer(header=msgH, message=msg)
 	
 	try:
-		textsrc = os.path.join(dlpath, textname)
-		textdest = os.path.join(destpath, textname)	
-		videosrc = os.path.join(dlpath, dfname)
-		videodest = os.path.join(destpath, dfname)		
-			
-		shutil.copy(textsrc, textdest)		
-		shutil.copy(videosrc, videodest)				
-		os.remove(videosrc)				# Videodatei löschen
-		os.remove(textsrc)				# Textdatei löschen
+		cnt = 0
+		if single == 'False':				# kompl. Verzeichmis
+			for i in os.listdir(dlpath):
+				src = os.path.join(dlpath, i)
+				dest = os.path.join(destpath, i)							
+				# Log(src); Log(dest); 
+				shutil.copy(src, destpath)	# Datei kopieren	
+				os.remove(src)				# Datei löschen
+				cnt = cnt + 1
+			error_txt = '%s Dateien verschoben nach: %s' % (cnt, destpath)		 			 	 
+		else:
+			textsrc = os.path.join(dlpath, textname)
+			textdest = os.path.join(destpath, textname)	
+			videosrc = os.path.join(dlpath, dfname)
+			videodest = os.path.join(destpath, dfname)		
+				
+			shutil.copy(textsrc, textdest)		
+			shutil.copy(videosrc, videodest)				
+			os.remove(videosrc)				# Videodatei löschen
+			os.remove(textsrc)				# Textdatei löschen
+			error_txt = 'Video + Textdatei verschoben: ' + 	dfname				 			 	 
 		
-		error_txt = 'Video + Textdatei verschoben: ' + 	dfname				 			 	 
 		msgH = 'Hinweis'; msg = error_txt 
 		msg =  msg.decode(encoding="utf-8", errors="ignore")
 		return ObjectContainer(header=msgH, message=msg)
@@ -3305,9 +3371,10 @@ def DirectoryNavigator(settingKey, newDirectory = None, fileFilter=None):
 	# newDirectory ohne Wert (dto. / oder c:\) =  ROOT_DIRECTORY 
 	# sonst: newDirectory wird auf Verzeichnispfad gekürzt
 	# 
+	DirSep = os.sep	# Log(DirSep)
 	if((newDirectory is not "") and (newDirectory is not None)):
-		cleanedPath = newDirectory.rstrip('/')
-		splitIndex = cleanedPath.rfind('/')
+		cleanedPath = newDirectory.rstrip(DirSep)
+		splitIndex = cleanedPath.rfind(DirSep)
 		if(splitIndex < 0):
 			cleanedPath = None
 		else:
@@ -3320,8 +3387,17 @@ def DirectoryNavigator(settingKey, newDirectory = None, fileFilter=None):
 	else:
 		newDirectory = ROOT_DIRECTORY
     
-	basePath = newDirectory
-	subItems = os.listdir(basePath)					# Verzeichnis auslesen
+	basePath = os.path.dirname(newDirectory)
+	try:
+		subItems = os.listdir(basePath)					# Verzeichnis auslesen
+	except Exception as exception:
+		error_txt = 'Verzeichnis-Problem | ' + str(exception)			 			 	 
+		msgH = 'Fehler'; msg = error_txt
+		msg =  msg.decode(encoding="utf-8", errors="ignore")
+		Log(msg)
+		return ObjectContainer(header=msgH, message=msg)
+	# Log(subItems)
+	
 	
 	# Beim Filter 'DIR' wird ein Button zum Speichern des akt. Verz. voran gestellt, 
 	#	die emthaltenen Unterverz. gelistet. Jedes Unterverz erhält einen Callback.
@@ -3348,16 +3424,16 @@ def DirectoryNavigator(settingKey, newDirectory = None, fileFilter=None):
 					dir.add(DirectoryObject(key = Callback(SetPrefValue, key = settingKey, value = value),
 						title = item, summary=summary, thumb = R(ICON_DIR_SAVE)))
 			else:
-				# Log.Debug('Setze Verzeichniseintrag:  ' + basePath + item + '/')
-				newDirectory = os.path.join(basePath, item)  # + '/'
+				# Log.Debug('Setze Verzeichniseintrag:  ' + basePath + item + DirSep)
+				newDirectory = os.path.join(basePath, item)  # + DirSep
 				dir.add(DirectoryObject(key = Callback(DirectoryNavigator, settingKey = settingKey, 
 					newDirectory = newDirectory, fileFilter=fileFilter), title=item, 
 					thumb =R(ICON_DIR_FOLDER)))			
 						
 		else:										# Verzeichnissuche: Unterverzeichnis -> neuer Button
 			if isDir == True:	
-				# Log.Debug('Setze Verzeichniseintrag:  ' + basePath + item + '/')
-				newDirectory = os.path.join(basePath, item)  # + '/'
+				# Log.Debug('Setze Verzeichniseintrag:  ' + basePath + item + DirSep)
+				newDirectory = os.path.join(basePath, item)  # + DirSep
 				dir.add(DirectoryObject(key = Callback(DirectoryNavigator, settingKey = settingKey, 
 					newDirectory = newDirectory, fileFilter = fileFilter), title = item, 
 					thumb = R(ICON_DIR_FOLDER)))			
