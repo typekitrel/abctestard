@@ -17,8 +17,8 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.7.1'		
-VDATE = '31.12.2016'
+VERSION =  '2.7.2'		
+VDATE = '04.01.2017'
 
 # 
 #	
@@ -462,7 +462,7 @@ def SearchUpdate(title):		#
 	int_lc = ret[1]			# Version aktuell
 	latest_version = ret[2]	# Version Github, Format 1.4.1
 	summ = ret[3]			# Plugin-Name
-	tag = ret[4]			# History (last change) )
+	tag = ret[4]			# History (last change)
 
 	url = 'https://github.com/{0}/releases/download/{1}/{2}.bundle.zip'.format(GITHUB_REPOSITORY, latest_version, REPO_NAME)
 	Log(latest_version); Log(int_lv); Log(int_lc); Log(url); 
@@ -472,7 +472,7 @@ def SearchUpdate(title):		#
 			key = Callback(updater.update, url=url , ver=latest_version), 
 			title = 'Update vorhanden - jetzt installieren',
 			summary = 'Plugin aktuell: ' + VERSION + ', neu auf Github: ' + latest_version,
-			tagline = summ,
+			tagline = cleanhtml(summ),
 			thumb = R(ICON_UPDATER_NEW)))
 			
 		oc.add(DirectoryObject(
@@ -484,9 +484,9 @@ def SearchUpdate(title):		#
 		oc.add(DirectoryObject(
 			#key = Callback(updater.menu, title='Update Plugin'), 
 			key = Callback(Main), 
-			title = 'Plugin ist aktuell', 
+			title = 'Plugin ist aktuell | weiter zum aktuellen Plugin',
 			summary = 'Plugin Version ' + VERSION + ' ist aktuell (kein Update vorhanden)',
-			tagline = 'weiter zum aktuellen Plugin',
+			tagline = cleanhtml(summ),
 			thumb = R(ICON_OK)))
 			
 	return oc
@@ -948,7 +948,7 @@ def SingleSendung(path, title, thumb, duration, summary, tagline, offset=0):	# -
 	# Format: 0|http://mvideos.daserste.de/videoportal/Film/c_610000/611560/format706220.mp4
 	# 	oder: rtmp://vod.daserste.de/ardfs/mp4:videoportal/mediathek/...
 	href_quality_S 	= ''; href_quality_M 	= ''; href_quality_L 	= ''; href_quality_XL 	= ''
-	download_url = ''
+	download_list = []		# 2-teilige Liste für Download: 'title # url'
 	for i in range(len(link_path)):
 		s = link_path[i]
 		#Log(s)
@@ -965,23 +965,28 @@ def SingleSendung(path, title, thumb, duration, summary, tagline, offset=0):	# -
 			title = 'Qualität SMALL'
 			url = href_quality_S
 			resolution = 240
+			download_list.append(title + '#' + url)
 		if s[0:1] == "1":			
 			href_quality_M = s[2:]
 			title = 'Qualität MEDIUM'
 			url = href_quality_M
 			resolution = 480
+			download_list.append(title + '#' + url)
 		if s[0:1] == "2":			
 			href_quality_L = s[2:]
 			title = 'Qualität LARGE'
 			url = href_quality_L
 			resolution = 540
+			download_list.append(title + '#' + url)
 		if s[0:1] == "3":			
 			href_quality_XL = s[2:]
 			title = 'Qualität EXTRALARGE'
 			url = href_quality_XL
 			resolution = 720
-		
-		Log('url ' + title + ': ' + url); 	
+			download_list.append(title + '#' + url)
+			
+
+		Log('url ' + title + ': ' + url); 
 		if url:
 			if url.find('.m3u8') >= 9:
 				del link_path[i]			# 1. master.m3u8 entfernen, oben bereits abgehandelt
@@ -993,12 +998,13 @@ def SingleSendung(path, title, thumb, duration, summary, tagline, offset=0):	# -
 					summary=summary, tagline=title, meta=path, thumb=thumb, duration=duration, rtmp_live='nein', 
 					resolution=''))					
 			else:
-				download_url = url			# letzte (höchste Qualität) = Url für Download 
 				summary='Video-Format: MP4'	# 3. mp4-Links:	
 				oc.add(CreateVideoClipObject(url=url, title=title, 
 					summary=summary, meta=path, thumb=thumb, tagline='', duration=duration, resolution=''))
-	if 	download_url:			
-		oc = test_downloads(oc,download_url,title_org,summary_org,tagline_org,thumb)  # Downloadbutton
+	Log(download_list)
+	if 	download_list:			
+		# high=-1: letztes Video bisher höchste Qualität
+		oc = test_downloads(oc,download_list,title_org,summary_org,tagline_org,thumb,high=-1)  # Downloadbutton(s)
 	return oc
 
 #-----------------------
@@ -1016,27 +1022,39 @@ def MakeDetailText(title, summary,tagline,thumb,url):	# Textdatei für Downloadv
 	
 #-----------------------
 # test_downloads: prüft ob Curl-Downloads freigeschaltet sind + erstellt den Downloadbutton
-def test_downloads(oc,download_url,title_org,summary_org,tagline_org,thumb):  # Downloadbutton (ARD + ZDF)
+# high (int): Index für einzelne + höchste Video-Qualität in download_list
+def test_downloads(oc,download_list,title_org,summary_org,tagline_org,thumb,high):  # Downloadbuttons (ARD + ZDF)
 	Log(test_downloads)
 	Log(Prefs['pref_use_downloads']) 							# Voreinstellung: False 
 	if Prefs['pref_use_downloads'] == True:
-		if download_url.find('.m3u8') == -1 and download_url.find('rtmp://') == -1:
-			# detailtxt =  Begleitdatei mit Textinfos zum video
-			detailtxt = MakeDetailText(title=title_org,thumb=thumb,summary=summary_org,
-				tagline=tagline_org,url=download_url)
-			now = datetime.datetime.now()
-			mydate = now.strftime("%Y-%m-%d_%H-%M-%S")				
-			dfname = 'Download_' + mydate + '.mp4'   			# Bsp.: Download_2016-12-18_09-15-00.mp4
-			title = 'Curl-Download Video: ' + title_org + ' --> ' + dfname
-			dest_path = Prefs['pref_curl_download_path'] 
-			tagline = 'Der Download erfolgt durch Curl im Hintergrund '
-			summary = 'Video >' + dfname + '< wird in ' + dest_path + ' gespeichert' 				
-			summary=summary.decode(encoding="utf-8", errors="ignore")
-			tagline=tagline.decode(encoding="utf-8", errors="ignore")
-			title=title.decode(encoding="utf-8", errors="ignore")
-			oc.add(DirectoryObject(key=Callback(DownloadExtern, url=download_url, title=title, dest_path=dest_path,
-				dfname=dfname, detailtxt=detailtxt), title=title, summary=summary, thumb=R(ICON_DOWNL), 
-				tagline=tagline))		
+		# Log(Prefs['pref_show_qualities'])
+		if Prefs['pref_show_qualities'] == False:				# nur 1 (höchste) Qualität verwenden
+			download_items = []
+			download_items.append(download_list.pop(high))									 
+		else:	
+			download_items = download_list						# ganze Liste verwenden
+		# Log(download_items)
+		
+		for item in download_items:
+			quality,url = item.split('#')
+			Log(url)
+			if url.find('.m3u8') == -1 and url.find('rtmp://') == -1:
+				# detailtxt =  Begleitdatei mit Textinfos zum video
+				detailtxt = MakeDetailText(title=title_org,thumb=thumb,summary=summary_org,
+					tagline=tagline_org,url=url)
+				now = datetime.datetime.now()
+				mydate = now.strftime("%Y-%m-%d_%H-%M-%S")				
+				dfname = 'Download_' + mydate + '.mp4'   			# Bsp.: Download_2016-12-18_09-15-00.mp4
+				title = 'Curl-Download Video: ' + title_org + ' --> ' + dfname
+				dest_path = Prefs['pref_curl_download_path'] 
+				tagline = 'Der Download erfolgt durch Curl im Hintergrund | ' + quality
+				summary = 'Video >' + dfname + '< wird in ' + dest_path + ' gespeichert' 				
+				summary=summary.decode(encoding="utf-8", errors="ignore")
+				tagline=tagline.decode(encoding="utf-8", errors="ignore")
+				title=title.decode(encoding="utf-8", errors="ignore")
+				oc.add(DirectoryObject(key=Callback(DownloadExtern, url=url, title=title, dest_path=dest_path,
+					dfname=dfname, detailtxt=detailtxt), title=title, summary=summary, thumb=R(ICON_DOWNL), 
+					tagline=tagline))		
 	return oc
 	
 #-------------------------
@@ -1185,7 +1203,7 @@ def DownloadsTools():
 	oc.add(DirectoryObject(key=Callback(DirectoryNavigator,settingKey = 'pref_VideoDest_path', fileFilter='DIR',
 		newDirectory=videst), title = title, tagline=tagline, summary=summary, thumb = R(ICON_MOVEDIR_DIR)))
 
-	title = 'Videos bearbeiten' 						# Button Bearbeiten
+	title = 'Videos bearbeiten: %s Video(s)' % (mp4cnt)				# Button Bearbeiten
 	summary = 'Videos im Downloadverzeichnis ansehen, löschen, verschieben'
 	summary=summary.decode(encoding="utf-8", errors="ignore")
 	oc.add(DirectoryObject(key=Callback(DownloadsList),title = title, summary=summary, thumb = R(ICON_DIR_WORK)))
@@ -1193,7 +1211,7 @@ def DownloadsTools():
 	if dirlist:
 		dlpath = Prefs['pref_curl_download_path'] 								
 		if movie_path:
-			title = 'alle Videos verschieben' 				# Button Verschieben (alle)
+			title = 'alle Videos verschieben: %s Video(s)' % (mp4cnt)	# Button Verschieben (alle)
 			tagline = 'Verschieben erfolgt ohne Rückfrage!' 
 			tagline=tagline.decode(encoding="utf-8", errors="ignore")			
 			summary = 'alle Videos verschieben nach: %s'  % (videst)
@@ -1202,9 +1220,10 @@ def DownloadsTools():
 				destpath=videst, single=False), title=title, tagline=tagline, summary=summary, 
 				thumb=R(ICON_DIR_MOVE_ALL)))		
 		
-		tagline = 'Leeren erfolgt ohne Rückfrage!'			# Button Leeren (alle)
+		title = 'alle Videos löschen: %s Video(s)' % (mp4cnt)			# Button Leeren (alle)
+		title=title.decode(encoding="utf-8", errors="ignore")			
+		tagline = 'Leeren erfolgt ohne Rückfrage!'						
 		tagline=tagline.decode(encoding="utf-8", errors="ignore")
-		title = 'Curl-Downloadverzeichnis leeren: %s Video(s)' % (mp4cnt)
 		summary = 'alle Dateien aus dem Curl-Downloadverzeichnis entfernen'
 		oc.add(DirectoryObject(key=Callback(DownloadsDelete, dlpath=dlpath, single='False'),
 			title=title, summary=summary, thumb=R(ICON_DELETE), tagline=tagline))
@@ -1237,6 +1256,11 @@ def DownloadsList():
 			vidsize = vidsize + os.path.getsize(fname) 
 	vidsize	= vidsize / 1000000
 	title1 = 'Downloadverzeichnis: %s Video(s), %s MBytes' % (mp4cnt, str(vidsize))
+	
+	if mp4cnt == 0:
+		msg='Kein Video gefunden | Pfad: %s' % (dlpath)
+		return ObjectContainer(header='Error', message=msg)
+		
 		
 	oc = ObjectContainer(view_group="InfoList", title1=title1, art=ICON)
 	oc = home(cont=oc, ID='ARD')								# Home-Button	
@@ -1415,9 +1439,10 @@ def parseLinks_Mp4_Rtmp(page):		# extrahiert aus Textseite .mp4- und rtmp-Links 
 			
 			if s1.find('http://') >= 0: # http: master.m3u8 + mp4
 				if s1.find('master.m3u8') >= 0 :
-					s2 = teilstring(s1, 'http://','master.m3u8' )
+					#s2 = teilstring(s1, 'http://','master.m3u8' )	# als Endung nicht sicher, auch vorkommend:
+					s2 = stringextract('stream\":\"','\"', s1)		# 	../master.m3u8?__b__=200
 					m3u8_master = s2
-					#Log(s2)				# nur bei Bedarf
+					Log(s2); Log(s1)				# nur bei Bedarf
 				elif s1.find('.mp4')  >= 0:
 					s2 = teilstring(s1, 'http://','.mp4' )
 					#Log(s2)
@@ -2993,6 +3018,7 @@ def ZDFotherSources(url, title, tagline, thumb):
 	formitaeten = blockextract('\"formitaeten\":', page)		# Video-URL's ermitteln
 	# Log(formitaeten)
 	i = 0 	# Titel-Zähler für mehrere Objekte mit dem selben Titel (manche Clients verwerfen solche)
+	download_list = []		# 2-teilige Liste für Download: 'summary # url'	
 	for rec in formitaeten:							# Datensätze gesamt
 		# Log(rec)		# bei Bedarf
 		typ = stringextract('\"type\": \"', '\"', rec)
@@ -3010,18 +3036,18 @@ def ZDFotherSources(url, title, tagline, thumb):
 			url = stringextract('\"uri\": \"',  '\"', audiorec)			# URL
 			url = url.replace('https', 'http')
 			quality = stringextract('\"quality\": \"',  '\"', audiorec)
-			if i == 0:					# 1. Video bisher höchste Qualität:  [progressive] veryhigh
-				download_url = url
 			Log(url); Log(quality);
 			i = i +1
 			if url:			
 				summary = 'Qualität: ' + quality + ' | Typ: ' + typ + ' ' + facets 
 				summary = summary.decode(encoding="utf-8", errors="ignore")
+				download_list.append(summary + '#' + url)				
 				oc.add(CreateVideoClipObject(url=url, title=str(i) + '. ' + title + ' | ' + quality,
 					summary=summary, meta= Plugin.Identifier + str(i), tagline=tagline, thumb=thumb, 
 					duration='duration', resolution='unbekannt'))
-				
-	oc = test_downloads(oc,download_url,title_org,summary_org,tagline_org,thumb)  # Downloadbutton
+					
+	# high=0: 	1. Video bisher höchste Qualität:  [progressive] veryhigh
+	oc = test_downloads(oc,download_list,title_org,summary_org,tagline_org,thumb,high=0)  # Downloadbutton(s)
 	return oc
 	
 #-------------------------

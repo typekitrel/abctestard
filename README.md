@@ -5,7 +5,8 @@ ab Version 2.0.0 mit ZDF Mediathek (Integration ZDF Mediathek.bundle V2.0)
 
 Download aktuelle Version: https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 
-Das Plugin löst den Vorgänger Plex-Plugin-ARDMediathek2015 ab. Das alte Plugin ist inkompatibel mit der neuen Struktur der Webseiten. Die ZDF Mediathek ist ab Version 2.1.1 integriert.
+Das Plugin löst den Vorgänger Plex-Plugin-ARDMediathek2015 ab. Die ZDF Mediathek ist ab Version 2.1.1 integriert.
+Der Relaunch des ZDF-Mediathek-Internetangebots vom 28.10.2016 ist eingearbeitet 
 
 #### Rückmeldungen willkommen:
 Im Forum: https://forums.plex.tv/discussion/213947/plex-plugin-ardmediathek2016
@@ -43,6 +44,10 @@ Funktionen ab Version 2.2.0:
 - Videostreams: Auflistung der verfügbaren Angebote an Bandbreiten + Auflösungen (Ausnahme Audio ohne Video)
 - Videoclips: Auflistung der verfügbaren Angebote an Qualitätstufen sowie zusätzlich verfügbarer Videoformate (Ausnahme HDS + SMIL) 
 
+#### Downloadoption ab Version 2.6.7
+- Download von Videos im ARD-Bereich
+- Download von Videos im ZDF-Bereich
+- Tools zum Bearbeiten des Download-Verzeichnisses
 
 INSTALLATION:
 ===================  

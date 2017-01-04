@@ -27,7 +27,7 @@ def get_latest_version():
 		tags = link.split('/')
 		tag = tags[len(tags)-1]
 		summary = cleanSummary((release_feed_data.entries[0].content[0]))
-		Log(link); Log(tags); Log(tag); Log(summary); 
+		Log(link); Log(tags); Log(tag); # Log(summary); 
 		return (release_feed_data.entries[0].title, summary, tag)
 	except Exception as exception:
 		#Log.Error('Checking for new releases failed: {0}'.format(repr(exception)))
