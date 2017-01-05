@@ -2,6 +2,8 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------			gelöschte Releases: älter als  2.5.1	
 
+05.01.2017 2.7.3	Radio-Livestreams: Icon für neuen WDR-Sender Cosmo erstellt, Abfangen nicht vorh. Icons	
+
 01.01.2017 2.7.2	Funktion DownloadsTools: Anbieten aller verfügbaren Qualitäten zum Download (ARD+ZDF) 
 			Funktion DownloadsTools: Titel vereinheitlicht für Verschieben + Löschen,
 			abgefangen: leeres Downloadverz. löschen

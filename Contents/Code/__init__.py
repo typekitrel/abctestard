@@ -17,8 +17,8 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.7.2'		
-VDATE = '04.01.2017'
+VERSION =  '2.7.3'		
+VDATE = '05.01.2017'
 
 # 
 #	
@@ -2145,7 +2145,7 @@ def RadioLiveListe(path, title):
 #-----------------------------
 @route(PREFIX + '/RadioAnstalten')  
 def RadioAnstalten(path, title,sender,thumbs):
-	Log('RadioAnstalten');
+	Log('RadioAnstalten: ' + path);
 	entry_path = path	# sichern
 	oc = ObjectContainer(view_group="InfoList",  title1='Radiosender von ' + title, art=ICON)
 	Log(Client.Platform)
@@ -2170,8 +2170,13 @@ def RadioAnstalten(path, title,sender,thumbs):
 		# Log(element[0:80])						#  nur bei Bedarf)	
 		
 		img_src = ""						# img_src = Sender-Icon, thumbs = lokale Icons
-		if element.find('urlScheme') >= 0:					# Bildaddresse versteckt im img-Knoten
-			img_src = img_urlScheme(element,320)				# ausgelagert - s.u.
+		#if element.find('urlScheme') >= 0:					# nicht mehr verwenden - Schema passt nicht mehr
+		#	img_src, img_alt = img_urlScheme(element,320)	# bei Radiosendern 04.01.2016
+		
+		#img_src = stringextract('urlScheme&#039;:&#039;', '##width##', element)  # OK aber abgeschaltet,
+		#if img_src:															  # damit Senderwechsel auffallen
+		#	img_src = BASE_URL + img_src + '320'
+		#Log(img_src)
 			
 		headline = ''; subtitel = ''		# nicht immer beide enthalten
 		if element.find('headline') >= 0:			# h4 class="headline" enthält den Sendernamen
