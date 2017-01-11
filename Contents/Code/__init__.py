@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-#import lxml.html  	# hier für Konvertierungen - Funktionen von Plex nicht akzeptiert
-#import requests	# u.a. Einlesen HTML-Seite, Methode außerhalb Plex-Framework 
 import string
 import urllib		# urllib.quote()
 import os, subprocess 	# u.a. Behandlung von Pfadnamen
@@ -17,8 +15,8 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.7.3'		
-VDATE = '05.01.2017'
+VERSION =  '2.7.4'		
+VDATE = '11.01.2017'
 
 # 
 #	
@@ -1008,19 +1006,6 @@ def SingleSendung(path, title, thumb, duration, summary, tagline, offset=0):	# -
 	return oc
 
 #-----------------------
-def MakeDetailText(title, summary,tagline,thumb,url):	# Textdatei für Downloadvideo
-	Log('MakeDetailText')
-		
-	detailtxt = ''
-	detailtxt = detailtxt + "%15s" % 'Titel: ' + "'"  + title + "'"  + '\r\n' 
-	detailtxt = detailtxt + "%15s" % 'Beschreibung1: ' + "'" + tagline + "'" + '\r\n' 
-	detailtxt = detailtxt + "%15s" % 'Beschreibung2: ' + "'" + summary + "'"  + '\r\n' 
-	detailtxt = detailtxt + "%15s" % 'Bildquelle: ' + "'" + thumb + "'"  + '\r\n' 
-	detailtxt = detailtxt + "%15s" % 'Adresse: ' + "'" + url + "'"  + '\r\n' 
-	
-	return detailtxt
-	
-#-----------------------
 # test_downloads: prüft ob Curl-Downloads freigeschaltet sind + erstellt den Downloadbutton
 # high (int): Index für einzelne + höchste Video-Qualität in download_list
 def test_downloads(oc,download_list,title_org,summary_org,tagline_org,thumb,high):  # Downloadbuttons (ARD + ZDF)
@@ -1037,11 +1022,11 @@ def test_downloads(oc,download_list,title_org,summary_org,tagline_org,thumb,high
 		
 		for item in download_items:
 			quality,url = item.split('#')
-			Log(url)
+			Log(url); Log(quality); 
 			if url.find('.m3u8') == -1 and url.find('rtmp://') == -1:
 				# detailtxt =  Begleitdatei mit Textinfos zum video
-				detailtxt = MakeDetailText(title=title_org,thumb=thumb,summary=summary_org,
-					tagline=tagline_org,url=url)
+				detailtxt = MakeDetailText(title=title_org,thumb=thumb,quality=quality,
+					summary=summary_org,tagline=tagline_org,url=url)
 				now = datetime.datetime.now()
 				mydate = now.strftime("%Y-%m-%d_%H-%M-%S")				
 				dfname = 'Download_' + mydate + '.mp4'   			# Bsp.: Download_2016-12-18_09-15-00.mp4
@@ -1057,7 +1042,20 @@ def test_downloads(oc,download_list,title_org,summary_org,tagline_org,thumb,high
 					tagline=tagline))		
 	return oc
 	
-#-------------------------
+#-----------------------
+def MakeDetailText(title, summary,tagline,quality,thumb,url):	# Textdatei für Downloadvideo
+	Log('MakeDetailText')
+		
+	detailtxt = ''
+	detailtxt = detailtxt + "%15s" % 'Titel: ' + "'"  + title + "'"  + '\r\n' 
+	detailtxt = detailtxt + "%15s" % 'Beschreibung1: ' + "'" + tagline + "'" + '\r\n' 
+	detailtxt = detailtxt + "%15s" % 'Beschreibung2: ' + "'" + summary + "'"  + '\r\n' 
+	detailtxt = detailtxt + "%15s" % 'Qualität: ' + "'" + quality + "'"  + '\r\n' 
+	detailtxt = detailtxt + "%15s" % 'Bildquelle: ' + "'" + thumb + "'"  + '\r\n' 
+	detailtxt = detailtxt + "%15s" % 'Adresse: ' + "'" + url + "'"  + '\r\n' 
+	
+	return detailtxt
+	
 ####################################################################################################
 @route(PREFIX + '/DownloadExtern')	#  Verwendung von Curl mittels Phytons subprocess-Funktionen
 # Wegen des Timeout-Problems (PMS bricht nach ca. 15 sec die Verbindung zum Plugin ab) macht es
@@ -1066,15 +1064,15 @@ def test_downloads(oc,download_list,title_org,summary_org,tagline_org,thumb,high
 # Die experimentelle interne Download-Variante mit Bordmitteln wurde wieder entfernt, da nach ca. 15 
 #	sec der Server die Verbindung zum Client mit timeout abbricht (unter Linux wurde der Download 
 #	trotzdem weiter fortgesetzt).
-#	url=Videoquelle, dest_path=Downloadverz.
+# url=Videoquelle, dest_path=Downloadverz.
 #
-def DownloadExtern(url, title, dest_path, dfname, detailtxt):  # Anzeige 
+def DownloadExtern(url, title, dest_path, dfname, detailtxt):  # Download mittels Curl
 	Log('DownloadExtern: ' + title + ' -> ' + dfname)
 	Log(url); Log(dest_path); 
 	# title=title.decode(encoding="utf-8", errors="ignore")	 # Titel zu lang 
 	title='Curl-Download Video'		
 	oc = ObjectContainer(view_group="InfoList", title1=title, art=ICON)
-	oc = home(cont=oc, ID='ARD')					# Home-Button	
+	oc = home(cont=oc, ID=NAME)					# Home-Button	
 
 	summary = 'Download-Tools: Videos und Einstellungen bearbeiten'	# wie in Main()
 	oc.add(DirectoryObject(key = Callback(DownloadsTools), title = 'Download-Tools', 
@@ -1131,10 +1129,7 @@ def DownloadExtern(url, title, dest_path, dfname, detailtxt):  # Anzeige
 		return oc
 	
 #---------------------------
-@route(PREFIX + '/DownloadsTools')	
-# Videos im Download-Tools - Einstellungen...
-#	Vorgabe 'pref_curl_download_path' wird geprüft: Abbruch bei falschem Verz., weiter wenn leer
-#
+@route(PREFIX + '/DownloadsTools')		# Tools: Einstellungen,  Bearbeiten, Verschieben, Löschen
 def DownloadsTools():
 	Log('DownloadsTools');
 
@@ -1161,7 +1156,7 @@ def DownloadsTools():
 	title1 = 'Downloadverzeichnis: %s Video(s), %s MBytes' % (mp4cnt, str(vidsize))
 		
 	oc = ObjectContainer(view_group="InfoList", title1=title1, art=ICON)
-	oc = home(cont=oc, ID='ARD')								# Home-Button	
+	oc = home(cont=oc, ID=NAME)								# Home-Button	
 	
 	s = Prefs['pref_curl_path']											# Einstellungen: Pfad Curl
 	title = 'Einstellungen: Pfad zum Downloadprogramm Curl festlegen/ändern (%s)' %s	
@@ -1276,9 +1271,16 @@ def DownloadsList():
 				title = stringextract("Titel: '", "'", txt)
 				tagline = stringextract("ung1: '", "'", txt)
 				summary = stringextract("ung2: '", "'", txt)
+				quality = stringextract("tät: '", "'", txt)
 				thumb = stringextract("Bildquelle: '", "'", txt)
 				httpurl = stringextract("Adresse: '", "'", txt)
-			# Log(txt); Log(url)
+				
+				if tagline == '':
+					tagline = quality
+				else:
+					tagline = quality + ' | ' + tagline
+			# Log(txt); Log(httpurl); Log(tagline); Log(quality)
+			Log('txtpath: ' + txtpath)
 			if title == '' or httpurl == '':			# könnte manuell entfernt worden sein
 				continue
 			
@@ -1304,7 +1306,7 @@ def VideoTools(httpurl,path,dlpath,txtpath,title,summary,thumb,tagline):
 	title_org = title
 	title1 = 'Bearbeiten: ' + title
 	oc = ObjectContainer(view_group="InfoList", title1=title1, art=ICON)
-	oc = home(cont=oc, ID='ARD')					# Home-Button	
+	oc = home(cont=oc, ID=NAME)					# Home-Button	
 	
 	title = title_org + ' | Ansehen' 												# 1. Ansehen
 	title=title.decode(encoding="utf-8", errors="ignore")
@@ -1337,6 +1339,9 @@ def VideoTools(httpurl,path,dlpath,txtpath,title,summary,thumb,tagline):
 def DownloadsDelete(dlpath, single):
 	Log('DownloadsDelete: ' + dlpath)
 	Log('single=' + single)
+	oc = ObjectContainer(view_group="InfoList", title1='Download-Tools', art=ICON)
+	oc = home(cont=oc, ID=NAME)					# Home-Button	
+
 	try:
 		if single == 'False':
 			for i in os.listdir(dlpath):		# Verz. leeren
@@ -1348,16 +1353,23 @@ def DownloadsDelete(dlpath, single):
 			os.remove(dlpath)					# Video löschen
 			os.remove(txturl)				# Textdatei löschen
 			error_txt = 'Video gelöscht: ' + dlpath
-					 			 	 
-		msgH = 'Hinweis'; msg = error_txt 
-		msg =  msg.decode(encoding="utf-8", errors="ignore")
-		return ObjectContainer(header=msgH, message=msg)
+		Log(error_txt)			 			 	 
+		title = 'Löschen erfolgreich | zurück zu den Download-Tools'
+		title =  title.decode(encoding="utf-8", errors="ignore")
+		tagline = error_txt
+		tagline =  tagline.decode(encoding="utf-8", errors="ignore")
+		oc.add(DirectoryObject(key=Callback(DownloadsTools), title=title, summary=title, thumb=R(ICON_OK), 
+			tagline=tagline))
+		return oc
 	except Exception as exception:
-		error_txt = 'Löschen fehlgeschlagen | ' + str(exception)			 			 	 
-		msgH = 'Fehler'; msg = error_txt
-		msg =  msg.decode(encoding="utf-8", errors="ignore")
-		Log(msg)
-		return ObjectContainer(header=msgH, message=msg)
+		Log(str(exception))
+		title = 'Fehler | zurück zu den Download-Tools'
+		title =  title.decode(encoding="utf-8", errors="ignore")
+		tagline='Löschen fehlgeschlagen | ' + str(exception)
+		tagline =  tagline.decode(encoding="utf-8", errors="ignore")
+		oc.add(DirectoryObject(key=Callback(DownloadsTools), title=title, summary=title, thumb=R(ICON_CANCEL), 
+			tagline=tagline))
+		return oc
 
 #---------------------------
 @route(PREFIX + '/DownloadsMove')	# 			# # Video + Textdatei verschieben
@@ -1367,10 +1379,16 @@ def DownloadsMove(dfname, textname, dlpath, destpath, single):
 	Log('DownloadsMove: ');Log(dfname);Log(textname);Log(dlpath);Log(destpath);
 	Log('single=' + single)
 
+	oc = ObjectContainer(view_group="InfoList", title1='Download-Tools', art=ICON)
+	oc = home(cont=oc, ID=NAME)					# Home-Button	
+
 	if  os.access(destpath, os.W_OK) == False:
-		msgH = 'Hinweis'; msg = 'Kein Schreibrecht im Zielverzeichnis ' + destpath
-		msg =  msg.decode(encoding="utf-8", errors="ignore")
-		return ObjectContainer(header=msgH, message=msg)
+		title = 'Fehler | zurück zu den Download-Tools'
+		title =  title.decode(encoding="utf-8", errors="ignore")
+		tagline='Download fehlgeschlagen | Kein Schreibrecht im Zielverzeichnis'
+		oc.add(DirectoryObject(key=Callback(DownloadsTools), title=title, summary=title, thumb=R(ICON_CANCEL), 
+			tagline=tagline))
+		return oc
 	
 	try:
 		cnt = 0
@@ -1394,16 +1412,24 @@ def DownloadsMove(dfname, textname, dlpath, destpath, single):
 			os.remove(videosrc)				# Videodatei löschen
 			os.remove(textsrc)				# Textdatei löschen
 			error_txt = 'Video + Textdatei verschoben: ' + 	dfname				 			 	 
-		
-		msgH = 'Hinweis'; msg = error_txt 
-		msg =  msg.decode(encoding="utf-8", errors="ignore")
-		return ObjectContainer(header=msgH, message=msg)
+		Log(error_txt)			 			 	 		
+		title = 'Verschieben erfolgreich | zurück zu den Download-Tools'
+		title =  title.decode(encoding="utf-8", errors="ignore")
+		title =  title.decode(encoding="utf-8", errors="ignore")
+		tagline = error_txt
+		tagline =  tagline.decode(encoding="utf-8", errors="ignore")
+		oc.add(DirectoryObject(key=Callback(DownloadsTools), title=title, summary=title, thumb=R(ICON_OK), 
+			tagline=tagline))
+		return oc
+
 	except Exception as exception:
-		error_txt = 'Verschieben fehlgeschlagen | ' + str(exception)			 			 	 
-		msgH = 'Fehler'; msg = error_txt
-		msg =  msg.decode(encoding="utf-8", errors="ignore")
-		Log(msg)
-		return ObjectContainer(header=msgH, message=msg)
+		Log(str(exception))
+		title = 'Fehler | zurück zu den Download-Tools'
+		title =  title.decode(encoding="utf-8", errors="ignore")
+		tagline='Verschieben fehlgeschlagen | ' + str(exception)
+		oc.add(DirectoryObject(key=Callback(DownloadsTools), title=title, summary=title, thumb=R(ICON_CANCEL), 
+			tagline=tagline))
+		return oc
 		
 ####################################################################################################
 def parseLinks_Mp4_Rtmp(page):		# extrahiert aus Textseite .mp4- und rtmp-Links (Aufrufer SingleSendung)
@@ -2233,8 +2259,10 @@ def RadioAnstalten(path, title,sender,thumbs):
 			Log(img_src); Log(headline); Log(subtitel); Log(sid); Log(slink);	# Bildquelle: z.Z. verwenden wir nur img_src
 			if subtitel == '':		# OpenPHT parsing Error, wenn leer
 				subtitel = headline
-			headline = headline.decode(encoding="utf-8", errors="ignore")		
-			subtitel = subtitel.decode(encoding="utf-8", errors="ignore")	
+			headline = headline.decode(encoding="utf-8", errors="ignore")
+			subtitel = unescape(subtitel)	
+			subtitel = subtitel.decode(encoding="utf-8", errors="ignore")
+			Log(subtitel)	
 				
 			if slink:						# normaler Link oder Link über .m3u ermittelt
 				# msg = ', Stream ' + str(i + 1) + ': OK'		# Log in parseLinks_Mp4_Rtmp ausreichend
@@ -3387,88 +3415,94 @@ def DirectoryNavigator(settingKey, newDirectory = None, fileFilter=None):
 	Log('fileFilter: ' + str(fileFilter))
 	Log('Plattform: ' + sys.platform)
 
+	# Bei leerer Verz.-Angabe setzen wir abhängig vom System / bzw. c:\ 
+	# Windows?: http://stackoverflow.com/questions/1325581/how-do-i-check-if-im-running-on-windows-in-python
 	ROOT_DIRECTORY = os.path.abspath(os.sep)	# s. http://stackoverflow.com/questions/12041525
-	if sys.platform.startswith('win'):			# http://stackoverflow.com/questions/1325581/how-do-i-check-if-im-running-on-windows-in-python
-		ROOT_DIRECTORY = get_sys_exec_root_or_drive()  
-	Log(ROOT_DIRECTORY)
-	containerTitle = ROOT_DIRECTORY
-	if(newDirectory is not None):
+	if sys.platform.startswith('win'):			
+		ROOT_DIRECTORY = get_sys_exec_root_or_drive() 
+		 
+	if(newDirectory is not None or newDirectory is ''):
 		containerTitle = newDirectory
-
-	dir = ObjectContainer(view_group = 'InfoList', art = R(ART), title1 = containerTitle, no_cache = True)
-	dir = home(cont=dir, ID=NAME)		# Home-Button - Rücksprung Pluginstart 
-
+	else:
+		containerTitle = ROOT_DIRECTORY
+		newDirectory = ROOT_DIRECTORY
+	Log('ROOT_DIRECTORY: ' + ROOT_DIRECTORY)
 		
-	# newDirectory ohne Wert (dto. / oder c:\) =  ROOT_DIRECTORY 
-	# sonst: newDirectory wird auf Verzeichnispfad gekürzt
-	# 
-	DirSep = os.sep	# Log(DirSep)
-	if((newDirectory is not "") and (newDirectory is not None)):
-		cleanedPath = newDirectory.rstrip(DirSep)
-		splitIndex = cleanedPath.rfind(DirSep)
-		if(splitIndex < 0):
-			cleanedPath = None
-		else:
-			cleanedPath = cleanedPath[:(splitIndex + 1)]
-		Log.Debug('Zusatz-Eintrag Back: ' + str(cleanedPath))
-		title = 'Zurück'.decode(encoding="utf-8", errors="ignore")
-		summary = 'zum vorherigen Ordner zurückkehren'.decode(encoding="utf-8", errors="ignore")
-		dir.add(DirectoryObject(key = Callback(DirectoryNavigator, settingKey = settingKey, newDirectory = cleanedPath, 
+	oc = ObjectContainer(view_group = 'InfoList', art = R(ART), title1 = containerTitle, no_cache = True)
+	oc= home(cont=oc, ID=NAME)		# Home-Button - Rücksprung Pluginstart 
+		
+	ParentDir = os.path.dirname(newDirectory)		# übergeordnetes Verz. ermitteln
+	if os.path.isdir(newDirectory) == False:		# 	dto. bei Pfad/Datei
+		ParentDir = os.path.dirname(ParentDir)
+	Log('ParentDir: ' + ParentDir)
+
+	# DirSep = os.sep	# Log(DirSep)	# Seperatoren nicht benötigt
+	if newDirectory:								# Button Back
+		Log.Debug('Button Back: ' + ParentDir)
+		summary = 'zum übergeordneten Ordner wechseln: ' + ParentDir
+		summary = summary.decode(encoding="utf-8", errors="ignore")
+		title = summary
+		oc.add(DirectoryObject(key = Callback(DirectoryNavigator, settingKey = settingKey, newDirectory = ParentDir, 
 			fileFilter = fileFilter), title =title, summary=summary, thumb = R(ICON_DIR_BACK)))
 	else:
 		newDirectory = ROOT_DIRECTORY
     
-	basePath = os.path.dirname(newDirectory)
+	basePath = newDirectory
+	Log('basePath: ' + basePath)
 	try:
-		subItems = os.listdir(basePath)					# Verzeichnis auslesen
+		if os.path.isdir(basePath):
+			subItems = os.listdir(basePath)					 # Verzeichnis auslesen
+		else:												 # Dateiname -> Verz. ermitteln
+			Dir = os.path.dirname(os.path.abspath(basePath)) 
+			subItems = os.listdir(Dir)
+		# Log.Debug(subItems)				# Windows: ohne .Debug hier keine Ausgabe 
+		Log.Debug(len(subItems))			# Windows: ohne .Debug hier keine Ausgabe
 	except Exception as exception:
 		error_txt = 'Verzeichnis-Problem | ' + str(exception)			 			 	 
 		msgH = 'Fehler'; msg = error_txt
 		msg =  msg.decode(encoding="utf-8", errors="ignore")
 		Log(msg)
 		return ObjectContainer(header=msgH, message=msg)
-	# Log(subItems)
 	
-	
-	# Beim Filter 'DIR' wird ein Button zum Speichern des akt. Verz. voran gestellt, 
+	# Beim Filter 'DIR' wird ein Button zum Speichern des akt. Verz. bereit gestellt, 
 	#	die emthaltenen Unterverz. gelistet. Jedes Unterverz erhält einen Callback.
-	# Bei den übrigen Filtern 
+	# 
 	Log(fileFilter)
 	if fileFilter == 'DIR':			# bei Verzeichnissuche akt. Verz. zum Speichern anbieten
-		summary = 'Klicken zum Speichern | Verzeichnis: ' + basePath
+		summary = 'Klicken zum Speichern | Ordner: ' + basePath
 		title = summary
 		Log(summary);Log(basePath);
-		dir.add(DirectoryObject(key = Callback(SetPrefValue, key = settingKey, value = basePath),
+		oc.add(DirectoryObject(key = Callback(SetPrefValue, key = settingKey, value = basePath),
 			title=title, summary=summary, thumb = R(ICON_DIR_SAVE)))
-	
+
 	for item in subItems:							# Verzeichniseinträge mit Filter listen
 		fullpath = os.path.join(basePath, item)
 		isDir = os.path.isdir(fullpath)
-		# Log(isDir)
+		# Log(isDir); Log(fullpath)
 		if fileFilter != 'DIR':						# nicht Verzeichnissuche
-			if isDir == False:						# und kein Unterverzeichnis, Suche nach Eintrag
-				Log.Debug('Suche nach: ' + fileFilter + ' in ' + basePath + item)
+			if isDir == False:						# und kein Unterverzeichnis -> Suche nach Eintrag
+				# Log.Debug('Suche nach: ' + fileFilter + ' in ' + basePath + item)
 				if item.find(fileFilter) >= 0:			# Filter passt
-					summary = 'Klicken zum Speichern | Eintrag: ' + item
+					summary = 'Klicken zum Speichern | Datei: ' + item
 					title = summary
 					value = os.path.join(basePath, item) 
-					dir.add(DirectoryObject(key = Callback(SetPrefValue, key = settingKey, value = value),
+					oc.add(DirectoryObject(key = Callback(SetPrefValue, key = settingKey, value = value),
 						title = item, summary=summary, thumb = R(ICON_DIR_SAVE)))
-			else:
-				# Log.Debug('Setze Verzeichniseintrag:  ' + basePath + item + DirSep)
+			else:									# Button für Unterverzeichnisse
+				Log.Debug('Setze Verzeichniseintrag:  ' + basePath + item)
 				newDirectory = os.path.join(basePath, item)  # + DirSep
-				dir.add(DirectoryObject(key = Callback(DirectoryNavigator, settingKey = settingKey, 
+				oc.add(DirectoryObject(key = Callback(DirectoryNavigator, settingKey = settingKey, 
 					newDirectory = newDirectory, fileFilter=fileFilter), title=item, 
 					thumb =R(ICON_DIR_FOLDER)))			
 						
 		else:										# Verzeichnissuche: Unterverzeichnis -> neuer Button
 			if isDir == True:	
-				# Log.Debug('Setze Verzeichniseintrag:  ' + basePath + item + DirSep)
+				# Log.Debug('Setze Verzeichniseintrag:  ' + basePath + item)
 				newDirectory = os.path.join(basePath, item)  # + DirSep
-				dir.add(DirectoryObject(key = Callback(DirectoryNavigator, settingKey = settingKey, 
+				oc.add(DirectoryObject(key = Callback(DirectoryNavigator, settingKey = settingKey, 
 					newDirectory = newDirectory, fileFilter = fileFilter), title = item, 
 					thumb = R(ICON_DIR_FOLDER)))			
-	return dir
+	return oc
 
 #-------------------
 def get_sys_exec_root_or_drive():

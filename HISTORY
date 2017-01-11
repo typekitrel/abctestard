@@ -1,6 +1,11 @@
 CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
---------------			gelöschte Releases: älter als  2.5.1	
+--------------			gelöschte Releases: älter als  2.6.5	
+
+11.01.2017 2.7.4	DirectoryNavigator komplett überarbeitet (überflüssigen Code entfernt, Fehler beseitigt)
+			Rücksprung-Buttons im Download-Bereich nach Löschen/Verschieben, einschl. Fehler
+			Home-Button im Download-Bereich: Rückkehr zum Hauptmenü (vorher Menü ARD)
+			RadioAnstalten: unescape Subtitel (enthielt manchmal das Zeichen " html-quotiert
 
 05.01.2017 2.7.3	Radio-Livestreams: Icon für neuen WDR-Sender Cosmo erstellt, Abfangen nicht vorh. Icons	
 
