@@ -15,31 +15,28 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.7.4'		
-VDATE = '11.01.2017'
+VERSION =  '2.7.5'		
+VDATE = '26.01.2017'
 
 # 
 #	
 
-
 # (c) 2016 by Roland Scholz, rols1@gmx.de
 #	GUI by Arauco (Plex-Forum) from V1.5.1
 # 
-#     Testing Enviroment -> README.md
+#     Functions -> README.md
 # 
-# Licensed under the GPL, Version 3.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#  
-#    http://www.gnu.org/licenses/gpl-3.0-standalone.html
-# 
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# 	Licensed under MIT License (MIT)
+# 	(previously licensed under GPL 3.0)
+# 	A copy of the License you find here:
+#		https://github.com/rols1/Plex-Plugin-ARDMediathek2016/blob/master/LICENSE.md
 
-# Artwork (folder 'Resources'): (c) ARD
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
+# INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR 
+# PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE 
+# FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR 
+# OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER 
+# DEALINGS IN THE SOFTWARE.
 
 ####################################################################################################
 
@@ -139,6 +136,7 @@ ZDF_BASE				= 'https://www.zdf.de'
 # ZDF_Search_PATH: siehe ZDF_Search, ganze Sendungen, sortiert nach Datum, bei Bilderserien ohne ganze Sendungen
 ZDF_SENDUNG_VERPASST 	= 'https://www.zdf.de/sendung-verpasst?airtimeDate=%s'  # Datumformat 2016-10-31
 ZDF_SENDUNGEN_AZ		= 'https://www.zdf.de/sendungen-a-z?group=%s'			# group-Format: a,b, ... 0-9: group=0+-+9
+ZDF_WISSEN				='https://www.zdf.de/doku-wissen'						# Basis für Ermittlung der Rubriken
 ZDF_SENDUNGEN_MEIST		= 'https://www.zdf.de/meist-gesehen'
 ZDF_BARRIEREARM		= 'https://www.zdf.de/barrierefreiheit-im-zdf'
 
@@ -880,8 +878,8 @@ def SinglePage(title, path, next_cbKey, mode, offset=0):	# path komplett
 			if func_path == BASE_URL + path: 	# überspringen - in ThemenARD erscheint der Dachdatensatz nochmal
 				Log('BASE_URL + path == func_path | Satz überspringen');
 				continue
-			if subtitel == '':	# ohne subtitel verm. keine EinzelSendung, sondern Verweis auf Serie o.ä.
-				continue
+			#if subtitel == '':	# ohne subtitel verm. keine EinzelSendung, sondern Verweis auf Serie o.ä.
+			#	continue		#   11.10.2017: Rubrik "must see" ohne subtitel
 			if subtitel == summary or subtitel == '':
 				subtitel = img_alt.decode(encoding="utf-8", errors="ignore")
 			
@@ -1204,8 +1202,8 @@ def DownloadsTools():
 	oc.add(DirectoryObject(key=Callback(DownloadsList),title = title, summary=summary, thumb = R(ICON_DIR_WORK)))
 
 	if dirlist:
-		dlpath = Prefs['pref_curl_download_path'] 								
-		if movie_path:
+		dlpath = Prefs['pref_curl_download_path'] 
+		if videst and movie_path:
 			title = 'alle Videos verschieben: %s Video(s)' % (mp4cnt)	# Button Verschieben (alle)
 			tagline = 'Verschieben erfolgt ohne Rückfrage!' 
 			tagline=tagline.decode(encoding="utf-8", errors="ignore")			
@@ -3401,9 +3399,9 @@ def mystrip(line):	# Ersatz für unzuverlässige strip-Funktion
 #----------------------------------------------------------------  	
 ####################################################################################################
 # Directory-Browser - Verzeichnis-Listing
-#	Vorlage: Funktion DirectoryNavigator aus Caster (https://github.com/MrHistamine/Caster)
-#	Blättert in Verzeichnissen, filtert optional nach PRG, Bildern + Textdateien
-#	Filterung bisher nur unter Windows. Für Linux ev Filterung nach Mimetypen nachrüsten (file- Kommando).
+#	Vorlage: Funktion DirectoryNavigator aus Caster (https://github.com/MrHistamine/Caster - nur Windows)
+#	Blättert in Verzeichnissen, filtert optional nach Dateinamen
+#	Für Filterung nach Dateitypen ev. Filterung nach Mimetypen nachrüsten.
 #		S. http://stackoverflow.com/questions/10263436/better-more-accurate-mime-type-detection-in-python
 #	 	Die plattformübergreifende Python-Lösung mimetypes steht unter Plex nicht zur Verfügung. 
 #	fileFilter = 'DIR'  = Verzeichnissuche	(alle Plattformen)
