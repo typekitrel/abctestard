@@ -2,6 +2,9 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------			gelöschte Releases: älter als  2.6.5	
 
+30.01.2017 2.7.6	TV-Live-Sender N24: Link aktualisiert. Funktioniert nur noch mit autom. Anpassung/Auflösung,
+			Einzelauflösungen nicht darstellbar. 	
+
 26.01.2017 2.7.5	Funktion DownloadsTools: Verschieben unterdrückt, falls Verschiebeverz. nicht belegt		
 			MIT-Lizenz am 17.01.2017 hinzugefügt
 			ARD-Bereich: Videos der Rubrik "must see" sichtbar gemacht (fehlenden Subtitel durch

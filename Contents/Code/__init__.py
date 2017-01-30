@@ -15,8 +15,8 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.7.5'		
-VDATE = '26.01.2017'
+VERSION =  '2.7.6'		
+VDATE = '30.01.2017'
 
 # 
 #	
@@ -2084,7 +2084,7 @@ def CreateVideoStreamObject(url, title, summary, tagline, meta, thumb, rtmp_live
 	else:
 		# Auslösungsstufen weglassen? (bei relativen Pfaden nutzlos) 
 		# Auflösungsstufen - s. SenderLiveResolution -> Parseplaylist
-		resolution=[720, 540, 480]		# wie VideoClipObject: Vorgabe für Webplayer entbehrlich, für PHT erforderlich
+		resolution=[1280,1024,720,540,480]# wie VideoClipObject: Vorgabe für Webplayer entbehrlich, für PHT erforderlich
 		meta=url						# leer (None) im Webplayer OK, mit PHT:  Server: Had trouble breaking meta
 		mo = MediaObject(parts=[PartObject(key=HTTPLiveStreamURL(url=url))]) 
 		rating_key = title
@@ -2100,7 +2100,7 @@ def CreateVideoStreamObject(url, title, summary, tagline, meta, thumb, rtmp_live
 	videoclip_obj.add(mo)
 
 	Log(url); Log(title); Log(summary); Log(tagline);
-	Log(meta); Log(thumb); Log(rating_key); 
+	Log(resolution); Log(meta); Log(thumb); Log(rating_key); 
 	
 	if include_container:
 		return ObjectContainer(objects=[videoclip_obj])
@@ -3200,7 +3200,7 @@ def Parseplaylist(container, url_m3u8, thumb):		# master.m3u8 auswerten, Url mus
   # Log(playlist)   # bei Bedarf
 	 
   lines = playlist.splitlines()
-  #Log(lines)
+  # Log(lines)
   lines.pop(0)		# 1. Zeile entfernen (#EXTM3U)
   BandwithOld = ''	# für Zwilling -Test (manchmal 2 URL für 1 Bandbreite + Auflösung) 
   i = 0
