@@ -2,8 +2,12 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------			gelöschte Releases: älter als  2.6.5	
 
+10.02.2017 2.7.7	livesenderRadio.xml: defekten Link für N24 ausgetauscht. Hinweis: Ziffer 4 in index_4_av-p.m3u8
+			liefert höchste Auflösung, 3=mittlere, 2=kleine. 
+			Funktion SenderLiveListe: tagline ergänzt, falls EPG abgewählt
+
 30.01.2017 2.7.6	TV-Live-Sender N24: Link aktualisiert. Funktioniert nur noch mit autom. Anpassung/Auflösung,
-			Einzelauflösungen nicht darstellbar. 	
+			Einzelauflösungen nicht darstellbar	
 
 26.01.2017 2.7.5	Funktion DownloadsTools: Verschieben unterdrückt, falls Verschiebeverz. nicht belegt		
 			MIT-Lizenz am 17.01.2017 hinzugefügt

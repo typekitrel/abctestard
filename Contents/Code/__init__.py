@@ -15,8 +15,8 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.7.6'		
-VDATE = '30.01.2017'
+VERSION =  '2.7.7'		
+VDATE = '11.02.2017'
 
 # 
 #	
@@ -1774,14 +1774,17 @@ def SenderLiveListe(title, listname, offset=0):	#
 																		
 			if epg_schema == 'DW':					# EPG-Daten  Deutsche Welle holen	
 				epgname = stringextract('<epgname>', '</epgname>', element_str)		
-				epg_date, epg_title, epg_text = get_epg_DW(epg_url, epgname)	
+				epg_date, epg_title, epg_text = get_epg_DW(epg_url, epgname)
 								
 		Log(epg_schema); Log(epg_url); 
-		# Log(epg_title); Log(epg_date); Log(epg_text[0:40]);	# bei Bedarf	
+		# Log(epg_title); Log(epg_date); Log(epg_text[0:40]),	# bei Bedarf	
 		if epg_date and epg_title:
 			summary = epg_date + ' | ' + epg_title
 		if epg_text:								# kann fehlen
 			tagline = epg_text
+		else:
+			tagline = title	
+		Log(tagline);
 			
 		title = title.decode(encoding="utf-8", errors="ignore")	
 		summary = summary.decode(encoding="utf-8", errors="ignore")			
@@ -2027,7 +2030,7 @@ def Arteplaylist(oc, url, title, thumb):
 	return oc
 
 ####################################################################################################
-@route(PREFIX + '/CreateVideoStreamObject')	# <- LiveListe, SingleSendung (nur m3u8-Dateien)
+@route(PREFIX + '/CreateVideoStreamObject')	# <- SenderLiveListe, SingleSendung (nur m3u8-Dateien)
 											# **kwargs - s. CreateVideoClipObject
 def CreateVideoStreamObject(url, title, summary, tagline, meta, thumb, rtmp_live, resolution, include_container=False, **kwargs):
   # Zum Problem HTTP Live Streaming (HLS): Redirecting des Video-Callbacks in einen HTTPLiveStreamURL
@@ -2082,9 +2085,8 @@ def CreateVideoStreamObject(url, title, summary, tagline, meta, thumb, rtmp_live
 				thumb=thumb,) 			 
 
 	else:
-		# Auslösungsstufen weglassen? (bei relativen Pfaden nutzlos) 
 		# Auflösungsstufen - s. SenderLiveResolution -> Parseplaylist
-		resolution=[1280,1024,720,540,480]# wie VideoClipObject: Vorgabe für Webplayer entbehrlich, für PHT erforderlich
+		resolution=[1280,1024,960,720,540,480]# wie VideoClipObject: Vorgabe für Webplayer entbehrlich, für PHT erforderlich
 		meta=url						# leer (None) im Webplayer OK, mit PHT:  Server: Had trouble breaking meta
 		mo = MediaObject(parts=[PartObject(key=HTTPLiveStreamURL(url=url))]) 
 		rating_key = title
@@ -2103,7 +2105,7 @@ def CreateVideoStreamObject(url, title, summary, tagline, meta, thumb, rtmp_live
 	Log(resolution); Log(meta); Log(thumb); Log(rating_key); 
 	
 	if include_container:
-		return ObjectContainer(objects=[videoclip_obj])
+		return ObjectContainer(objects=[videoclip_obj])				
 	else:
 		return videoclip_obj
 
@@ -3097,8 +3099,9 @@ def ZDF_Bildgalerie(oc, page, mode, title):	# keine Bildgalerie, aber ähnlicher
 			
 	Log(len(content))
 	# neuer Container mit neuem Titel
+	title = title.decode(encoding="utf-8", errors="ignore")
 	oc = ObjectContainer(title2=title, view_group="InfoList")
-	
+
 	image = 1
 	for rec in content:
 		# Log(rec)  # bei Bedarf
