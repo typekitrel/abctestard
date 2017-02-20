@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import string
-import urllib		# urllib.quote()
+import urllib			# urllib.quote(), 
+import urllib2			# urllib2.Request
+import ssl				# HTTPS-Handshake
 import os, subprocess 	# u.a. Behandlung von Pfadnamen
 import sys				# Plattformerkennung
 import shutil			# Dateioperationen
@@ -15,8 +17,8 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.7.7'		
-VDATE = '11.02.2017'
+VERSION =  '2.7.8'		
+VDATE = '20.02.2017'
 
 # 
 #	
@@ -603,7 +605,10 @@ def get_page(path):		# holt kontrolliert raw-Content
 def VerpasstWoche(name):	# Wochenliste zeigen
 	Log('VerpasstWoche: ' + name)
 	oc = ObjectContainer(view_group="InfoList", title1=NAME, title2=name, art = ObjectContainer.art)
-	oc = home(cont=oc, ID='ARD')						# Home-Button	
+	if name == 'ZDF Mediathek':
+		oc = home(cont=oc, ID='ZDF')						# Home-Button
+	else:	
+		oc = home(cont=oc, ID='ARD')						# Home-Button	
 		
 	wlist = range(0,6)
 	now = datetime.datetime.now()
@@ -1777,7 +1782,7 @@ def SenderLiveListe(title, listname, offset=0):	#
 				epg_date, epg_title, epg_text = get_epg_DW(epg_url, epgname)
 								
 		Log(epg_schema); Log(epg_url); 
-		# Log(epg_title); Log(epg_date); Log(epg_text[0:40]),	# bei Bedarf	
+		# Log(epg_title); Log(epg_date); Log(epg_text[0:40]);	# bei Bedarf	
 		if epg_date and epg_title:
 			summary = epg_date + ' | ' + epg_title
 		if epg_text:								# kann fehlen
@@ -2086,8 +2091,8 @@ def CreateVideoStreamObject(url, title, summary, tagline, meta, thumb, rtmp_live
 
 	else:
 		# Auflösungsstufen - s. SenderLiveResolution -> Parseplaylist
-		resolution=[1280,1024,960,720,540,480]# wie VideoClipObject: Vorgabe für Webplayer entbehrlich, für PHT erforderlich
-		meta=url						# leer (None) im Webplayer OK, mit PHT:  Server: Had trouble breaking meta
+		resolution=[1280, 1024, 960, 720, 540, 480] # wie VideoClipObject: Vorgabe für Webplayer entbehrlich, für PHT erforderlich
+		meta=url									# leer (None) im Webplayer OK, mit PHT:  Server: Had trouble breaking meta
 		mo = MediaObject(parts=[PartObject(key=HTTPLiveStreamURL(url=url))]) 
 		rating_key = title
 		videoclip_obj = VideoClipObject(					# Parameter wie MovieObject
@@ -2846,7 +2851,7 @@ def get_airing(airing_string):		# Datum + Uhrzeit, Bsp. airing_string 2016-11-12
 ####################################################################################################
 # Subtitles: im Kopf der videodat-Datei enthalten (Endung .vtt). Leider z.Z. keine Möglichkeit
 #	bekannt, diese einzubinden
-@route(PREFIX + '/GetZDFVideoSources')			# 4 Requests bis zu den Quellen erforderlich!				
+@route(PREFIX + '/GetZDFVideoSources')						# 4 Requests bis zu den Quellen erforderlich!				
 def GetZDFVideoSources(url, title, thumb, tagline, segment_start=None, segment_end=None):	
 	Log('GetVideoSources'); Log(url); Log(tagline); 
 	title = title.decode(encoding="utf-8", errors="ignore")					
@@ -2857,12 +2862,12 @@ def GetZDFVideoSources(url, title, thumb, tagline, segment_start=None, segment_e
 	#headers = HTTP.Request(url).headers	# etag entfällt ab 20.11.2016  
 	#headers = str(headers)
 	# Log(headers); # Log(page)    # bei Bedarf
-	#etag = stringextract('etag\': ', ',', headers)  # Bsp: 'etag': 'W/"07e11176a095329b326b128fd3528f916"',
+	#etag = stringextract('etag\': ', ',', headers) # Bsp: 'etag': 'W/"07e11176a095329b326b128fd3528f916"',
 	#etag = stringextract('\'', '\'', etag)			# Verwendung in header von profile_url
 	#Log(etag)
 	
-	# Start Vorauswertungen: Bildgalerie u.ä. 
-	if segment_start and segment_end:						# Vorgabe Ausschnitt durch ZDF_get_content 
+	# -- Start Vorauswertungen: Bildgalerie u.ä. 
+	if segment_start and segment_end:				# Vorgabe Ausschnitt durch ZDF_get_content 
 		pos1 = page.find(segment_start); pos2 = page.find(segment_end);  # bisher: b-group-persons
 		Log(pos1);Log(pos2);
 		page = page[pos1:pos2]
@@ -2877,7 +2882,7 @@ def GetZDFVideoSources(url, title, thumb, tagline, segment_start=None, segment_e
 			oc = ZDF_Bildgalerie(oc=oc, page=page, mode='is_gallery', title=title)
 			return oc
 			
-	# Ende Vorauswertungen: 
+	# -- Ende Vorauswertungen
 			
 	oc = home(cont=oc, ID='ZDF')	# Home-Button - nach Bildgalerie (PhotoObject darf keine weiteren Medienobjekte enth.)
 	
@@ -2895,28 +2900,40 @@ def GetZDFVideoSources(url, title, thumb, tagline, segment_start=None, segment_e
 		if page.find(alt_msg) > 0:
 			msgH = alt_msg + ' Seite:\r'
 		msg = msgH + url
-		return ObjectContainer(message=msg)	  # header=... ohne Wirkung	(?)
-	
-	config_url = ZDF_BASE + config_url 											# 2. apiToken ermitteln - immer identisch?
-	page = HTTP.Request(config_url).content 									# 	ev. nicht außerhalb Deutschlands?
-	apiToken = stringextract('\"apiToken\": \"', '\"', page)
-	Log(apiToken)	
+		return ObjectContainer(message=msg)	  
+		
+	# Ermittlung ptmd_player im Javascriptcode. ptmd_player wird in videodat_url anstelle von {playerId} injiziert.
+	#	Bisher genügt der String "portal" - bei Bedarf freischalten. 
+	# 	Injektion ptmd_player s.u. (auskommentiert)
+	# script_path = stringextract('player: {', '},', page)	# Pfad zu Player-Javascript 
+	# player_script =  stringextract('js: \'', '\'', script_path)
+	# script_url = ZDF_BASE + player_script		# Bsp. https://www.zdf.de/ZDFplayer/latest-v2/skins/zdf/zdf-player.js
+	# Log(script_url)
+	# script = HTTP.Request(script_url).content 							# Player-Javascript  laden
+	# ptmd_player =  stringextract('this.ptmd_player_id=\"', '\"', script) # Bsp. this.ptmd_player_id="ngplayer_2_3"
+	# Log(ptmd_player)
+			
+	# Ermittlung apiToken - Verwendung im HTTP-Header, Feld 'Api-Auth'
+	#	Bisher hat sich der Wert 'Bearer d2726b6c8c655e42b68b0db26131b15b22bd1a32'
+	#		nicht geändert - Bei Bedarf freischalten und headers sowie urllib2.Request anpassen 
+	#						 dto. in ZDFotherSources
+	# config_url = ZDF_BASE + config_url 										# 2. apiToken ermitteln - bisher identisch
+	# page = HTTP.Request(config_url).content 									# 	ev. nicht außerhalb Deutschlands?
+	# apiToken = stringextract('\"apiToken\": \"', '\"', page)
+	# Log(apiToken)	
 	
 	# zu headers s. ZDF_Video_Quellen.txt + ZDF_Video_HAR_gesamt.txt
 	#	Abruf mit curl + Header-Option OK (z,Z, reicht apiToken)
 	#   headers = {'Api-Auth':"Bearer d2726b6c8c655e42b68b0db26131b15b22bd1a32", 'Host':"api.zdf.de", ... 
 	#   Bearer = apiToken aus https://www.zdf.de/ZDFplayer/configs/zdf/zdf2016/configuration.json 
-	#	nur Api-Auth + Host erforderlich, Rest entbehrlich
-	#headers = {'Api-Auth':"Bearer d2726b6c8c655e42b68b0db26131b15b22bd1a32", 'Host':"api.zdf.de", 'Accept-Encoding':"gzip, deflate, sdch, br", 'Accept':"application/vnd.de.zdf.v1.0+json"}
-	#headers = {'Api-Auth':"Bearer %s" % apiToken, 'If-None-Match':"%s" % etag} 
-	#headers = {'Host':"api.zdf.de", 'Api-Auth': "Bearer %s" % apiToken}
-	#headers = {'Api-Auth': "Bearer %s" % apiToken}
-	headers = {'Api-Auth': "Bearer %s" % apiToken, 'Host':"api.zdf.de", 'Accept-Encoding':"gzip, deflate, sdch, br", 'Accept':"application/vnd.de.zdf.v1.0+json"}
-	# Log(headers)		# bei Bedarf
+	#	Api-Auth + Host reichen manchmal, aber nicht immer! 
+	# headers = {'Api-Auth': "Bearer %s" % apiToken, 'Host':"api.zdf.de", 'Accept-Encoding':"gzip, deflate, sdch, br", 'Accept':"application/vnd.de.zdf.v1.0+json"}
+	headers = {'Api-Auth': "Bearer d2726b6c8c655e42b68b0db26131b15b22bd1a32",'Host':"api.zdf.de", 'Accept-Encoding':"gzip, deflate, sdch, br", 'Accept':"application/vnd.de.zdf.v1.0+json"}
+	Log(headers)		# bei Bedarf
 	
 	request = JSON.ObjectFromURL(profile_url, headers=headers)					# 3. Playerdaten ermitteln
 	request = json.dumps(request, sort_keys=True, indent=2, separators=(',', ': '))  # sortierte Ausgabe
-	# Log(request)
+	Log(request[:20])	# "canonical" ...
 	request = str(request)				# json=dict erlaubt keine Stringsuche, json.dumps klappt hier nicht
 	request = request.decode('utf-8', 'ignore')		
 	
@@ -2925,29 +2942,28 @@ def GetZDFVideoSources(url, title, thumb, tagline, segment_start=None, segment_e
 	# Log(request_part)			# bei Bedarf
 	old_videodat = stringextract('http://zdf.de/rels/streams/ptmd\": \"', '\",', request_part)	
 	# Bsp.: /tmd/2/portal/vod/ptmd/mediathek/161021_hsh_hsh'
-	# Log(videodat)	
+	# Log(old_videodat)	
 	old_videodat_url = 'https://api.zdf.de' + old_videodat							# 4. Videodaten ermitteln
 	# neu ab 20.1.2016: uurl-Pfad statt ptmd-Pfad ( ptmd-Pfad fehlt bei Teilvideos)
 	videodat = stringextract('\"uurl\": \"', '\"', request_part)	# Bsp.: 161118_clip_5_hsh
-	videodat_url = 'https://api.zdf.de/tmd/2/portal/vod/ptmd/mediathek/' + videodat
+	# videodat_url = 'https://api.zdf.de/tmd/2/%s/vod/ptmd/mediathek/' % (ptmd_player) 	# ptmd_player injiziert - (noch) nicht benötigt, s.o.
+	videodat_url = 'https://api.zdf.de/tmd/2/portal/vod/ptmd/mediathek/'  
+	videodat_url = videodat_url + videodat
 	Log('ptmd: ' + old_videodat_url); Log('uurl: ' + videodat); Log('videodat_url: ' + videodat_url)	
-	
-	
-	# Bsp.: https://api.zdf.de/tmd/2/portal/vod/ptmd/mediathek/161021_hsh_hsh'
-	# 	zweite Variante mit {player} = ngplayer_2_3 : identische Datei
-	# headers = {'Api-Auth':"Bearer d2726b6c8c655e42b68b0db26131b15b22bd1a32", 'Origin':"https://www.zdf.de", 
-	#		'Host':"api.zdf.de", 'Accept-Encoding':"de-DE,de;q=0.8,en-US;q=0.6,en;q=0.4", 
-	#		'Accept':"application/vnd.de.zdf.v1.0+json"}
-	#
-	# Fehler "crossdomain access denied" bei .m3u8-Dateien: Ursache https-Verbindung - konkrete Wechselwirkung n.b.
-	#	div. Versuche mit Änderungen der crossdomain.xml in Plex erfolglos,
-	#	dto. Eintrag des Servers zdfvodnone-vh.akamaihd.net in der hosts-Datei.
-	#	Abhilfe: https -> http, klappt bei allen angebotenen Formaten
-	#	
-	page = JSON.ObjectFromURL(videodat_url)	 # json=dict erlaubt keine Stringsuche, Sortierung nötig (not in order!)				
-	page = 	json.dumps(page, sort_keys=True, indent=2, separators=(',', ': '))
-	# Log(page)	
-	
+
+	# Ab 19.02.2017 kann videodat_url nicht mehr normal angefordert werden - wie in GetZDFVideoSources
+	#	ZDF besteht auf Authentifizierung mit apiToken und zusätzlich SSL-Handshake
+	# 		Bsp.: https://api.zdf.de/tmd/2/portal/vod/ptmd/mediathek/161021_hsh_hsh' oder
+	#			  https://api.zdf.de/tmd/2/portal/vod/ptmd/mediathek/151213_camper_chaos_inf	
+	#	SSL-Handshake hier via Python urllib2.Request verwirklicht. für mehr Sicherheit ssl.CERT_REQUIRED 
+	#		verwenden (Plex-Zertifikate: ca.crt, certificate.p12)
+	req = urllib2.Request(videodat_url)
+	req.add_header('Api-Auth', 'Bearer d2726b6c8c655e42b68b0db26131b15b22bd1a32')
+	gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1)  
+	r = urllib2.urlopen(req, context=gcontext)
+	page =  r.read()
+	Log(page[:20])	# "attributes" ...
+		
 	subtitles = stringextract('\"captions\"', '\"documentVersion\"', page)	# Untertitel ermitteln, bisher in Plex-
 	subtitles = blockextract('\"class\"', subtitles)						# Channels nicht verwendbar
 	#Log(subtitles)
@@ -2958,24 +2974,29 @@ def GetZDFVideoSources(url, title, thumb, tagline, segment_start=None, segment_e
 		sub_xml_path = stringextract('\"uri\": \"', '\"', sub_xml)
 		sub_vtt_path = stringextract('\"uri\": \"', '\"', sub_vtt)
 		Log('Untertitel xml + vtt:');Log(sub_xml_path);Log(sub_vtt_path);
-	
-	formitaeten = blockextract('\"formitaeten\":', page)		# Video-URL's ermitteln
+
+	# Fehler "crossdomain access denied" bei .m3u8-Dateien: Ursache https-Verbindung - konkrete Wechselwirkung n.b.
+	#	div. Versuche mit Änderungen der crossdomain.xml in Plex erfolglos,
+	#	dto. Eintrag des Servers zdfvodnone-vh.akamaihd.net in der hosts-Datei.
+	#	Abhilfe: https -> http beim m3u8-Link - klappt bei allen angebotenen Formaten
+	#	
+	formitaeten = blockextract('formitaeten', page)		# Video-URL's ermitteln
 	# Log(formitaeten)
 	title_call = title
 	i = 0 	# Titel-Zähler für mehrere Objekte mit dem selben Titel (manche Clients verwerfen solche)
 	for rec in formitaeten:							# Datensätze gesamt
 		# Log(rec)		# bei Bedarf
-		typ = stringextract('\"type\": \"', '\"', rec)
-		facets = stringextract('\"facets\": ', ',', rec)	# Bsp.: "facets": ["progressive"]
+		typ = stringextract('\"type\" : \"', '\"', rec)
+		facets = stringextract('\"facets\" : ', ',', rec)	# Bsp.: "facets": ["progressive"]
 		facets = facets.replace('\"', '').replace('\n', '').replace(' ', '')  
 		Log('typ: ' + typ); Log('facets: ' + facets)
 		if typ == "h264_aac_ts_http_m3u8_http":			# hier nur m3u8-Dateien			
-			audio = blockextract('\"audio\":', rec)		# Datensätze je Typ
+			audio = blockextract('\"audio\" :', rec)		# Datensätze je Typ
 			# Log(audio)	# bei Bedarf
 			for audiorec in audio:		
-				url = stringextract('\"uri\": \"',  '\"', audiorec)			# URL
+				url = stringextract('\"uri\" : \"',  '\"', audiorec)			# URL
 				url = url.replace('https', 'http')		# im Plugin kein Zugang mit https!
-				quality = stringextract('\"quality\": \"',  '\"', audiorec)
+				quality = stringextract('\"quality\" : \"',  '\"', audiorec)
 				Log(url); Log(quality);
 				if quality == 'high':					# high bisher identisch mit auto 
 					continue
@@ -3009,53 +3030,69 @@ def ZDFotherSources(url, title, tagline, thumb):
 	oc = ObjectContainer(title2=title, view_group="InfoList")
 	oc = home(cont=oc, ID='ZDF')						# Home-Button
 
-	page = HTTP.Request(url).content 					# player-Konfig. ermitteln		
+	page = HTTP.Request(url).content 					# player-Konfig. ermitteln	- klappt (noch) ohne Authentifizierung	
 	# Log(page)    # bei Bedarf
 		
 	zdfplayer = stringextract('data-module=\"zdfplayer\"', 'autoplay', page)			
 	player_id =  stringextract('data-zdfplayer-id=\"', '\"', zdfplayer)		
 	config_url = stringextract('\"config\": \"', '\"', zdfplayer)		
 	profile_url = stringextract('\"content\": \"', '\"', zdfplayer)	
-	#Log(zdfplayer); Log(player_id); Log(config_url); Log(profile_url)
+	# Log(zdfplayer); Log(player_id); Log(config_url); Log(profile_url)
 	
-	config_url = ZDF_BASE + config_url 											# 2. apiToken ermitteln - immer identisch?
-	page = HTTP.Request(config_url).content 									# 	ev. nicht außerhalb Deutschlands?
-	apiToken = stringextract('\"apiToken\": \"', '\"', page)
-	Log(apiToken)	
+	# apiToken noch unverändert - siehe GetZDFVideoSources
+	# config_url = ZDF_BASE + config_url 											# 2. apiToken ermitteln - bisher identisch
+	# page = HTTP.Request(config_url).content 										# 	ev. nicht außerhalb Deutschlands?
+	# apiToken = stringextract('\"apiToken\": \"', '\"', page)
+	# Log(apiToken)	
 	
-	headers = {'Api-Auth': "Bearer %s" % apiToken, 'Host':"api.zdf.de", 'Accept-Encoding':"gzip, deflate, sdch, br", 'Accept':"application/vnd.de.zdf.v1.0+json"}
+	# Ab 19.02.2017 kann videodat_url nicht mehr normal angefordert werden - wie videodat_url in GetZDFVideoSources
+	#	ZDF besteht auf Authentifizierung mit apiToken und zusätzlich SSL-Handshake
+	# 		Bsp.: https://api.zdf.de/tmd/2/portal/vod/ptmd/mediathek/170218_sendung_dgk od. 
+	# 			  https://api.zdf.de/tmd/2/portal/vod/ptmd/mediathek/170218_sendung_kio
+	# headers = {'Api-Auth': "Bearer %s" % apiToken, 'Host':"api.zdf.de", 'Accept-Encoding':"gzip, deflate, sdch, br", 'Accept':"application/vnd.de.zdf.v1.0+json"}
 	# Log(headers)		# bei Bedarf
-
-	request = JSON.ObjectFromURL(profile_url, headers=headers)					# 3. Playerdaten ermitteln
-	request = json.dumps(request, sort_keys=True, indent=2, separators=(',', ': '))  # sortierte Ausgabe
-	# Log(request)
-	request = str(request)				# json=dict erlaubt keine Stringsuche, json.dumps klappt hier nicht
+	req = urllib2.Request(profile_url)
+	req.add_header('Api-Auth', 'Bearer d2726b6c8c655e42b68b0db26131b15b22bd1a32')
+	gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1)  
+	r = urllib2.urlopen(req, context=gcontext)
+	request =  r.read()
 	request = request.decode('utf-8', 'ignore')		
-		
+	Log(request[:20])	# "attributes" ...
+			
 	pos = request.rfind('mainVideoContent')				# 'mainVideoContent' am Ende suchen
 	request_part = request[pos:]
-	# Log(request_part)			# bei Bedarf
-	old_videodat = stringextract('http://zdf.de/rels/streams/ptmd\": \"', '\",', request_part)	
-	# Bsp.: /tmd/2/portal/vod/ptmd/mediathek/161021_hsh_hsh'
+	request_part = repl_char('\\', request_part) # das erspart hier die JSON-Behandlung, Bsp. http:\/\/zdf.de\/rels\/target
+	Log(request_part[:20])			# bei Bedarf, mainVideoContent"...
+	old_videodat = stringextract('http://zdf.de/rels/streams/ptmd\":\"', '\",', request_part)	
+	# Bsp. old_videodat: /tmd/2/portal/vod/ptmd/mediathek/161021_hsh_hsh'
 	# Log(videodat)	
 	old_videodat_url = 'https://api.zdf.de' + old_videodat							# 4. Videodaten ermitteln
 	# neu ab 20.1.2016: uurl-Pfad statt ptmd-Pfad ( ptmd-Pfad fehlt bei Teilvideos)
 	videodat = stringextract('\"uurl\": \"', '\"', request_part)	# Bsp.: 161118_clip_5_hsh
-	videodat_url = 'https://api.zdf.de/tmd/2/portal/vod/ptmd/mediathek/' + videodat
+	if videodat == '':
+		videodat_url = old_videodat_url
+	else:
+		videodat_url = 'https://api.zdf.de/tmd/2/portal/vod/ptmd/mediathek/' + videodat
+		
 	Log('ptmd: ' + old_videodat_url); Log('uurl: ' + videodat); Log('videodat_url: ' + videodat_url)	
 	
-	page = JSON.ObjectFromURL(videodat_url)	 # json=dict erlaubt keine Stringsuche, Sortierung nötig (not in order!)				
-	page = 	json.dumps(page, sort_keys=True, indent=2, separators=(',', ': '))
-	# Log(page)	
+	# Authentifizierung wie bei profile_url - s.o.:
+	req = urllib2.Request(videodat_url)
+	req.add_header('Api-Auth', 'Bearer d2726b6c8c655e42b68b0db26131b15b22bd1a32')
+	gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1)  
+	r = urllib2.urlopen(req, context=gcontext)
+	page =  r.read()
+	request_part = repl_char('\\', request_part) # das erspart hier die JSON-Behandlung, Bsp. http:\/\/zdf.de\/rels\/target
+	Log(page[:20])	 # "attributes" : ...
 	
-	formitaeten = blockextract('\"formitaeten\":', page)		# Video-URL's ermitteln
+	formitaeten = blockextract('\"formitaeten\" :', page)		# Video-URL's ermitteln
 	# Log(formitaeten)
 	i = 0 	# Titel-Zähler für mehrere Objekte mit dem selben Titel (manche Clients verwerfen solche)
 	download_list = []		# 2-teilige Liste für Download: 'summary # url'	
-	for rec in formitaeten:							# Datensätze gesamt
+	for rec in formitaeten:									# Datensätze gesamt
 		# Log(rec)		# bei Bedarf
-		typ = stringextract('\"type\": \"', '\"', rec)
-		facets = stringextract('\"facets\": ', ',', rec)	# Bsp.: "facets": ["progressive"]
+		typ = stringextract('\"type\" : \"', '\"', rec)
+		facets = stringextract('\"facets\" : ', ',', rec)	# Bsp.: "facets": ["progressive"]
 		facets = facets.replace('\"', '').replace('\n', '').replace(' ', '') 
 		Log(typ); Log(facets)
 		if typ == "h264_aac_f4f_http_f4m_http":				# manifest.f4m auslassen
@@ -3063,12 +3100,12 @@ def ZDFotherSources(url, title, tagline, thumb):
 		if typ == "h264_aac_ts_http_m3u8_http":				# bereits in GetZDFVideoSources ausgewertet
 			continue
 			
-		audio = blockextract('\"audio\":', rec)		# Datensätze je Typ
+		audio = blockextract('\"audio\" :', rec)			# Datensätze je Typ
 		# Log(audio)	# bei Bedarf
 		for audiorec in audio:		
-			url = stringextract('\"uri\": \"',  '\"', audiorec)			# URL
+			url = stringextract('\"uri\" : \"',  '\"', audiorec)			# URL
 			url = url.replace('https', 'http')
-			quality = stringextract('\"quality\": \"',  '\"', audiorec)
+			quality = stringextract('\"quality\" : \"',  '\"', audiorec)
 			Log(url); Log(quality);
 			i = i +1
 			if url:			

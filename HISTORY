@@ -2,8 +2,16 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------			gelöschte Releases: älter als  2.6.5	
 
+
+20.02.2017 2.7.8	ZDFMediathek nach HTTP Error 403: Umstellung der JSON-Requests in GetZDFVideoSources 
+			und ZDFotherSources auf urllib2.Request mit SSL-Handshake. Der Header-Parameter 'Api-Auth'
+			bleibt 'hardcoded', da bisher unverändert - dynamische Ermittlung im Code vorgesehen, aber
+			auskommentiert (Performancegründe). Stringoperationen bei den vorherigen JSON-Extrakten
+			angepasst
+			Funktion VerpasstWoche (Bereich ZDF Mediathek): Home-Button angepasst für ZDF Mediathek - führte
+			vorher zum Hauptmenü ARD-Bereich zurück
 10.02.2017 2.7.7	livesenderRadio.xml: defekten Link für N24 ausgetauscht. Hinweis: Ziffer 4 in index_4_av-p.m3u8
-			liefert höchste Auflösung, 3=mittlere, 2=kleine. 
+			liefert höchste Auflösung, 3=mittlere, 2=kleine
 			Funktion SenderLiveListe: tagline ergänzt, falls EPG abgewählt
 
 30.01.2017 2.7.6	TV-Live-Sender N24: Link aktualisiert. Funktioniert nur noch mit autom. Anpassung/Auflösung,
