@@ -17,8 +17,8 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.7.8'		
-VDATE = '20.02.2017'
+VERSION =  '2.7.9'		
+VDATE = '22.02.2017'
 
 # 
 #	
@@ -1734,7 +1734,7 @@ def SenderLiveListe(title, listname, offset=0):	#
 			break
 	
 	liste = element.xpath('./items/item')
-	Log(name); Log(liste); # Log(element_str)  # 1 Channel  der Playlist - nur bei Bedarf
+	Log(name); Log(len(liste)); # Log(element_str)  # 1 Channel  der Playlist - nur bei Bedarf
 
 	# Besonderheit: die Senderliste wird lokal geladen (s.o.). Über den link wird die URL zur  
 	#	*.m3u8 geholt. Nach Anwahl eines Live-Senders erfolgt in SenderLiveResolution die Listung
@@ -1753,7 +1753,9 @@ def SenderLiveListe(title, listname, offset=0):	#
 		# Bei link zu lokaler m3u8-Datei (Resources) reagieren SenderLiveResolution und ParsePlayList entsprechend:
 		#	der erste Eintrag (automatisch) entfällt, da für die lokale Reource kein HTTP-Request durchge-
 		#	führt werden kann. In ParsePlayList werden die enthaltenen Einträge wie üblich aufbereitet
-		#	 
+		#	
+		# Spezialbehandlung für N24 in SenderLiveResolution - Test auf Verfügbarkeit der Lastserver (1-4)
+		 
 									
 		title = stringextract('<title>', '</title>', element_str)
 		epg_schema=''; epg_url=''
@@ -1977,6 +1979,10 @@ def SenderLiveResolution(path, title, thumb, include_container=False):
 		Log(len(oc))
 		return oc
 		
+	# Spezialbehandlung für N24 - Test auf Verfügbarkeit der Lastserver (1-4):
+	if title.find('N24') >= 0:
+		url_m3u8 = N24LastServer(url_m3u8)
+		
 	if url_m3u8.find('rtmp') == 0:		# rtmp, summary darf für PHT nicht leer sein
 		oc.add(CreateVideoStreamObject(url=url_m3u8, title=title, 
 			summary='rtmp-Stream', tagline=title, meta=Codecs, thumb=thumb, rtmp_live='ja', resolution=''))
@@ -1997,6 +2003,36 @@ def SenderLiveResolution(path, title, thumb, include_container=False):
 		return oc							# (-> CreateVideoStreamObject pro Auflösungstufe)
 	else:	# keine oder unbekannte Extension - Format unbekannt
 		return ObjectContainer(header='SenderLiveResolution: ', message='unbekanntes Format in ' + url_m3u8)
+
+#-----------------------------
+# Spezialbehandlung für N24 - Test auf Verfügbarkeit der Lastserver (1-4): wir prüfen
+# 	die Lastservers durch, bis einer Daten liefert
+def N24LastServer(url_m3u8):	
+	Log('N24LastServer: ' + url_m3u8)
+	url = url_m3u8
+	
+	pos = url.find('index_')	# Bsp. index_1_av-p.m3u8
+	nr_org = url[pos+6:pos+7]
+	Log(nr_org) 
+	for nr in [1,2,3,4]:
+		# Log(nr)
+		url_list = list(url)
+		url_list[pos+6:pos+7] = str(nr)
+		url_new = "".join(url_list)
+		# Log(url_new)
+		try:
+			# playlist = HTTP.Request(url).content   # wird abgewiesen
+			req = urllib2.Request(url_new)
+			r = urllib2.urlopen(req)
+			playlist = r.read()			
+		except:
+			playlist = ''
+			
+		Log(playlist[:20])
+		if 	playlist:	# playlist gefunden - diese url verwenden
+			return url_new	
+	
+	return url_m3u8		# keine playlist gefunden, weiter mit Original-url
 				
 ####################################################################################################
 @route(PREFIX + '/Arteplaylist')	# Auswertung Arte-Parameter rtmp- + hls-streaming
@@ -2122,9 +2158,8 @@ def CreateVideoStreamObject(url, title, summary, tagline, meta, thumb, rtmp_live
 # 
 @route(PREFIX + '/PlayVideo')  
 #def PlayVideo(url, resolution, **kwargs):	# resolution übergeben, falls im  videoclip_obj verwendet
-def PlayVideo(url, **kwargs):	# resolution übergeben, falls im  videoclip_obj verwendet
+def PlayVideo(url, **kwargs):	
 	Log('PlayVideo: ' + url); 		# Log('PlayVideo: ' + resolution)
-	HTTP.Request(url).content
 	return Redirect(url)
 
 ####################################################################################################
@@ -3229,7 +3264,10 @@ def Parseplaylist(container, url_m3u8, thumb):		# master.m3u8 auswerten, Url mus
   # seit ZDF-Relaunch 28.10.2016 dort nur noch https
   if url_m3u8.find('http://') == 0 or url_m3u8.find('https://') == 0:		# URL oder lokale Datei?	
 	try:
-		playlist = HTTP.Request(url_m3u8).content  # als Text, nicht als HTML-Element
+		# playlist = HTTP.Request(url_m3u8).content  # der Plex-interne Request wir manchmal abgewiesen, Bsp. N24
+		req = urllib2.Request(url_m3u8)
+		r = urllib2.urlopen(req)
+		playlist = r.read()			 # Playlist als Text	laden
 	except:
 		if playlist == '':
 			msg = 'Playlist kann nicht geladen werden. URL:\r'

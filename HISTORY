@@ -2,6 +2,9 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------			gelöschte Releases: älter als  2.6.5	
 
+22.02.2017 2.7.9	TV-Livesender: Spezialbehandlung für N24 - Test auf Verfügbarkeit der Lastserver (1-4),
+			neben N24-Livestream zusätzlich N24-News aufgenommen			
+			Funktion PlayVideo: "HTTP.Request(url).content" entfernt (überflüssig)
 
 20.02.2017 2.7.8	ZDFMediathek nach HTTP Error 403: Umstellung der JSON-Requests in GetZDFVideoSources 
 			und ZDFotherSources auf urllib2.Request mit SSL-Handshake. Der Header-Parameter 'Api-Auth'

@@ -362,12 +362,23 @@
 		<fanart></fanart>
 	</item>
 	<item>
-		<title>N24</title>
-		<link>https://news2weltcms-lh.akamaihd.net/i/News2WeltCMS_1@425444/index_4_av-p.m3u8?sd=10&rebase=on</link>
+		<title>N24-Live</title>
+		<link>http://live2weltcms-lh.akamaihd.net/i/Live2WeltCMS_1@444563/index_1_av-p.m3u8?sd=10&rebase=on</link>
 		<thumbnail>tv-n24.png</thumbnail>
 		<genre>TV</genre>
-		<info>n24</info>
-		<date>13.03.2015</date>
+		<info>n24-live</info>
+		<date>21.02.2017</date>
+		<epg></epg>
+		<epg_schema></epg_schema>
+		<fanart></fanart>
+	</item>
+	<item>
+		<title>N24-NEWS</title>
+		<link>http://news2weltcms-lh.akamaihd.net/i/News2WeltCMS_1@425444/index_1_av-p.m3u8?sd=10&rebase=on</link>
+		<thumbnail>tv-n24.png</thumbnail>
+		<genre>TV</genre>
+		<info>n24-news</info>
+		<date>21.02.2017</date>
 		<epg></epg>
 		<epg_schema></epg_schema>
 		<fanart></fanart>
