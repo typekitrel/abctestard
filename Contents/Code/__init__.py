@@ -17,8 +17,8 @@ import updater
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.7.9'		
-VDATE = '22.02.2017'
+VERSION =  '2.8.0'		
+VDATE = '25.02.2017'
 
 # 
 #	
@@ -87,6 +87,7 @@ ICON_ZDF_HOERFASSUNGEN = 'zdf-hoerfassungen.png'
 ICON_ZDF_UNTERTITEL = 'zdf-untertitel.png'
 ICON_ZDF_INFOS = 'zdf-infos.png'
 ICON_ZDF_BILDERSERIEN = 'zdf-bilderserien.png'
+ICON_ZDF_NEWCONTENT = 'zdf-newcontent.png'
 
 ICON_OK = "icon-ok.png"
 ICON_WARNING = "icon-warning.png"
@@ -290,13 +291,15 @@ def Main_ZDF(name):
 		thumb=R(ICON_ZDF_RUBRIKEN))) 
 	oc.add(DirectoryObject(key=Callback(MeistGesehen, name="Meist gesehen"), title="Meist gesehen (1 Woche)", 
 		thumb=R(ICON_ZDF_MEIST))) 
+	oc.add(DirectoryObject(key=Callback(NeuInMediathek, name="Neu in der Mediathek"), title="Neu in der Mediathek)", 
+		thumb=R(ICON_ZDF_NEWCONTENT))) 
 	oc.add(DirectoryObject(key=Callback(BarriereArm, name="Barrierearm"), title="Barrierearm", 
 		thumb=R(ICON_ZDF_BARRIEREARM))) 
 		
 	oc.add(DirectoryObject(key=Callback(ZDF_Search, s_type='Bilderserien', title="Bilderserien", query="Bilderserien"), 
 		title="Bilderserien", thumb=R(ICON_ZDF_BILDERSERIEN))) 
 	return oc	
-	
+
 #----------------------------------------------------------------
 def home(cont, ID):												# Home-Button, Aufruf: oc = home(cont=oc)	
 	title = 'Zurück zum Hauptmenü ' + ID
@@ -1691,7 +1694,7 @@ def SenderLiveListePre(title, offset=0):	# Vorauswahl: Überregional, Regional, 
 		
 	doc = HTML.ElementFromString(playlist)		# unterschlägt </link>	
 	liste = doc.xpath('//channels/channel')
-	Log(liste)
+	Log(len(liste))
 	
 	for element in liste:
 		element_str = HTML.StringFromElement(element)
@@ -1725,7 +1728,7 @@ def SenderLiveListe(title, listname, offset=0):	#
 	
 	doc = HTML.ElementFromString(playlist)		# unterschlägt </link>	
 	liste = doc.xpath('//channels/channel')
-	Log(liste)
+	Log(len(liste))
 	
 	for element in liste:
 		element_str = HTML.StringFromElement(element)
@@ -1873,6 +1876,7 @@ def get_epg_ZDF(epg_url, epgname):					# EPG-Daten ermitteln für SenderLiveList
 	page = HTTP.Request(epg_url).content 	# ohne Cachebeschränkung - Seiten enthalten Tagesdaten
 	epgZDF =  blockextract('class="b-epg-timeline timeline-', page)	# Datensätze für ZDF, ZDFinfo, ZDFneo
 	# Log(epgZDF); 				# bei Bedarf
+	
 	for epg_rec in epgZDF:
 		mark = 'timeline-' + epgname
 		if epg_rec.find(mark) >= 0:		# Name hinter timeline-, Bsp.: timeline-ZDFneo
@@ -2149,8 +2153,7 @@ def CreateVideoStreamObject(url, title, summary, tagline, meta, thumb, rtmp_live
 		return ObjectContainer(objects=[videoclip_obj])				
 	else:
 		return videoclip_obj
-
-	return oc
+		
 #-----------------------------
 # PlayVideo: .m3u8 wurde in Route als fehlend bemängelt, wird aber als Attribut der Funktion nicht 
 #	akzeptiert - Ursache nicht gefunden. 
@@ -2563,6 +2566,22 @@ def MeistGesehen(name):
 	return oc
 		
 ####################################################################################################
+@route(PREFIX + '/NeuInMediathek')
+def NeuInMediathek(name):
+	Log('NeuInMediathek'); 
+	oc = ObjectContainer(title2=name, view_group="List")
+	oc = home(cont=oc, ID='ZDF')							# Home-Button
+	
+	path = ZDF_BASE
+	page = HTTP.Request(path).content
+	# 1. article-Parameter (1. von 9) enthält die relevanten Inhalte. 
+	page = stringextract('<article class="b-cluster m-filter js-rb-live','Teaser:Sendung verpasst', page)
+	 			
+	oc = ZDF_get_content(oc=oc, page=page, ref_path=path, ID='DEFAULT')	
+	
+	return oc
+		
+####################################################################################################
 @route(PREFIX + '/BarriereArm')		# z.Z. nur Hörfassungen, Rest ausgeblendet, da UT in Plex-Channels n.m.
 def BarriereArm(name):				# Vorauswahl: 1. Infos, 2. Hörfassungen, 3. Videos mit Untertitel
 	Log('BarriereArm')
@@ -2640,8 +2659,7 @@ def ZDF_get_content(oc, page, ref_path, ID=None):	# ID='Search' od. 'VERPASST' -
 		headline = stringextract('name headline mainEntityOfPage\" >', '</h1>', page)
 		if headline[0:7] == 'Objekte':		# Bsp.: Objekte vom 6. Dezember 2016
 			oc = ZDF_Bildgalerie(oc=oc, page=page, mode='pics_in_accordion-panels', title=headline)
-			return oc 
-		 	
+			return oc 		 	
 		
 	pos = page.find('class=\"content-box\"')					# ab hier verwertbare Inhalte 
 	if pos >= 0:
