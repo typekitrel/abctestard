@@ -18,7 +18,7 @@ import updater
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
 VERSION =  '2.8.0'		
-VDATE = '25.02.2017'
+VDATE = '28.02.2017'
 
 # 
 #	
@@ -142,6 +142,9 @@ ZDF_SENDUNGEN_AZ		= 'https://www.zdf.de/sendungen-a-z?group=%s'			# group-Format
 ZDF_WISSEN				='https://www.zdf.de/doku-wissen'						# Basis für Ermittlung der Rubriken
 ZDF_SENDUNGEN_MEIST		= 'https://www.zdf.de/meist-gesehen'
 ZDF_BARRIEREARM		= 'https://www.zdf.de/barrierefreiheit-im-zdf'
+# 26.02.2017 alternative Seiten (vollständig im Vergleich mit Web-Version?): 
+#	https://config-cdn.cellular.de/zdf/mediathek/config/android/4_0/zdf_mediathek_android_live_4_0.json
+#	Siehe https://github.com/raptor2101/Mediathek/issues/85 Kodi-Plugin Mediathek
 
 REPO_NAME = 'Plex-Plugin-ARDMediathek2016'
 GITHUB_REPOSITORY = 'rols1/' + REPO_NAME
@@ -311,11 +314,11 @@ def home(cont, ID):												# Home-Button, Aufruf: oc = home(cont=oc)
 	if ID == 'ARD':
 		name = "ARD Mediathek"
 		cont.add(DirectoryObject(key=Callback(Main_ARD, name=name),title=title, summary=summary, tagline=name, 
-			thumb=R('home.png')))
+			thumb=R('home-ard.png')))
 	if ID == 'ZDF':
 		name = "ZDF Mediathek"
 		cont.add(DirectoryObject(key=Callback(Main_ZDF,name=name),title=title, summary=summary, tagline=name, 
-			thumb=R('home.png')))
+			thumb=R('home-zdf.png')))
 
 	return cont
 	
@@ -1655,27 +1658,21 @@ def CreateVideoClipObject(url, title, summary, tagline, meta, thumb, duration, r
 	# resolution = ''					# leer - Clients skalieren besser selbst
 	resolution=[720, 540, 480]			# wie VideoClipObject: Vorgabe für Webplayer entbehrlich, für PHT erforderlich
 
- 
+	mo = MediaObject(parts=[PartObject(key=Callback(PlayVideo, url=url))],
+		container = Container.MP4,  	# weitere Video-Details für Chrome nicht erf., aber Firefox 
+		video_codec = VideoCodec.H264,	# benötigt VideoCodec + AudioCodec zur Audiowiedergabe
+		audio_codec = AudioCodec.AAC,)	# 
+		
 	videoclip_obj = VideoClipObject(
-	key = Callback(CreateVideoClipObject, url=url, title=title, summary=summary, tagline=tagline,
+		key = Callback(CreateVideoClipObject, url=url, title=title, summary=summary, tagline=tagline,
 		meta=meta, thumb=thumb, duration=duration, resolution=resolution, include_container=True),
 		rating_key = url,
 		title = title,
 		summary = summary,
 		tagline = tagline,
-		thumb = thumb,
-		items = [
-			MediaObject(
-				parts = [
-					# PartObject(key=url)						# reicht für Webplayer
-					PartObject(key=Callback(PlayVideo, url=url)) 
-				],
-				container = Container.MP4,  	# weitere Video-Details für Chrome nicht erf., aber Firefox 
-				video_codec = VideoCodec.H264,	# benötigt VideoCodec + AudioCodec zur Audiowiedergabe
-				audio_codec = AudioCodec.AAC,	# 
-				
-			)  									# for resolution in [720, 540, 480, 240] # (in PlayVideo übergeben), s.o.
-	])
+		thumb = thumb,)
+	
+	videoclip_obj.add(mo)	
 
 	if include_container:						# Abfrage anscheinend verzichtbar, schadet aber auch nicht 
 		return ObjectContainer(objects=[videoclip_obj])
@@ -2108,6 +2105,7 @@ def CreateVideoStreamObject(url, title, summary, tagline, meta, thumb, rtmp_live
 		if rtmp_live == 'ja':
 			Log('rtmp_live: '); Log(rtmp_live) 
 			mo = MediaObject(parts=[PartObject(key=RTMPVideoURL(url=url,live=True))]) # live=True nur Streaming
+			
 			rating_key = title
 			videoclip_obj = VideoClipObject(
 				key = Callback(CreateVideoStreamObject, url=url, title=title, summary=summary, tagline=tagline,
@@ -2119,6 +2117,7 @@ def CreateVideoStreamObject(url, title, summary, tagline, meta, thumb, rtmp_live
 				thumb=thumb,)  
 		else:
 			mo = MediaObject(parts=[PartObject(key=RTMPVideoURL(url=url))])
+			
 			rating_key = title
 			videoclip_obj = VideoClipObject(
 				key = Callback(CreateVideoStreamObject, url=url, title=title, summary=summary,  tagline=tagline,
@@ -2134,6 +2133,7 @@ def CreateVideoStreamObject(url, title, summary, tagline, meta, thumb, rtmp_live
 		resolution=[1280, 1024, 960, 720, 540, 480] # wie VideoClipObject: Vorgabe für Webplayer entbehrlich, für PHT erforderlich
 		meta=url									# leer (None) im Webplayer OK, mit PHT:  Server: Had trouble breaking meta
 		mo = MediaObject(parts=[PartObject(key=HTTPLiveStreamURL(url=url))]) 
+		
 		rating_key = title
 		videoclip_obj = VideoClipObject(					# Parameter wie MovieObject
 			key = Callback(CreateVideoStreamObject, url=url, title=title, summary=summary,  tagline=tagline,
@@ -2155,9 +2155,10 @@ def CreateVideoStreamObject(url, title, summary, tagline, meta, thumb, rtmp_live
 		return videoclip_obj
 		
 #-----------------------------
-# PlayVideo: .m3u8 wurde in Route als fehlend bemängelt, wird aber als Attribut der Funktion nicht 
-#	akzeptiert - Ursache nicht gefunden. 
-#	Routine ab 03.04.2016 entbehrlich - s.o. (ohne Redirect)
+# PlayVideo: falls HTTPLiveStreamURL hier verarbeitet wird (nicht in diesem Plugin), sollte die Route der
+#	Endung (i.d.R. .m3u8) entsprechen. Siehe Post sander1 28.02.2017: 
+#	https://forums.plex.tv/discussion/260046/what-is-the-right-way-to-use-httplivestreamurl-without-url-services#latest
+#	
 # 
 @route(PREFIX + '/PlayVideo')  
 #def PlayVideo(url, resolution, **kwargs):	# resolution übergeben, falls im  videoclip_obj verwendet
