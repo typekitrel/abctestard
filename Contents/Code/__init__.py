@@ -18,7 +18,7 @@ import updater
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
 VERSION =  '2.8.1'		
-VDATE = '28.02.2017'
+VDATE = '29.02.2017'
 
 # 
 #	
@@ -2167,6 +2167,8 @@ def PlayVideo(url, **kwargs):
 	return Redirect(url)
 
 ####################################################################################################
+# path = ARD_RadioAll = http://www.ardmediathek.de/radio/live?genre=Alle+Genres&kanal=Alle
+#	Bei Änderungen der Sender Datei livesenderRadio.xml anpassen (Sendernamen, Icons)
 @route(PREFIX + '/RadioLiveListe')  
 def RadioLiveListe(path, title):
 	Log('RadioLiveListe');

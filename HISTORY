@@ -2,8 +2,8 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------			gelöschte Releases: älter als  2.6.5	
 
-28.02.2017 2.8.1	Radio-Livestreams: Icon für neuen MDR-Sender "MDR Schlagerwelt" erstellt. Datei livesenderRadio.xml
-			angepasst
+29.02.2017 2.8.1	Radio-Livestreams: Icon für neuen MDR-Sender "MDR Schlagerwelt" erstellt. Datei livesenderRadio.xml
+			angepasst (Icons, geänderte Sendernamen in MDR, SR + SWF)
 			Codebereinigung Funktion CreateVideoClipObject: Strukturierung des MediaObject's
 			an die Struktur in CreateVideoStreamObject
 			Zusätzliche Home-Buttons für die Ebenen ARD und ZDF

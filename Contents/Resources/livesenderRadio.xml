@@ -65,14 +65,14 @@
 		<title>SR</title>
 		<link>http://www.ardmediathek.de/radio/live?genre=Alle+Genres&kanal=1128</link>
 		<thumbnail>radio-sr.png</thumbnail>
-		<sender>AntenneSaar|SR 1 Europawelle|SR 2 KulturRadio|SR 3 Saarlandwelle|103.7 UnserDing</sender>		
+		<sender>AntenneSaar|SR 1|SR 2 KulturRadio|SR 3 Saarlandwelle|103.7 UnserDing</sender>		
 		<thumblist>radio-antennesaar.png|radio-sr1.png|radio-sr2.png|radio-sr3.png|radio-unser-ding.png</thumblist>
 	</item>
 	<item>
 		<title>SWR</title>
 		<link>http://www.ardmediathek.de/radio/live?genre=Alle+Genres&kanal=728</link>
 		<thumbnail>radio-swr.png</thumbnail>
-		<sender>DASDING|SWRinfo|SWR1 Baden-Württemberg|SWR1 Rheinland-Pfalz|SWR2|SWR3|SWR4 Baden-Württemberg|
+		<sender>DASDING|SWR Aktuell|SWR1 Baden-Württemberg|SWR1 Rheinland-Pfalz|SWR2|SWR3|SWR4 Baden-Württemberg|
 			SWR4 Rheinland-Pfalz</sender>		
 		<thumblist>radio-dasding.png|radio-swr-info.png|radio-swr1.png|radio-swr1.png|radio-swr2.png|radio-swr3.png|
 			radio-swr4.png|radio-swr4.png</thumblist>
