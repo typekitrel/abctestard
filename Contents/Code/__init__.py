@@ -12,13 +12,13 @@ import datetime
 import json			# json -> Textstrings
 
 import locale
-
 import updater
+import EPG
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.8.1'		
-VDATE = '29.02.2017'
+VERSION =  '2.8.2'		
+VDATE = '11.03.2017'
 
 # 
 #	
@@ -152,15 +152,10 @@ myhost = 'http://127.0.0.1:32400'
 
 ''' 
 ####################################################################################################
-TV-Live-Sender der Mediathek: | ARD-Alpha | BR |Das Erste | HR | MDR | NDR | RBB | SR | SWR | 
-	WDR | tagesschau24 |  | KIKA | PHOENIX | Deutsche Welle
-	zusätzlich: Tagesschau | NDR Fernsehen Hamburg, Mecklenburg-Vorpommern, Niedersachsen, Schleswig-Holstein |
-	RBB Berlin, Brandenburg | MDR Sachsen-Anhalt, Sachsen, Thüringen
-
-TV-Live-Sender des ZDF: ZDF | ZDFneo | ZDFinfo | 3Sat | ARTE (Sonderbehandlung im Code für ARTE 
-	wegen relativer Links in den m3u8-Dateien)
-
-TV-Live-Sender Sonstige: NRW.TV | Joiz | DAF | N24 | n-tv
+TV-Live-Sender: Liste siehe Resources/livesenderTV.xml, ca. 35 Sender
+	Aufteilung: Überregional (öffentlich-rechtliche TV-Sender bundesweit)
+				Regional (öffentlich-rechtliche TV-Sender der Bundesländer)
+				Privat (weitere ausgewählte TV-Sender, z.B. n-tv, N24)
 
 Radio-Live-Streams der ARD: alle Radiosender von Bayern, HR, mdr, NDR, Radio Bremen, RBB, SR, SWR, WDR, 
 	Deutschlandfunk. Insgesamt 10 Stationen, 63 Sender
@@ -545,12 +540,13 @@ def SendungenAZ(name):		# Auflistung 0-9 (1 Eintrag), A-Z (einzeln)
 	# Hinweis zur Suche in der Mediathek: miserabler unscharfer Algorithmus - findet alles mögliche
 def Search(query=None, title=L('Search'), s_type='video', offset=0, **kwargs):
 	Log('Search'); Log(query)
+	query = query.replace(' ', '+')		# Leer-Trennung bei ARD-Suche mit + (wie ZDF)
 	
 	name = 'Suchergebnis zu: ' + query
 	oc = ObjectContainer(view_group="InfoList", title1=NAME, title2=name, art = ObjectContainer.art)
 	next_cbKey = 'SinglePage'	# cbKey = Callback für Container in PageControl
 			
-	path =  BASE_URL +  ARD_Suche + query 
+	path =  BASE_URL +  ARD_Suche + query + '&source=tv&sort=date'
 	Log(path) 
 	page = HTTP.Request(path).content
 	Log(len(page))
@@ -1059,7 +1055,7 @@ def MakeDetailText(title, summary,tagline,quality,thumb,url):	# Textdatei für D
 	detailtxt = detailtxt + "%15s" % 'Titel: ' + "'"  + title + "'"  + '\r\n' 
 	detailtxt = detailtxt + "%15s" % 'Beschreibung1: ' + "'" + tagline + "'" + '\r\n' 
 	detailtxt = detailtxt + "%15s" % 'Beschreibung2: ' + "'" + summary + "'"  + '\r\n' 
-	detailtxt = detailtxt + "%15s" % 'Qualität: ' + "'" + quality + "'"  + '\r\n' 
+	detailtxt = detailtxt + "%15s" % 'Qualitaet: ' + "'" + quality + "'"  + '\r\n' 
 	detailtxt = detailtxt + "%15s" % 'Bildquelle: ' + "'" + thumb + "'"  + '\r\n' 
 	detailtxt = detailtxt + "%15s" % 'Adresse: ' + "'" + url + "'"  + '\r\n' 
 	
@@ -1645,41 +1641,6 @@ def img_urlScheme(text, dim):
 		return '', ''		
 	
 ####################################################################################################
-@route(PREFIX + '/CreateVideoClipObject')	# <- SingleSendung Qualitätsstufen
-	# Plex-Warnung: Media part has no streams - attempting to synthesize | keine Auswirkung
-	# **kwargs erforderlich bei Fehler: CreateVideoClipObject() got an unexpected keyword argument 'checkFiles'
-	#	beobachtet bei Firefox (Suse Leap) + Chrome (Windows7)
-	#	s.a. https://github.com/sander1/channelpear.bundle/tree/8605fc778a2d46243bb0378b0ab40a205c408da4
-def CreateVideoClipObject(url, title, summary, tagline, meta, thumb, duration, resolution, include_container=False, **kwargs):
-	#title = title.encode("utf-8")		# ev. für alle ausgelesenen Details erforderlich
-	Log('CreateVideoClipObject')
-	Log(url); Log(duration); Log(tagline)
-	Log(Client.Platform)
-	# resolution = ''					# leer - Clients skalieren besser selbst
-	resolution=[720, 540, 480]			# wie VideoClipObject: Vorgabe für Webplayer entbehrlich, für PHT erforderlich
-
-	mo = MediaObject(parts=[PartObject(key=Callback(PlayVideo, url=url))],
-		container = Container.MP4,  	# weitere Video-Details für Chrome nicht erf., aber Firefox 
-		video_codec = VideoCodec.H264,	# benötigt VideoCodec + AudioCodec zur Audiowiedergabe
-		audio_codec = AudioCodec.AAC,)	# 
-		
-	videoclip_obj = VideoClipObject(
-		key = Callback(CreateVideoClipObject, url=url, title=title, summary=summary, tagline=tagline,
-		meta=meta, thumb=thumb, duration=duration, resolution=resolution, include_container=True),
-		rating_key = url,
-		title = title,
-		summary = summary,
-		tagline = tagline,
-		thumb = thumb,)
-	
-	videoclip_obj.add(mo)	
-
-	if include_container:						# Abfrage anscheinend verzichtbar, schadet aber auch nicht 
-		return ObjectContainer(objects=[videoclip_obj])
-	else:
-		return videoclip_obj
-	
-#####################################################################################################
 @route(PREFIX + '/SenderLiveListePre')	# LiveListe Vorauswahl - verwendet lokale Playlist
 def SenderLiveListePre(title, offset=0):	# Vorauswahl: Überregional, Regional, Privat
 	Log.Debug('SenderLiveListePre')
@@ -1705,7 +1666,138 @@ def SenderLiveListePre(title, offset=0):	# Vorauswahl: Überregional, Regional, 
 		Log(name); Log(img); # Log(element_str);  # nur bei Bedarf	
 		oc.add(DirectoryObject(key=Callback(SenderLiveListe, title=name, listname=name),
 			title='Live-Sender: ' + name, thumb=img, tagline=''))
-			
+
+	title = 'EPG Alle JETZT'; summary='elektronischer Programmführer'.decode(encoding="utf-8", errors="ignore")
+	oc.add(DirectoryObject(key=Callback(EPG_ShowAll, title=title),  				# EPG-Button All anhängen
+			title=title, thumb=R('tv-EPG-all.png'), summary=summary, tagline='aktuelle Sendungen aller Sender'))				
+	title = 'EPG Sender einzeln'; summary='elektronischer Programmführer'.decode(encoding="utf-8", errors="ignore")
+	tagline = 'Sendungen für ausgewählten Sender'.decode(encoding="utf-8", errors="ignore")
+	oc.add(DirectoryObject(key=Callback(EPG_Sender, title=title),  					# EPG-Button Einzeln anhängen
+			title=title, thumb=R('tv-EPG-single.png'), summary=summary, tagline=tagline))				
+	return oc
+	
+#-----------------------------------------------------------------------------------------------------
+@route(PREFIX + '/EPG_Sender')		# EPG Vorauswahl, Daten holen in Modul EPG.py, Anzeige in EPG_Show
+def EPG_Sender(title):
+	Log('EPG_Sender')
+	
+	oc = ObjectContainer(view_group="InfoList", title1='EPG', title2='EPG Auswahl', art = ICON)	
+	oc = home(cont=oc, ID=NAME)				# Home-Button	
+	
+	sort_playlist = get_sort_playlist()	
+	# Log(sort_playlist)
+	
+	for rec in sort_playlist:
+		title = rec[0].decode(encoding="utf-8", errors="ignore")
+		link = rec[3]
+		ID = rec[1]
+		if ID == '':				# ohne EPG_ID
+			title = title + ': ohne EPG' 
+			summ = 'weiter zum Livestream'
+			oc.add(DirectoryObject(key=Callback(SenderLiveResolution, path=link, title=title, thumb=R(rec[2])),
+				title=title, summary='',  tagline='', thumb=R(rec[2])))
+		else:
+			summ = 'EPG verfügbar'.decode(encoding="utf-8", errors="ignore")
+			oc.add(DirectoryObject(key=Callback(EPG_ShowSingle, ID=ID, name=title, stream_url=link),
+				title=title, thumb=R(rec[2]), summary=summ, tagline=''))		
+
+	return oc
+#-----------------------------
+def get_sort_playlist():								# sortierte Playliste der TV-Livesender
+	Log('get_sort_playlist')
+	playlist = Resource.Load(PLAYLIST)					# lokale XML-Datei (Pluginverz./Resources)
+	stringextract('<channel>', '</channel>', playlist)	# ohne Header
+	playlist = blockextract('<item>', playlist)
+	sort_playlist =  []
+	for item in playlist:   
+		rec = []
+		title = stringextract('<title>', '</title>', item)
+		EPG_ID = stringextract('<EPG_ID>', '</EPG_ID>', item)
+		img = 	stringextract('<thumbnail>', '</thumbnail>', item)
+		link =  stringextract('<link>', '</link>', item)			# url für Livestreaming
+		rec.append(title); rec.append(EPG_ID);						# Listen-Element
+		rec.append(img); rec.append(link);
+		sort_playlist.append(rec)									# Liste Gesamt
+	
+	# Zeilen-Index: title=rec[0]; EPG_ID=rec[1]; img=rec[2]; link=rec[3];	
+	sort_playlist.sort()	
+	return sort_playlist
+	
+#-----------------------------------------------------------------------------------------------------
+@route(PREFIX + '/EPG_ShowSingle')		# EPG: Daten holen in Modul EPG.py, Anzeige hier, Klick zum Livestream
+def EPG_ShowSingle(ID, name, stream_url):
+	Log('EPG_ShowSingle')
+	EPG_rec = EPG.EPG(ID=ID)		# Daten holen
+	if len(EPG_rec) == 0:			# kann vorkommen, Bsp. SR
+		msg='Sender ' + name + ': keine EPG-Daten gefunden'
+		msg = msg.decode(encoding="utf-8", errors="ignore")
+		return ObjectContainer(header='Error', message=msg)
+		
+	# Log(EPG_rec[0]) # bei Bedarf
+	
+	oc = ObjectContainer(view_group="InfoList", title1='EPG', title2=name, art = ICON)	
+	oc = home(cont=oc, ID=NAME)				# Home-Button	
+	
+	# Indices EPG_rec: 0=starttime, 1=href, 2=img, 3=sname, 4=stime, 5=summ, 6=vonbis: 
+	# Link zur Einzelanzeige href=rec[1] hier nicht verwendet - wenig zusätzl. Infos
+	for rec in EPG_rec:
+		href=rec[1]; img=rec[2]; sname=rec[3]; stime=rec[4]; summ=rec[5]; vonbis=rec[6];
+		# Log(img)
+		if img.find('http') == -1:	# Werbebilder today.de hier ohne http://, Ersatzbild einfügen
+			img = R('icon-bild-fehlt.png')
+		sname = unescape(sname)
+		title=sname.decode(encoding="utf-8", errors="ignore")
+		summ = summ.decode(encoding="utf-8", errors="ignore")
+		tagline = 'Zeit: ' + vonbis
+		tagline = tagline.decode(encoding="utf-8", errors="ignore")
+		oc.add(DirectoryObject(key=Callback(SenderLiveResolution, path=stream_url, title=title, thumb=img),
+			title=title, summary=summ,  tagline=tagline, thumb=img))
+		
+	return oc
+#-----------------------------------------------------------------------------------------------------
+@route(PREFIX + '/EPG_ShowAll')		# EPG: aktuelle Sendungen aller Sender mode='allnow'
+def EPG_ShowAll(title):
+	Log('EPG_ShowAll')
+		
+	oc = ObjectContainer(view_group="InfoList", title1='EPG', title2='Aktuelle Sendungen', art = ICON)	
+	oc = home(cont=oc, ID=NAME)				# Home-Button	
+
+	# Zeilen-Index: title=rec[0]; EPG_ID=rec[1]; img=rec[2]; link=rec[3];	
+	sort_playlist = get_sort_playlist()	
+	for rec in sort_playlist:
+		title_playlist = rec[0].decode(encoding="utf-8", errors="ignore")
+		m3u8link = rec[3]
+		img_playlist = R(rec[2])
+		ID = rec[1]
+		if ID == '':									# ohne EPG_ID
+			title = title_playlist + ': ohne EPG'
+			summ = 'weiter zum Livestream'
+			tagline = ''
+			img = img_playlist
+		else:
+			# Indices EPG_rec: 0=starttime, 1=href, 2=img, 3=sname, 4=stime, 5=summ, 6=vonbis: 
+			rec = EPG.EPG(ID=ID, mode='OnlyNow')		# Daten holen - nur aktuelle Sendung
+			# Log(rec)	# bei Bedarf
+			if len(rec) == 0:							# Satz leer?
+				title = title_playlist + ': ohne EPG'
+				summ = 'weiter zum Livestream'
+				tagline = ''
+				img = img_playlist			
+			else:	
+				href=rec[1]; img=rec[2]; sname=rec[3]; stime=rec[4]; summ=rec[5]; vonbis=rec[6]
+				if img.find('http') == -1:	# Werbebilder today.de hier ohne http://, Ersatzbild einfügen
+					img = R('icon-bild-fehlt.png')
+				sname = sname.replace('JETZT', title_playlist)			# JETZT durch Sender ersetzen
+				Log(sname)
+				title=sname.decode(encoding="utf-8", errors="ignore")
+				summ = summ.decode(encoding="utf-8", errors="ignore")
+				tagline = 'Zeit: ' + vonbis
+				
+		title = unescape(title)				
+		tagline = tagline.decode(encoding="utf-8", errors="ignore")
+		oc.add(DirectoryObject(key=Callback(SenderLiveResolution, path=m3u8link, title=title, thumb=img),
+			title=title, summary=summ,  tagline=tagline, thumb=img))	
+		
 	return oc
 #-----------------------------------------------------------------------------------------------------
 @route(PREFIX + '/SenderLiveListe')	# LiveListe - verwendet lokale Playlist
@@ -1720,33 +1812,26 @@ def SenderLiveListe(title, listname, offset=0):	#
 	oc = ObjectContainer(view_group="InfoList", title1='Live-Sender', title2=title2, art = ICON)
 	oc = home(cont=oc, ID=NAME)				# Home-Button
 			
-	playlist = Resource.Load(PLAYLIST)	# muss neu geladen werden, das 'listelement' ist hier sonst nutzlos und die
-	#Log(playlist)						# Übergabe als String kann zu groß  werden (max. URL-Länge beim MIE 2083)
 	
-	doc = HTML.ElementFromString(playlist)		# unterschlägt </link>	
-	liste = doc.xpath('//channels/channel')
-	Log(len(liste))
-	
-	for element in liste:
-		element_str = HTML.StringFromElement(element)
-		name = stringextract('<name>', '</name>', element_str)
-		if name == listname:			# Listenauswahl gefunden
-			break
-	
-	liste = element.xpath('./items/item')
-	Log(name); Log(len(liste)); # Log(element_str)  # 1 Channel  der Playlist - nur bei Bedarf
-
 	# Besonderheit: die Senderliste wird lokal geladen (s.o.). Über den link wird die URL zur  
 	#	*.m3u8 geholt. Nach Anwahl eines Live-Senders erfolgt in SenderLiveResolution die Listung
 	#	der Auflösungsstufen.
 	#
-
+	playlist = Resource.Load(PLAYLIST)					# lokale XML-Datei (Pluginverz./Resources)
+	playlist = blockextract('<channel>', playlist)
+	Log(len(playlist)); Log(listname)
+	for i in range(len(playlist)):						# gewählte Channel extrahieren
+		item = playlist[i] 
+		name =  stringextract('<name>', '</name>', item)
+		Log(name)
+		if name == listname:							# Bsp. Überregional, Regional, Privat
+			mylist =  playlist[i] 
+			break
+	
+	liste = blockextract('<item>', mylist)
+	Log(len(liste));
 	for element in liste:							# EPG-Daten für einzelnen Sender holen 	
-		#title = element.xpath("./title/text()")	# xpath arbeitet fehlerhaft bei Sonderzeichen (z.B. in URL)
-		element_str = HTML.StringFromElement(element)
-		#Log(element_str)		# bei Bedarf			
-		link = stringextract('<link>', '<thumbnail>', element_str) 	# HTML.StringFromElement unterschlägt </link>
-		link = link.strip()							# \r + Leerz. am Ende entfernen
+		link = stringextract('<link>', '</link>', element) 	# HTML.StringFromElement unterschlägt </link>
 		link = unescape(link)						# amp; entfernen! Herkunft: HTML.ElementFromString bei &-Zeichen
 		Log(link);
 		
@@ -1755,211 +1840,51 @@ def SenderLiveListe(title, listname, offset=0):	#
 		#	führt werden kann. In ParsePlayList werden die enthaltenen Einträge wie üblich aufbereitet
 		#	
 		# Spezialbehandlung für N24 in SenderLiveResolution - Test auf Verfügbarkeit der Lastserver (1-4)
-		 
+		# EPG: ab 10.03.2017 einheitlich über Modul EPG.py (vorher direkt bei den Sendern, mehrere Schemata)
 									
-		title = stringextract('<title>', '</title>', element_str)
+		title = stringextract('<title>', '</title>', element)
 		epg_schema=''; epg_url=''
 		epg_date=''; epg_title=''; epg_text=''; summary=''; tagline='' 
-		Log(Prefs['pref_use_epg']) 					# Voreinstellung: EPG nutzen? - nur mit Schema nutzbar 
+		# Log(Prefs['pref_use_epg']) 					# Voreinstellung: EPG nutzen? - nur mit Schema nutzbar 
 		if Prefs['pref_use_epg'] == True:
-			epg_schema = stringextract('<epg_schema>', '</epg_schema>', element_str)	# bisher nur ARD, ZDF
-			epg_url = stringextract('<epg_url>', '</epg_url>', element_str)				# Link auf Seite mit Info zur Sendung
-			epg_url = unescape(epg_url)						# amp; entfernen! Herkunft: HTML.ElementFromString bei &-Zeichen
-			Log('--')		# Suchmarke 
-			Log(epg_url)
-			
-			now = datetime.datetime.now()		# akt. Zeit, Parameter für epg_url nach ARD-Schema
-			myDate = now.strftime("%d.%m.%Y")	
-			
-			if epg_schema == 'ARD':						# EPG-Daten ARD holen 
-				epg_url = epg_url % myDate
-				epg_date, epg_title, epg_text = get_epg_ARD(epg_url, listname)			
-					
-			if epg_schema == 'ZDF':						# EPG-Daten  ZDF holen	
-				epgname = stringextract('<epgname>', '</epgname>', element_str)		
-				epg_date, epg_title, epg_text = get_epg_ZDF(epg_url, epgname)	
-																		
-			if epg_schema == 'DW':					# EPG-Daten  Deutsche Welle holen	
-				epgname = stringextract('<epgname>', '</epgname>', element_str)		
-				epg_date, epg_title, epg_text = get_epg_DW(epg_url, epgname)
-								
-		Log(epg_schema); Log(epg_url); 
-		# Log(epg_title); Log(epg_date); Log(epg_text[0:40]);	# bei Bedarf	
-		if epg_date and epg_title:
-			summary = epg_date + ' | ' + epg_title
-		if epg_text:								# kann fehlen
-			tagline = epg_text
-		else:
-			tagline = title	
-		Log(tagline);
-			
+			# Indices EPG_rec: 0=starttime, 1=href, 2=img, 3=sname, 4=stime, 5=summ, 6=vonbis:
+			EPG_ID = stringextract('<EPG_ID>', '</EPG_ID>', element)
+			try:
+				rec = EPG.EPG(ID=EPG_ID, mode='OnlyNow')	# Daten holen - nur aktuelle Sendung
+				sname=rec[3]; stime=rec[4]; summ=rec[5]; vonbis=rec[6]	
+			except:
+				sname=''; stime=''; summ=''; vonbis=''						
+			if sname:
+				title = title + ': ' + sname
+			if summ:
+				summary = summ
+			else:
+				summary = ''
+			if vonbis:
+				tagline = 'Zeit: ' + vonbis
+			else:
+				tagline = ''			
+		title = unescape(title)	
+		title = title.replace('JETZT:', '')					# 'JETZT:' hier überflüssig
 		title = title.decode(encoding="utf-8", errors="ignore")	
 		summary = summary.decode(encoding="utf-8", errors="ignore")			
 		tagline = tagline.decode(encoding="utf-8", errors="ignore")	
 						
-		img = stringextract('<thumbnail>', '</thumbnail>', element_str) 
+		img = stringextract('<thumbnail>', '</thumbnail>', element) 
 		if img.find('://') == -1:	# Logo lokal? -> wird aus Resources geladen, Unterverz. leider n.m.
 			img = R(img)
 			
 		Log(link); Log(img); Log(summary); Log(tagline[0:80]);
 		Resolution = ""; Codecs = ""; duration = ""
 	
-		#if link.find('rtmp') == 0:				# rtmp-Streaming s. CreateVideoStreamObject
+		# if link.find('rtmp') == 0:				# rtmp-Streaming s. CreateVideoStreamObject
 		# Link zu master.m3u8 erst auf Folgeseite? - SenderLiveResolution reicht an  Parseplaylist durch  
 		oc.add(DirectoryObject(key=Callback(SenderLiveResolution, path=link, title=title, thumb=img),
 			title=title, summary=summary,  tagline=tagline, thumb=img))
 
 	Log(len(oc))
 	return oc
-#----------------------
-def get_epg_ARD(epg_url, listname):					# EPG-Daten ermitteln für SenderLiveListe, ARD
-	Log('get_epg_ARD: ' + listname)
-	epg_date = ''; epg_title=''; epg_text=''
 
-	# 	Abruf ohne Cachebeschränkung - Seiten enthalten Tagesdaten
-	page = HTTP.Request(epg_url, timeout=float(3)).content # ohne xpath, Timeout max. 3 sec
-	# Log(page)		# nur bei Bedarf		
-	liste = blockextract('class=\"sendungslink\"', page)  
-	Log(len(liste));	# bei Bedarf
-	if len(liste) == 0: # Sicherung
-		return '','','Keine EPG-Daten gefunden'
-	
-	now = datetime.datetime.now()		# akt. Zeit
-	nowtime = now.strftime("%H:%M")		# ARD: <span class="date"> \r 00:15 \r <div class="icons">
-	
-	for i in range (len(liste)):		# ältere Sendungen enthalten - daher Schleife + Zeitabgleich	
-		starttime = stringextract('<span class=\"date\">', '<', liste[i]) # aktuelle Sendezeit
-		starttime = mystrip(starttime)
-		try:
-			endtime = stringextract('<span class=\"date\">', '<', liste[i+1])		# nächste Sendezeit		
-			endtime = mystrip(endtime)
-		except:
-			endtime = '23:59'			# Listenende
-
-		#Log('starttime ' + starttime); Log('endtime ' + endtime); Log('nowtime ' + nowtime);	# bei Bedarf
-		epg_date = ''
-		if nowtime >= starttime and nowtime < endtime:
-			epg_date = stringextract('<span class=\"date\">', '<', liste[i])
-			epg_date = mystrip(epg_date) + ' - ' + endtime
-			
-			epg_title = stringextract('<span class=\"titel\">', '<',  liste[i])
-			epg_title = mystrip(epg_title)
-			epg_title = unescape(epg_title)			
-					
-			epg_text = stringextract('<span class=\"subtitel\">', '<',  liste[i])
-			epg_text = mystrip(epg_text)
-			epg_text = unescape(epg_text)
-			
-			# weitere Details via eventid z.Z. nicht verfügbar - beim Abruf klemmt Plex ohne Fehlermeldung:
-			#eventid = stringextract('data-eventid=\"', '\"', liste[i])	# Bsp. 	2872518888223822
-			#details_url = "http://programm.ard.de/?sendung=" + eventid
-			#page = HTTP.Request(details_url, cacheTime=1, timeout=float(10)).content # ohne xpath, Cache max. 1 sec
-			#epg_details = stringextract('name=\"description\" content="', '\" />', page)
-			#epg_text = unescape(epg_text[0:80])
-			
-			break
-	
-	if epg_date == '':					# Sicherung
-		return '','','Problem mit EPG-Daten'	
-			
-	epg_text = epg_text.decode(encoding="utf-8", errors="ignore") # möglich: UnicodeDecodeError: 'utf8' codec can't decode byte 0xc3 ...
-	Log(epg_date); Log(epg_title); Log(epg_text[0:80]); 	
-	return epg_date, epg_title, epg_text
-#----------------------
-def get_epg_ZDF(epg_url, epgname):					# EPG-Daten ermitteln für SenderLiveListe, ZDF
-	Log('get_epg_ZDF: ' + epgname)					#	neu nach ZDF-Relaunch 28.10.2016
-	#Log(epgname)
-
-	page = HTTP.Request(epg_url).content 	# ohne Cachebeschränkung - Seiten enthalten Tagesdaten
-	epgZDF =  blockextract('class="b-epg-timeline timeline-', page)	# Datensätze für ZDF, ZDFinfo, ZDFneo
-	# Log(epgZDF); 				# bei Bedarf
-	
-	for epg_rec in epgZDF:
-		mark = 'timeline-' + epgname
-		if epg_rec.find(mark) >= 0:		# Name hinter timeline-, Bsp.: timeline-ZDFneo
-			break
-	# Log(epg_rec)		# bei Bedarf
-	rec_liste = blockextract('class=\"overlay-link-title\"', epg_rec)	# Datensätze für epgname
-	# Log(rec_liste)	# bei Bedarf
-	
-	now = datetime.datetime.now()
-	nowtime = now.strftime("%H:%M")		  	# ZDF-Format, Bsp.: 05:50
-	epg_date = ''; epg_title = ''; epg_text = '';
-	
-	for rec in rec_liste:				# schön: Zeitangabe enthält Anfang + Ende, Bsp.: 05:50 - 06:35
-		# Log(rec)	# bei Bedarf
-		sendtime = 	stringextract('class=\"time\">', '</span>', rec)	
-		starttime = sendtime[0:4]
-		endtime = sendtime[8:]					
-		# Log('starttime ' + starttime); Log('endtime ' + endtime); Log('nowtime ' + nowtime);	# bei Bedarf
-		
-		if nowtime >= starttime and nowtime < endtime:
-			#  	Beschreib.: h3, (h5), (p, p). h3= titel, h5= Untertitel, p=Herkunft/Jahr 
-			epg_date = sendtime	
-			epg_cat = 	stringextract('link-category\">', '<span', rec)		
-			epg_title = stringextract('</span></span>', '</a>', rec)
-			epg_title = mystrip(epg_title)		# mit Zeilenumbruch	
-			# etext = stringextract('</span></span>', '</h5>', rec)  # weitere Infos fehlen, ev. in plusbar?
-			if epg_cat:
-				epg_title = epg_cat + ' | ' + epg_title				# Kat. + Titel zusammenfassen
-			Log(epg_date); Log(epg_title); # Log(etext); 
-			epg_title = unescape(epg_title); 	epg_text = unescape(epg_text)			
-			break												# fertig mit 'Jetzt'
-						
-	epg_text = epg_text.decode(encoding="utf-8", errors="ignore")	
-	Log(epg_date); Log(epg_title); Log(epg_text[0:40]);  
-	return epg_date, epg_title, epg_text
-#----------------------
-#	Aktuell : http://www.dw.com/de/media-center/live-tv/s-100817 - mitnunter morgens leer
-def get_epg_DW(epg_url, epgname):					# EPG-Daten ermitteln für SenderLiveListe, Deutsche Welle
-	Log('get_epg_DW: ' + epgname)	
-	#page = HTML.ElementFromURL(epg_url, cacheTime=1)
-	page = HTTP.Request(epg_url, timeout=float(1)).content #  nur Stringsuche
-	
-	# xpath n.m., da <td class="time"> auch ohne Zeitangabe vorh., Zeitangaben + Sprachen überschneiden sich
-	# liste =  re.findall("td class=\"time\">(.*?)</td>\s+?", page)	# falsche Ergebnisse wg. o.g. Überschneidung 
-	
-	page = stringextract('<table data-channel-id=\"5\"', '</table>', page)	# Filterung deutscher Inhalte
-	# Log(page)			# bei Bedarf
-	liste = blockextract('<tr class=\"langDE', page)  	# einschl. <tr class="langDE highlight">			
-	Log(len(liste));	# bei Bedarf
-	if len(liste) == 0: # Sicherung
-		return '','','Problem mit EPG-Daten'
-	
-	now = datetime.datetime.now()		# akt. Zeit
-	nowtime = now.strftime("%H:%M")		# DW: <td class="time">00:15</td>
-	
-	for i in range (len(liste)):
-		# starttime =stringextract('class=\"time\">', '</td>', liste[i]) # aktuelle Sendezeit UTC-Zeit (minus 2 Std)
-		starttime =stringextract('data-time=\"', '\"></td>', liste[i]) # aktuelle Sendezeit
-		starttime = starttime[0:10]			# 13-stel, auf 10 Stellen kürzen für Operationen mittels datetime.fromtimestamp
-		starttime = datetime.datetime.fromtimestamp(int(starttime))
-		starttime =  starttime.strftime("%H:%M")	
-		try:
-			endtime = stringextract('data-time=\"', '\"></td>', liste[i+1])		# nächste Sendezeit		
-			endtime = endtime[0:10]			# 13-stel, auf 10 Stellen kürzen für Operationen mittels datetime.fromtimestamp
-			endtime = datetime.datetime.fromtimestamp(int(endtime))
-			endtime =  endtime.strftime("%H:%M")	
-		except:
-			endtime = '23:59'			# Listenende
-
-		#Log('starttime ' + starttime); Log('endtime ' + endtime); Log('nowtime ' + nowtime);	# bei Bedarf
-		epg_date = ''
-		if nowtime >= starttime and nowtime < endtime:
-			epg_date = starttime
-			epg_title = stringextract('<h2>', '</h2>', liste[i])
-			epg_text = stringextract('nofollow\">', '</a', liste[i])
-			label = stringextract('label\">', '</span', liste[i])		# Sprachlabel
-			epg_text = label + ' | ' + epg_text
-			epg_text = unescape(epg_text)				# HTML-Escapezeichen  im Teasertext	
-			Log(liste[i][0:40])
-			break
-	if epg_date == '':					# Sicherung
-		return '','','Problem mit EPG-Daten'
-		
- 	Log(epg_date); Log(epg_title); Log(epg_text[0:80]);  
-	return epg_date, epg_title, epg_text
-		
 ###################################################################################################
 @route(PREFIX + '/SenderLiveResolution')	# Auswahl der Auflösungstufen des Livesenders
 	#	Die URL der gewählten Auflösung führt zu weiterer m3u8-Datei (*.m3u8), die Links zu den 
@@ -1973,13 +1898,8 @@ def SenderLiveResolution(path, title, thumb, include_container=False):
 	oc = ObjectContainer(view_group="InfoList", title1=title + ' Live', art=ICON)
 	oc = home(cont=oc, ID=NAME)					# Home-Button
 	
-	Codecs = 'H.264'	# dummy-Vorgabe für PHT (darf nicht leer sein)										
-	if title.find('Arte') >= 0:
-		Log('Arte-Stream gefunden')			
-		oc = Arteplaylist(oc, url_m3u8, title, thumb)	# Auswertung Arte-Parameter rtmp- + hls-streaming
-		Log(len(oc))
-		return oc
-		
+	Codecs = 'H.264'	# dummy-Vorgabe für PHT (darf nicht leer sein)	
+										
 	# Spezialbehandlung für N24 - Test auf Verfügbarkeit der Lastserver (1-4):
 	if title.find('N24') >= 0:
 		url_m3u8 = N24LastServer(url_m3u8)
@@ -2036,42 +1956,6 @@ def N24LastServer(url_m3u8):
 	return url_m3u8		# keine playlist gefunden, weiter mit Original-url
 				
 ####################################################################################################
-@route(PREFIX + '/Arteplaylist')	# Auswertung Arte-Parameter rtmp- + hls-streaming
-	# Die unter  https://api.arte.tv/api/player/v1/livestream/de?autostart=1 ausgelieferte Textdatei
-	# 	enthält je 2 rtmp-Url und 2 hls-Url
-	# 27.09.2016: Format + Sender URL's geändert - json, 2 x .f4m, 2 x .m3u8 (jeweils deutsch/französisch)
-	#	wir verwenden nur die beiden .m3u8-Versionen. 
-	#	Sender artelive-lh.akamaihd.net statt delive.artestras.cshls.lldns.net
-def Arteplaylist(oc, url, title, thumb):
-	Log('Arteplaylist')
-	playlist = HTTP.Request(url).content  # als Text, nicht als HTML-Element
-
-	HLS_SQ_1 = stringextract('\"HLS_SQ_1\": {', '}', playlist)	# .m3u8 deutsch
-	HLS_SQ_2 = stringextract('\"HLS_SQ_2\": {', '}', playlist)  # .m3u8 französisch
-	# Log(HLS_SQ_1); Log(HLS_SQ_2);  # bei Bedarf
-	
-	r1 = stringextract('\"url\": \"', '\",',  HLS_SQ_1)  # hls-Url 
-	r2 = stringextract('\"url\": \"', '\",',  HLS_SQ_2)  # 
-	hls1_url = repl_char('\\', r1)	# Quotierung für Slashes entfernen
-	hls2_url = repl_char('\\', r2)	
-	Log(hls1_url);Log(hls2_url);
-		
-	title1=title;title2=title;
-	notfound = 	'Problem: URL nicht gefunden! '
-	if hls1_url == '':		# Sicherung bzw. Info im Titel bei leeren Links
-		title1 = notfound + title1
-	if hls2_url == '':		
-		title2 = notfound + title2
-	
-	oc.add(CreateVideoStreamObject(url=hls1_url, title=title1 + ' (de) | http', 
-		summary='HLS-Streaming deutsch', tagline=title, meta='', thumb=thumb, rtmp_live='nein', resolution=''))
-	oc.add(CreateVideoStreamObject(url=hls2_url, title=title2 + ' (fr) | http', 
-		summary='HLS-Streaming französisch', tagline=title, meta='', thumb=thumb, rtmp_live='nein', resolution=''))
-	
-	Log(len(oc))
-	return oc
-
-####################################################################################################
 @route(PREFIX + '/CreateVideoStreamObject')	# <- SenderLiveListe, SingleSendung (nur m3u8-Dateien)
 											# **kwargs - s. CreateVideoClipObject
 def CreateVideoStreamObject(url, title, summary, tagline, meta, thumb, rtmp_live, resolution, include_container=False, **kwargs):
@@ -2095,6 +1979,12 @@ def CreateVideoStreamObject(url, title, summary, tagline, meta, thumb, rtmp_live
   #				resolution ohne Auswirkung auf Player-Einstellungen
   #				Die CRITICAL Meldung CreateVideoStreamObject() takes at least 7 arguments (7 given) führt
   #				nicht zum Abbruch des Streams.
+  # 
+  # 01.03.2017: kein DirectPlay mehr neuen Web-Player-Versionen. Lokaler Workaround: Austausch WebClient.bundle gegen
+  #			WebClient.bundle aus PMS-Version 1.0.0. Siehe auch Post sander1:
+  #			https://forums.plex.tv/discussion/260454/no-directplay-with-httplivestreamurl-in-the-latest-web-players
+  # 		Bei Web-Player-Meldung ohne Plugin-Änderung 'dieses medium unterstützt kein streaming' Browser neu starten
+  #			(offensichtlich Problem mit dem Javascriptcode)
   
 	url = url.replace('%40', '@')	# Url kann Zeichen @ enthalten
 	Log('CreateVideoStreamObject: '); Log(url); Log(rtmp_live) 
@@ -2129,11 +2019,14 @@ def CreateVideoStreamObject(url, title, summary, tagline, meta, thumb, rtmp_live
 				thumb=thumb,) 			 
 
 	else:
+		if url.find('artelive-lh')  >= 0:		# Sonderbehandlung für ARTE - s.a. def Parseplaylist. Plex macht kein bzw. kein
+			url = url.replace('https', 'http')	# kompatibles SSL-Handshake. Die Streaming-Links funktionieren mit http.
+		
 		# Auflösungsstufen - s. SenderLiveResolution -> Parseplaylist
 		resolution=[1280, 1024, 960, 720, 540, 480] # wie VideoClipObject: Vorgabe für Webplayer entbehrlich, für PHT erforderlich
 		meta=url									# leer (None) im Webplayer OK, mit PHT:  Server: Had trouble breaking meta
 		mo = MediaObject(parts=[PartObject(key=HTTPLiveStreamURL(url=url))]) 
-		
+				
 		rating_key = title
 		videoclip_obj = VideoClipObject(					# Parameter wie MovieObject
 			key = Callback(CreateVideoStreamObject, url=url, title=title, summary=summary,  tagline=tagline,
@@ -2154,6 +2047,41 @@ def CreateVideoStreamObject(url, title, summary, tagline, meta, thumb, rtmp_live
 	else:
 		return videoclip_obj
 		
+#####################################################################################################
+@route(PREFIX + '/CreateVideoClipObject')	# <- SingleSendung Qualitätsstufen
+	# Plex-Warnung: Media part has no streams - attempting to synthesize | keine Auswirkung
+	# **kwargs erforderlich bei Fehler: CreateVideoClipObject() got an unexpected keyword argument 'checkFiles'
+	#	beobachtet bei Firefox (Suse Leap) + Chrome (Windows7)
+	#	s.a. https://github.com/sander1/channelpear.bundle/tree/8605fc778a2d46243bb0378b0ab40a205c408da4
+def CreateVideoClipObject(url, title, summary, tagline, meta, thumb, duration, resolution, include_container=False, **kwargs):
+	#title = title.encode("utf-8")		# ev. für alle ausgelesenen Details erforderlich
+	Log('CreateVideoClipObject')
+	Log(url); Log(duration); Log(tagline)
+	Log(Client.Platform)
+	# resolution = ''					# leer - Clients skalieren besser selbst
+	resolution=[720, 540, 480]			# wie VideoClipObject: Vorgabe für Webplayer entbehrlich, für PHT erforderlich
+
+	mo = MediaObject(parts=[PartObject(key=Callback(PlayVideo, url=url))],
+		container = Container.MP4,  	# weitere Video-Details für Chrome nicht erf., aber Firefox 
+		video_codec = VideoCodec.H264,	# benötigt VideoCodec + AudioCodec zur Audiowiedergabe
+		audio_codec = AudioCodec.AAC,)	# 
+		
+	videoclip_obj = VideoClipObject(
+		key = Callback(CreateVideoClipObject, url=url, title=title, summary=summary, tagline=tagline,
+		meta=meta, thumb=thumb, duration=duration, resolution=resolution, include_container=True),
+		rating_key = url,
+		title = title,
+		summary = summary,
+		tagline = tagline,
+		thumb = thumb,)
+	
+	videoclip_obj.add(mo)	
+
+	if include_container:						# Abfrage anscheinend verzichtbar, schadet aber auch nicht 
+		return ObjectContainer(objects=[videoclip_obj])
+	else:
+		return videoclip_obj
+	
 #-----------------------------
 # PlayVideo: falls HTTPLiveStreamURL hier verarbeitet wird (nicht in diesem Plugin), sollte die Route der
 #	Endung (i.d.R. .m3u8) entsprechen. Siehe Post sander1 28.02.2017: 
@@ -2577,10 +2505,12 @@ def NeuInMediathek(name):
 	
 	path = ZDF_BASE
 	page = HTTP.Request(path).content
-	# 1. article-Parameter (1. von 9) enthält die relevanten Inhalte. 
-	page = stringextract('<article class="b-cluster m-filter js-rb-live','Teaser:Sendung verpasst', page)
+	Log(len(page))
+	#  1. Block extrahieren (Blöcke: Neu, Nachrichten, Sport ...)
+	page = stringextract('<article class="b-cluster m-filter js-rb-live','<article class="b-cluster m-filter js-rb-live', page)
+	Log(len(page))
 	 			
-	oc = ZDF_get_content(oc=oc, page=page, ref_path=path, ID='DEFAULT')	
+	oc = ZDF_get_content(oc=oc, page=page, ref_path=path, ID='NeuInMediathek')	
 	
 	return oc
 		
@@ -2671,7 +2601,9 @@ def ZDF_get_content(oc, page, ref_path, ID=None):	# ID='Search' od. 'VERPASST' -
 				
 	#if ID == 'Search' or ID == 'VERPASST':						# Unterscheidung ab 22.11.16 nicht mehr nötig
 	#	content =  blockextract('class=\"content-link\"', page)																			
-	content =  blockextract('class=\"artdirect\"', page)			
+	content =  blockextract('class=\"artdirect\"', page)
+	if ID == 'NeuInMediathek':									# letztes Element entfernen (Verweis Sendung verpasst)
+		content.pop()	
 	Log(len(page)); Log(len(content));
 	
 	if len(content) == 0:										# kein Ergebnis oder allg. Fehler
@@ -3264,6 +3196,7 @@ def ZDF_Bildgalerie(oc, page, mode, title):	# keine Bildgalerie, aber ähnlicher
 #-------------------------
 ####################################################################################################
 #									Hilfsfunktionen
+####################################################################################################
 def Parseplaylist(container, url_m3u8, thumb):		# master.m3u8 auswerten, Url muss komplett sein
 #													# container muss nicht leer ein (siehe SingleSendung)
 #  1. Besonderheit: in manchen *.m3u8-Dateien sind die Pfade nicht vollständig,
@@ -3274,7 +3207,10 @@ def Parseplaylist(container, url_m3u8, thumb):		# master.m3u8 auswerten, Url mus
 #	versucht die ts-Stücke in Dauerschleife zu laden.
 #	Wir prüfen daher besser auf Pfadbeginne mit http:// und verwerfen Nichtpassendes - auch wenn dabei ein
 #	Sender komplett ausfällt.
-#	Lösung ab April 2016:  Sonderbehandlung Arte in Arteplaylists
+#	Lösung ab April 2016:  Sonderbehandlung Arte in Arteplaylists.						
+#	ARTE ab 10.03.2017:	 die m3u8-Links	enthalten nun komplette Pfade. Allerdings ist SSL-Handshake erforderlich zum
+#		Laden der master.m3u8 erforderlich (s.u.). Zusätzlich werden in	CreateVideoStreamObject die https-Links durch 
+#		http ersetzt (die Streaming-Links funktionieren auch mit http).	
 #  2. Besonderheit: fast identische URL's zu einer Auflösung (...av-p.m3u8, ...av-b.m3u8) Unterschied n.b.
 #  3. Besonderheit: für manche Sendungen nur 1 Qual.-Stufe verfügbar (Bsp. Abendschau RBB)
 #  4. Besonderheit: manche Playlists enthalten zusätzlich abgeschaltete Links, gekennzeichnet mit #. Fehler Webplayer:
@@ -3285,14 +3221,16 @@ def Parseplaylist(container, url_m3u8, thumb):		# master.m3u8 auswerten, Url mus
   # seit ZDF-Relaunch 28.10.2016 dort nur noch https
   if url_m3u8.find('http://') == 0 or url_m3u8.find('https://') == 0:		# URL oder lokale Datei?	
 	try:
-		# playlist = HTTP.Request(url_m3u8).content  # der Plex-interne Request wir manchmal abgewiesen, Bsp. N24
+		# playlist = HTTP.Request(url_m3u8).content  		# der Plex-interne Request wir manchmal abgewiesen, Bsp. N24
 		req = urllib2.Request(url_m3u8)
-		r = urllib2.urlopen(req)
+		gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1)		# SSL-Handshake für Arte erforderlich
+		r = urllib2.urlopen(req, context=gcontext)
 		playlist = r.read()			 # Playlist als Text	laden
 	except:
 		if playlist == '':
-			msg = 'Playlist kann nicht geladen werden. URL:\r'
+			msg = 'Playlist kann nicht geladen werden. URL: \r'
 			msg = msg + url_m3u8
+			Log(msg.replace('\r', ''))
 			return ObjectContainer(message=msg)	  # header=... ohne Wirkung	(?)			
   else:													
 	playlist = Resource.Load(url_m3u8) 
@@ -3325,18 +3263,18 @@ def Parseplaylist(container, url_m3u8, thumb):		# master.m3u8 auswerten, Url mus
 				Resolution = 'zur Zeit nicht verfügbar!'
 			if Bandwith == BandwithOld:	# Zwilling -Test
 				title = 'Bandbreite ' + Bandwith + ' (2. Alternative)'
-			if url.startswith('http://') == False:   	# relativer Pfad? 
+			if url.startswith('http') == False:   		# relativer Pfad? 
 				pos = url_m3u8.rfind('/')				# m3u8-Dateinamen abschneiden
 				url = url_m3u8[0:pos+1] + url 			# Basispfad + relativer Pfad
 				
 			Log(url); Log(title); Log(thumb); Log('Resolution')
-			container.add(CreateVideoStreamObject(url=url, title=title, # Einbettung in DirectoryObject zeigt bei
-				summary= Resolution, tagline='', meta=Codecs, thumb=thumb, 			# AllConnect trotzdem nur letzten Eintrag
-				rtmp_live='nein', resolution=''))
+			container.add(CreateVideoStreamObject(url=url, title=title, 		# Einbettung in DirectoryObject zeigt bei
+				summary= Resolution, tagline=title, meta=Codecs, thumb=thumb, # AllConnect trotzdem nur letzten Eintrag
+				rtmp_live='nein', resolution=''))								# resolution s. CreateVideoStreamObject
 			BandwithOld = Bandwith
 			
-		if url_m3u8.find('http://') < 0:		# lokale Datei
-			if Prefs['pref_tvlive_allbandwith'] == False:	# nur 1. Eintrag
+		if url_m3u8.startswith('http') == False:			# lokale Datei
+			if Prefs['pref_tvlive_allbandwith'] == False:	# nur 1. Eintrag zeigen, bei lokalen Dateien immer alle zeigen
 				return container
 
 				

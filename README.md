@@ -35,7 +35,7 @@ Funktionen ab Version 2.2.0:
 - Barrierearm (Hörfassung)
 - Bilderserien
 
-#### TV-Live-Streams (z.Z. 30 Sender): 
+#### TV-Live-Streams (11.03.2017: 34 Sender): 
 - ARD- und ZDF-Sender überregional und regional, einige ausgewählte Privatsender
 
 #### Radio-Live-Streams der ARD:
@@ -49,6 +49,9 @@ Funktionen ab Version 2.2.0:
 - Download von Videos im ARD-Bereich
 - Download von Videos im ZDF-Bereich
 - Tools zum Bearbeiten des Download-Verzeichnisses
+
+#### Update-Modul
+- nach der Erst-Installation können weitere Updates durch das Plugin installiert werden
 
 INSTALLATION:
 ===================  

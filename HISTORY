@@ -2,6 +2,22 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------			gelöschte Releases: älter als  2.6.5	
 
+11.03.2017 2.8.2	EPG-Modul: Daten von tvtoday.de, EPG-Anzeige 05 - 05 Uhr für die TV-Livesender, Kennzeichnung der
+			laufenden Sendung + Sprung zum Live-Streaming. Alten Code für die einzelnen EPG-Abfragen bei den 
+			Webseiten der Sender entfernt
+			TV-Livesender / Funktion Parseplaylist: Parameter für tagline in den Auflösungsstufen belegt
+			(für PHT erforderlich)
+			TV-Livesender ARTE: bisherigen Spezialcode entfernt. Artes neuere m3u8-Links enthalten nun
+			keine relativen Links mehr. Den jetzt erforderlichen SSL-Handshake in Parseplaylist
+			eingefügt
+			Resources/livesenderTV.xml: Anpassung an EPG-Modul (u.a. Parameter <EPG_ID>)
+			Funktionen CreateVideoClipObject + CreateVideoStreamObject hintereinander gestellt 
+			(Codepflege: übersichtlicher) 
+			Funktion NeuInMediathek: Blocklänge korrigiert (Kontext war zu weit gefasst) + in ZDF_get_content
+			letzten Block entfernt (hier störender Verweis auf "Sendung verpasst")
+			ARD-Suche: Anpassung für mehrteilige Suchbegriffe und Sortierung nach Datum
+			Funktion MakeDetailText: 'Qualität' auf 'Qualitaet' geändert (Umlaut verfälscht Formatierung %s)
+
 29.02.2017 2.8.1	Radio-Livestreams: Icon für neuen MDR-Sender "MDR Schlagerwelt" erstellt. Datei livesenderRadio.xml
 			angepasst (Icons, geänderte Sendernamen in MDR, SR + SWF)
 			Codebereinigung Funktion CreateVideoClipObject: Strukturierung des MediaObject's
