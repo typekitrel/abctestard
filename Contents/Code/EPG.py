@@ -49,7 +49,7 @@ def EPG(ID, mode=None):
 	#	
 	# Log("neuer Satz:")
 	EPG_rec = []
-	for i in range (len(liste)):		# ältere Sendungen enthalten - daher Schleife + Zeitabgleich	
+	for i in range (len(liste)):		# ältere + jüngere Sendungen in Liste - daher Schleife + Zeitabgleich	
 		# Log(liste[i])					# bei Bedarf
 		rec = []
 		starttime = stringextract('data-start-time=\"', '\"', liste[i]) # Sendezeit, Bsp. "1488827700" (UTC)
@@ -91,12 +91,12 @@ def EPG(ID, mode=None):
 		sname = iWeekday[0:2] + ' | ' + sname	# Wochentag voranstellen
 
 		# Indices EPG_rec: 0=starttime, 1=href, 2=img, 3=sname, 4=stime, 5=summ, 6=vonbis:  
-		# Link zur Einzelanzeige href hier nicht verwendet - wenig zusätzl. Infos
+		# Link href zum einzelnen Satz hier nicht verwendet - wenig zusätzl. Infos
 		rec.append(starttime);rec.append(href); rec.append(img);	# Listen-Element
 		rec.append(sname);rec.append(stime); rec.append(summ); rec.append(vonbis);
-		EPG_rec.append(rec)											# Liste Gesamt
+		EPG_rec.append(rec)											# Liste Gesamt (2-Dim-Liste)
 	
-	EPG_rec.sort()						# Sortierung 	
+	EPG_rec.sort()						# Sortierung	
 	Log(len(EPG_rec))
 	return EPG_rec
 #-----------------------
@@ -122,7 +122,7 @@ def get_summ(block):		# Beschreibung holen
 #									Hilfsfunktionen
 ####################################################################################################
 # get_unixtime() ermittelt 'jetzt', 'nächster Tag' und 'nächster Tag, 5 Uhr 'im Unix-Format
-#	Unix-Format wird von tvtoday.de verwendet: data-start-time, : data-end-time
+#	Unix-Format wird von tvtoday.de verwendet: data-start-time, data-end-time
 def get_unixtime():		
 	dt = datetime.datetime.now()								# Format 2017-03-09 22:04:19.044463
 	now = time.mktime(dt.timetuple())							# Unix-Format 1489094334.0

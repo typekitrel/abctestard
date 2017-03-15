@@ -2,6 +2,9 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------			gelöschte Releases: älter als  2.6.5	
 
+15.03.2017 2.8.3	Funktion PlayAudio: von Android-Clients vermisste Parameter ergänzt (location=None, 
+			includeBandwidths=None, autoAdjustQuality=None, hasMDE=None)	
+
 11.03.2017 2.8.2	EPG-Modul: Daten von tvtoday.de, EPG-Anzeige 05 - 05 Uhr für die TV-Livesender, Kennzeichnung der
 			laufenden Sendung + Sprung zum Live-Streaming. Alten Code für die einzelnen EPG-Abfragen bei den 
 			Webseiten der Sender entfernt

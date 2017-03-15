@@ -17,8 +17,8 @@ import EPG
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.8.2'		
-VDATE = '11.03.2017'
+VERSION =  '2.8.3'		
+VDATE = '15.03.2017'
 
 # 
 #	
@@ -2278,9 +2278,11 @@ def CreateTrackObject(url, title, summary, fmt, thumb, include_container=False):
 
 	if fmt == 'mp3':
 		container = Container.MP3
+		# container = 'mp3'
 		audio_codec = AudioCodec.MP3
 	elif fmt == 'aac':
 		container = Container.MP4
+		# container = 'aac'
 		audio_codec = AudioCodec.AAC
 	elif fmt == 'hls':
 		protocol = 'hls'
@@ -2314,7 +2316,8 @@ def CreateTrackObject(url, title, summary, fmt, thumb, include_container=False):
 
 #-----------------------------
 @route(PREFIX + '/PlayAudio') 
-def PlayAudio(url):				# runtime- Aufruf PlayAudio.mp3
+# 15.03.2017: die Parameter location, includeBandwidths usw. werden unter Android benötigt.			
+def PlayAudio(url, location=None, includeBandwidths=None, autoAdjustQuality=None, hasMDE=None):	# runtime- Aufruf PlayAudio.mp3
 	Log('PlayAudio: ' + url)	
 	return Redirect(url)
 		
@@ -3223,7 +3226,7 @@ def Parseplaylist(container, url_m3u8, thumb):		# master.m3u8 auswerten, Url mus
 	try:
 		# playlist = HTTP.Request(url_m3u8).content  		# der Plex-interne Request wir manchmal abgewiesen, Bsp. N24
 		req = urllib2.Request(url_m3u8)
-		gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1)		# SSL-Handshake für Arte erforderlich
+		gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1)		# SSL-Handshake für Arte erforderlich (außerhalb von Plex nicht)
 		r = urllib2.urlopen(req, context=gcontext)
 		playlist = r.read()			 # Playlist als Text	laden
 	except:
