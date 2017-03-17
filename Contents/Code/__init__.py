@@ -17,8 +17,8 @@ import EPG
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.8.3'		
-VDATE = '15.03.2017'
+VERSION =  '2.8.4'		
+VDATE = '17.03.2017'
 
 # 
 #	
@@ -184,7 +184,7 @@ def Start():
 @handler(PREFIX, NAME, art = ART, thumb = ICON)
 def Main():
 	Log('Funktion Main'); Log(PREFIX); Log(VERSION); Log(VDATE)
-	Log('Client: '); Log(Client.Platform)
+	Log('Client: '); Log(Client.Platform);
 	oc = ObjectContainer(view_group="InfoList", art=ObjectContainer.art)	# Plex akzeptiert nur InfoList + List, keine
 																			# Auswirkung auf Wiedergabe im Webplayer
 	# folgendes DirectoryObject ist Deko für das nicht sichtbare InputDirectoryObject dahinter:
@@ -2271,9 +2271,12 @@ def RadioEinzel(url, title, summary, fmt, thumb,):
 	
 #-----------------------------
 @route(PREFIX + '/CreateTrackObject')
-# @route('/music/ardmediathek2016/CreateTrackObject')  # funktioniert nicht, dto. in PlayAudio
+# 	@route('/music/ardmediathek2016/CreateTrackObject')  # funktioniert nicht, dto. in PlayAudio
+# 	16.03.2017: die Parameter location, includeBandwidths usw. wurden für ältere Android-Clients eingefügt - für neuere 
+#				reichen die in PlayAudio 		
 #	 **kwargs als Parameter für PHT nicht geeignet
-def CreateTrackObject(url, title, summary, fmt, thumb, include_container=False):
+# def CreateTrackObject(url, title, summary, fmt, thumb, include_container=False):
+def CreateTrackObject(url, title, summary, fmt, thumb, include_container=False, location=None, includeBandwidths=None, autoAdjustQuality=None, hasMDE=None):
 	Log('CreateTrackObject: ' + url); Log(include_container)
 
 	if fmt == 'mp3':
@@ -2290,8 +2293,8 @@ def CreateTrackObject(url, title, summary, fmt, thumb, include_container=False):
 		audio_codec = AudioCodec.AAC	
 
 	track_object = TrackObject(
-		key = Callback(CreateTrackObject, url=url, title=title, summary=summary, fmt=fmt, thumb=thumb, include_container=True),
-        # key=Callback(CreateTrackObject, url=url, title=title, fmt=fmt, thumb=thumb, include_container=True),
+		key = Callback(CreateTrackObject, url=url, title=title, summary=summary, fmt=fmt, thumb=thumb, include_container=True, 
+				location=None, includeBandwidths=None, autoAdjustQuality=None, hasMDE=None),
 		rating_key = url,	
 		title = title,
 		summary = summary,
@@ -2309,6 +2312,15 @@ def CreateTrackObject(url, title, summary, fmt, thumb, include_container=False):
 		]
 	)
 
+	if location: 
+		Log(location); 
+	if includeBandwidths: 
+		Log(includeBandwidths); 
+	if autoAdjustQuality: 
+		Log(autoAdjustQuality);
+	if hasMDE: 
+		Log(hasMDE); 
+
 	if include_container:
 		return ObjectContainer(objects=[track_object])
 	else:
@@ -2319,6 +2331,14 @@ def CreateTrackObject(url, title, summary, fmt, thumb, include_container=False):
 # 15.03.2017: die Parameter location, includeBandwidths usw. werden unter Android benötigt.			
 def PlayAudio(url, location=None, includeBandwidths=None, autoAdjustQuality=None, hasMDE=None):	# runtime- Aufruf PlayAudio.mp3
 	Log('PlayAudio: ' + url)	
+	if location: 
+		Log(location); 
+	if includeBandwidths: 
+		Log(includeBandwidths); 
+	if autoAdjustQuality: 
+		Log(autoAdjustQuality);
+	if hasMDE: 
+		Log(hasMDE); 
 	return Redirect(url)
 		
 ####################################################################################################
