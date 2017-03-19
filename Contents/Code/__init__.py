@@ -17,8 +17,8 @@ import EPG
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.8.4'		
-VDATE = '17.03.2017'
+VERSION =  '2.8.5'		
+VDATE = '19.03.2017'
 
 # 
 #	
@@ -222,7 +222,7 @@ def Main_ARD(name):
 	oc = ObjectContainer(view_group="InfoList", art=ObjectContainer.art)	
 	oc = home(cont=oc, ID=NAME)							# Home-Button	
 	
-	# folgendes DirectoryObject ist Deko für das nicht sichtbare InputDirectoryObject dahinter:
+	# Web-Player: folgendes DirectoryObject ist Deko für das nicht sichtbare InputDirectoryObject dahinter:
 	oc.add(DirectoryObject(key=Callback(Main_ARD, name=name),title='Suche: im Suchfeld eingeben', 
 		summary='', tagline='TV', thumb=R(ICON_SEARCH)))
 	oc.add(InputDirectoryObject(key=Callback(Search,  channel='ARD', s_type='video', title=u'%s' % L('Search Video')),
@@ -326,7 +326,7 @@ def home(cont, ID):												# Home-Button, Aufruf: oc = home(cont=oc)
 
 def Main_Options(title):
 	Log('Funktion Main_Options')	
-	Log(Prefs['pref_use_epg']); Log(Prefs['pref_tvlive_allbandwith']);
+	# Log(Prefs['pref_use_epg']); Log(Prefs['pref_tvlive_allbandwith']);
 	
 	# hier zeigt Plex die Einstellungen (Entwicklervorgabe in DefaultPrefs.json):
 	# 	http://127.0.0.1:32400/:/plugins/com.plexapp.plugins.ardmediathek2016/prefs
@@ -1698,7 +1698,7 @@ def EPG_Sender(title):
 				title=title, summary='',  tagline='', thumb=R(rec[2])))
 		else:
 			summ = 'EPG verfügbar'.decode(encoding="utf-8", errors="ignore")
-			oc.add(DirectoryObject(key=Callback(EPG_ShowSingle, ID=ID, name=title, stream_url=link),
+			oc.add(DirectoryObject(key=Callback(EPG_ShowSingle, ID=ID, name=title, stream_url=link, pagenr=0),
 				title=title, thumb=R(rec[2]), summary=summ, tagline=''))		
 
 	return oc
@@ -1725,21 +1725,24 @@ def get_sort_playlist():								# sortierte Playliste der TV-Livesender
 	
 #-----------------------------------------------------------------------------------------------------
 @route(PREFIX + '/EPG_ShowSingle')		# EPG: Daten holen in Modul EPG.py, Anzeige hier, Klick zum Livestream
-def EPG_ShowSingle(ID, name, stream_url):
-	Log('EPG_ShowSingle')
-	EPG_rec = EPG.EPG(ID=ID)		# Daten holen
+def EPG_ShowSingle(ID, name, stream_url, pagenr=0):
+	Log('EPG_ShowSingle'); Log(name)
+	
+	# Indices EPG_rec: 0=starttime, 1=href, 2=img, 3=sname, 4=stime, 5=summ, 6=vonbis, 7=today_human: 
+	# Link zur Einzelanzeige href=rec[1] hier nicht verwendet - wenig zusätzl. Infos
+	EPG_rec = EPG.EPG(ID=ID, day_offset=pagenr)		# Daten holen
+	today_human = 'ab ' + EPG_rec[0][7]
+	
 	if len(EPG_rec) == 0:			# kann vorkommen, Bsp. SR
 		msg='Sender ' + name + ': keine EPG-Daten gefunden'
 		msg = msg.decode(encoding="utf-8", errors="ignore")
 		return ObjectContainer(header='Error', message=msg)
 		
 	# Log(EPG_rec[0]) # bei Bedarf
-	
-	oc = ObjectContainer(view_group="InfoList", title1='EPG', title2=name, art = ICON)	
+	name = name.decode(encoding="utf-8", errors="ignore") 
+	oc = ObjectContainer(view_group="InfoList", title1=name, title2=today_human, art = ICON)	
 	oc = home(cont=oc, ID=NAME)				# Home-Button	
 	
-	# Indices EPG_rec: 0=starttime, 1=href, 2=img, 3=sname, 4=stime, 5=summ, 6=vonbis: 
-	# Link zur Einzelanzeige href=rec[1] hier nicht verwendet - wenig zusätzl. Infos
 	for rec in EPG_rec:
 		href=rec[1]; img=rec[2]; sname=rec[3]; stime=rec[4]; summ=rec[5]; vonbis=rec[6];
 		# Log(img)
@@ -1747,11 +1750,20 @@ def EPG_ShowSingle(ID, name, stream_url):
 			img = R('icon-bild-fehlt.png')
 		sname = unescape(sname)
 		title=sname.decode(encoding="utf-8", errors="ignore")
+		summ = unescape(summ)
 		summ = summ.decode(encoding="utf-8", errors="ignore")
 		tagline = 'Zeit: ' + vonbis
 		tagline = tagline.decode(encoding="utf-8", errors="ignore")
 		oc.add(DirectoryObject(key=Callback(SenderLiveResolution, path=stream_url, title=title, thumb=img),
 			title=title, summary=summ,  tagline=tagline, thumb=img))
+			
+	# Mehr Seiten anzeigen:
+	max = 12
+	pagenr = int(pagenr) + 1
+	if pagenr < max: 
+		summ = 'nächster Tag'.decode(encoding="utf-8", errors="ignore")
+		oc.add(DirectoryObject(key=Callback(EPG_ShowSingle, ID=ID, name=name, stream_url=stream_url, pagenr=pagenr),
+			title=summ, thumb=R(ICON_MEHR), summary=summ, tagline=''))		
 		
 	return oc
 #-----------------------------------------------------------------------------------------------------
@@ -3381,7 +3393,8 @@ def teilstring(zeile, startmarker, endmarker):  		# rfind: endmarker=letzte Fund
 #----------------------------------------------------------------  
 def blockextract(blockmark, mString):  	# extrahiert Blöcke begrenzt durch blockmark aus mString
 	#	blockmark bleibt Bestandteil der Rückgabe
-	#	Rückgabe in Liste. Letzter Block reicht bis Ende mString (undefinierte Länge)
+	#	Rückgabe in Liste. Letzter Block reicht bis Ende mString (undefinierte Länge),
+	#		Variante mit definierter Länge siehe Plex-Plugin-TagesschauXL (extra Parameter blockendmark)
 	#	Verwendung, wenn xpath nicht funktioniert (Bsp. Tabelle EPG-Daten www.dw.com/de/media-center/live-tv/s-100817)
 	rlist = []				
 	if 	blockmark == '' or 	mString == '':
@@ -3461,7 +3474,7 @@ def mystrip(line):	# Ersatz für unzuverlässige strip-Funktion
 # Directory-Browser - Verzeichnis-Listing
 #	Vorlage: Funktion DirectoryNavigator aus Caster (https://github.com/MrHistamine/Caster - nur Windows)
 #	Blättert in Verzeichnissen, filtert optional nach Dateinamen
-#	Für Filterung nach Dateitypen ev. Filterung nach Mimetypen nachrüsten.
+#	Für Filterung nach Dateitypen ev. Filterung nach Mimetypen nachrüsten (hier nicht benötigt)
 #		S. http://stackoverflow.com/questions/10263436/better-more-accurate-mime-type-detection-in-python
 #	 	Die plattformübergreifende Python-Lösung mimetypes steht unter Plex nicht zur Verfügung. 
 #	fileFilter = 'DIR'  = Verzeichnissuche	(alle Plattformen)
@@ -3487,14 +3500,14 @@ def DirectoryNavigator(settingKey, newDirectory = None, fileFilter=None):
 	Log('ROOT_DIRECTORY: ' + ROOT_DIRECTORY)
 		
 	oc = ObjectContainer(view_group = 'InfoList', art = R(ART), title1 = containerTitle, no_cache = True)
-	oc= home(cont=oc, ID=NAME)		# Home-Button - Rücksprung Pluginstart 
+	oc= home(cont=oc, ID=NAME)						# Home-Button - Rücksprung Pluginstart 
 		
 	ParentDir = os.path.dirname(newDirectory)		# übergeordnetes Verz. ermitteln
 	if os.path.isdir(newDirectory) == False:		# 	dto. bei Pfad/Datei
 		ParentDir = os.path.dirname(ParentDir)
 	Log('ParentDir: ' + ParentDir)
 
-	# DirSep = os.sep	# Log(DirSep)	# Seperatoren nicht benötigt
+	# DirSep = os.sep	# Log(DirSep)				# Seperatoren nicht benötigt
 	if newDirectory:								# Button Back
 		Log.Debug('Button Back: ' + ParentDir)
 		summary = 'zum übergeordneten Ordner wechseln: ' + ParentDir
@@ -3509,12 +3522,12 @@ def DirectoryNavigator(settingKey, newDirectory = None, fileFilter=None):
 	Log('basePath: ' + basePath)
 	try:
 		if os.path.isdir(basePath):
-			subItems = os.listdir(basePath)					 # Verzeichnis auslesen
-		else:												 # Dateiname -> Verz. ermitteln
+			subItems = os.listdir(basePath)			# Verzeichnis auslesen
+		else:										# Dateiname -> Verz. ermitteln
 			Dir = os.path.dirname(os.path.abspath(basePath)) 
 			subItems = os.listdir(Dir)
-		# Log.Debug(subItems)				# Windows: ohne .Debug hier keine Ausgabe 
-		Log.Debug(len(subItems))			# Windows: ohne .Debug hier keine Ausgabe
+		# Log.Debug(subItems)						# bei Bedarf
+		Log.Debug(len(subItems))					# Windows: ohne .Debug hier keine Ausgabe
 	except Exception as exception:
 		error_txt = 'Verzeichnis-Problem | ' + str(exception)			 			 	 
 		msgH = 'Fehler'; msg = error_txt
@@ -3522,11 +3535,11 @@ def DirectoryNavigator(settingKey, newDirectory = None, fileFilter=None):
 		Log(msg)
 		return ObjectContainer(header=msgH, message=msg)
 	
-	# Beim Filter 'DIR' wird ein Button zum Speichern des akt. Verz. bereit gestellt, 
+	# Beim Filter 'DIR' wird ein Button zum Speichern des akt. Verz. voran gestellt, 
 	#	die emthaltenen Unterverz. gelistet. Jedes Unterverz erhält einen Callback.
 	# 
 	Log(fileFilter)
-	if fileFilter == 'DIR':			# bei Verzeichnissuche akt. Verz. zum Speichern anbieten
+	if fileFilter == 'DIR':							# bei Verzeichnissuche akt. Verz. zum Speichern anbieten
 		summary = 'Klicken zum Speichern | Ordner: ' + basePath
 		title = summary
 		Log(summary);Log(basePath);

@@ -19,7 +19,9 @@ EPG_BASE =  "http://www.tvtoday.de"
 
 PREFIX = '/video/ardmediathek2016'			
 @route(PREFIX + '/EPG')		# EPG-Daten holen
-def EPG(ID, mode=None):
+# 	mode: 		falls 'OnlyNow' dann JETZT-Sendungen
+# 	day_offset:	1,2,3 ... Offset in Tagen (Verwendung zum Blättern in EPG_ShowSingle)
+def EPG(ID, mode=None, day_offset=None):
 	Log('EPG ID: ' + ID)
 	Log(mode)
 	url="http://www.tvtoday.de/programm/standard/sender/%s.html" % ID
@@ -38,12 +40,14 @@ def EPG(ID, mode=None):
 	Log(len(liste));	
 
 	# today.de verwendet Unix-Format, Bsp. 1488830442
-	now,today,nextday,nextday_5Uhr = get_unixtime()						# lokale Unix-Zeitstempel holen
+	now,today,today_5Uhr,nextday,nextday_5Uhr = get_unixtime(day_offset)# lokale Unix-Zeitstempel holen + Offsets
 	now_human = datetime.datetime.fromtimestamp(int(now))				# Debug: Übereinstimmung mit UTC, Timezone?	
-	now_human =  now_human.strftime("%d.%m.%Y, %H:%M:%S")
+	now_human =  now_human.strftime("%d.%m.%Y, %H:%M:%S")				# deutsches Format
+	today_human = datetime.datetime.fromtimestamp(int(today_5Uhr))
+	today_human =  today_human.strftime("%d.%m.%Y, %H:%M Uhr")			# deutsches Format mit Offset (Datumanzeige ab ...)
 	
-	Log(now); Log(now_human); 
-	# Log(today); Log(nextday); Log(nextday_5Uhr)	# bei Bedarf
+	Log(now); Log(now_human); Log(today_human);
+	# Log(today); Log(today_5Uhr); Log(nextday); Log(nextday_5Uhr)	# bei Bedarf
 
 	# Ausgabe: akt. Tag ab 05 Uhr(Start) bis nächster Tag 05 Uhr (Ende)
 	#	
@@ -73,15 +77,18 @@ def EPG(ID, mode=None):
 		bis = bis.strftime("%H:%M") 
 		vonbis = von + '-' + bis
 		
-		# Auslese:
-		if starttime > nextday_5Uhr:			# nur akt. Tag + Folgetag 05 Uhr
+		# Auslese - nur akt. Tag 05 Uhr (einschl. Offset in Tagen ) + Folgetag 05 Uhr:
+		if starttime < today_5Uhr:				# ältere verwerfen
+			# Log(starttime); Log(nextday_5Uhr)
+			continue
+		if starttime > nextday_5Uhr:			# jüngere verwerfen
 			# Log(starttime); Log(nextday_5Uhr)
 			continue
 						
 		if now >= starttime and now < endtime:
 			# Log(now); Log(starttime); Log(endtime)	# bei Bedarf
 			sname = "JETZT: " + sname
-			Log(sname); Log(img)
+			# Log(sname); Log(img)				# bei Bedarf
 			if mode == 'OnlyNow':				# aus EPG_ShowAll - nur aktuelle Sendung
 				rec = [starttime,href,img,sname,stime,summ,vonbis]  # Index wie EPG_rec
 				# Log(rec)
@@ -90,10 +97,10 @@ def EPG(ID, mode=None):
 		iWeekday = transl_wtag(s_startday)
 		sname = iWeekday[0:2] + ' | ' + sname	# Wochentag voranstellen
 
-		# Indices EPG_rec: 0=starttime, 1=href, 2=img, 3=sname, 4=stime, 5=summ, 6=vonbis:  
+		# Indices EPG_rec: 0=starttime, 1=href, 2=img, 3=sname, 4=stime, 5=summ, 6=vonbis, 7=today_human:  
 		# Link href zum einzelnen Satz hier nicht verwendet - wenig zusätzl. Infos
-		rec.append(starttime);rec.append(href); rec.append(img);	# Listen-Element
-		rec.append(sname);rec.append(stime); rec.append(summ); rec.append(vonbis);
+		rec.append(starttime);rec.append(href); rec.append(img); rec.append(sname);	# Listen-Element
+		rec.append(stime); rec.append(summ); rec.append(vonbis); rec.append(today_human);
 		EPG_rec.append(rec)											# Liste Gesamt (2-Dim-Liste)
 	
 	EPG_rec.sort()						# Sortierung	
@@ -122,27 +129,33 @@ def get_summ(block):		# Beschreibung holen
 #									Hilfsfunktionen
 ####################################################################################################
 # get_unixtime() ermittelt 'jetzt', 'nächster Tag' und 'nächster Tag, 5 Uhr 'im Unix-Format
-#	Unix-Format wird von tvtoday.de verwendet: data-start-time, data-end-time
-def get_unixtime():		
+#	tvtoday.de verwendet Unix-Format: data-start-time, data-end-time (beide ohne Sekunden)
+# 	day_offset:	1,2,3 ... Offset in Tagen
+#	Rückgabe today: today + Offset
+def get_unixtime(day_offset=None):		
 	dt = datetime.datetime.now()								# Format 2017-03-09 22:04:19.044463
 	now = time.mktime(dt.timetuple())							# Unix-Format 1489094334.0
 	dt = dt.replace(hour=0, minute=0, second=0, microsecond=0)  # auf 0 Uhr setzen: 2017-03-09 00:00:00
 	today = time.mktime(dt.timetuple())							# Unix-Format 1489014000.0
 	# today = time.mktime(d.timetuple()) 						# Ergebnis wie oben
-					
+		
+	if day_offset:
+		today = today + (int(day_offset) * 86400)				# Zuschlag in ganzen Tagen (1 Tag = 86400 sec)
 	nextday = today + 86400										# nächster Tag 			(+ 86400 sec = 24 x 3600)
-	nextday_5Uhr = nextday + 18000								# nächster Tag, 05 Uhr 	(+ 18000 sec = 5 x 3600)
+	today_5Uhr = today + 18000									# today+Offset, 05 Uhr  (+ 18000 sec = 5 x 3600)
+	nextday_5Uhr = nextday + 18000								# nächster Tag, 05 Uhr 
 	
 	now = str(now).split('.')[0]								# .0 kappen (tvtoday.de ohne .0)
 	today = str(today).split('.')[0]
 	nextday = str(nextday).split('.')[0]
 	nextday_5Uhr = str(nextday_5Uhr).split('.')[0]
+	today_5Uhr = str(today_5Uhr).split('.')[0]
 	
 	# Bei Bedarf Konvertierung 'Human-like':
 	# nextday_str = datetime.datetime.fromtimestamp(int(nextday))
 	# nextday_str = nextday.strftime("%Y%m%d")	# nächster Tag, Format 20170331
 		
-	return now, today,nextday,nextday_5Uhr
+	return now,today,today_5Uhr,nextday,nextday_5Uhr
 #----------------------------------------------------------------  
 def transl_wtag(tag):	# Wochentage engl./deutsch wg. Problemen mit locale-Setting 
 	wt_engl = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
