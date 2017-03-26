@@ -2,6 +2,9 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------			gelöschte Releases: älter als  2.6.5	
 
+26.03.2017 2.8.6	Funktionen CreateTrackObject, PlayAudio: kwargs-Parameter hinzugefügt (verhindert Plugin-Crash
+			bei unbekannten Extra-Parametern
+			
 19.03.2017 2.8.5	EPG-Modul: erweitert zum Blättern (12 Tage gesamt)
 			Bereinigung Kommentare (div. Stellen): Korrekturen, Einrückungen usw. 	
 

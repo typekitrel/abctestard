@@ -17,8 +17,8 @@ import EPG
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.8.5'		
-VDATE = '19.03.2017'
+VERSION =  '2.8.6'		
+VDATE = '26.03.2017'
 
 # 
 #	
@@ -2284,11 +2284,11 @@ def RadioEinzel(url, title, summary, fmt, thumb,):
 #-----------------------------
 @route(PREFIX + '/CreateTrackObject')
 # 	@route('/music/ardmediathek2016/CreateTrackObject')  # funktioniert nicht, dto. in PlayAudio
-# 	16.03.2017: die Parameter location, includeBandwidths usw. wurden für ältere Android-Clients eingefügt - für neuere 
-#				reichen die in PlayAudio 		
-#	 **kwargs als Parameter für PHT nicht geeignet
+# 15.03.2017: die Parameter location und includeBandwidths werden für die Android-App benötigt 	
+# 26.03.2017: **kwargs - siehe Funktion PlayAudio
+#	 **kwargs als Parameter früher für PHT hier nicht geeignet - Test 26.03.2017: OK
 # def CreateTrackObject(url, title, summary, fmt, thumb, include_container=False):
-def CreateTrackObject(url, title, summary, fmt, thumb, include_container=False, location=None, includeBandwidths=None, autoAdjustQuality=None, hasMDE=None):
+def CreateTrackObject(url, title, summary, fmt, thumb, include_container=False, location=None, includeBandwidths=None, **kwargs):
 	Log('CreateTrackObject: ' + url); Log(include_container)
 
 	if fmt == 'mp3':
@@ -2328,10 +2328,6 @@ def CreateTrackObject(url, title, summary, fmt, thumb, include_container=False, 
 		Log(location); 
 	if includeBandwidths: 
 		Log(includeBandwidths); 
-	if autoAdjustQuality: 
-		Log(autoAdjustQuality);
-	if hasMDE: 
-		Log(hasMDE); 
 
 	if include_container:
 		return ObjectContainer(objects=[track_object])
@@ -2340,8 +2336,12 @@ def CreateTrackObject(url, title, summary, fmt, thumb, include_container=False, 
 
 #-----------------------------
 @route(PREFIX + '/PlayAudio') 
-# 15.03.2017: die Parameter location, includeBandwidths usw. werden unter Android benötigt.			
-def PlayAudio(url, location=None, includeBandwidths=None, autoAdjustQuality=None, hasMDE=None):	# runtime- Aufruf PlayAudio.mp3
+# # runtime-Aufruf PlayAudio.mp3 
+# 15.03.2017: die Parameter location, includeBandwidths usw. werden für die Android-App benötigt.	
+# 26.03.2017: **kwargs für eventuelle weitere Extra-Parameter angefügt, siehe
+#		https://forums.plex.tv/discussion/comment/1405423/#Comment_1405423
+#		**kwargs allein würde reichen - Android-Parameter verbleiben zunächst zum Debuggen
+def PlayAudio(url, location=None, includeBandwidths=None, autoAdjustQuality=None, hasMDE=None, **kwargs):	
 	Log('PlayAudio: ' + url)	
 	if location: 
 		Log(location); 
@@ -2357,8 +2357,8 @@ def PlayAudio(url, location=None, includeBandwidths=None, autoAdjustQuality=None
 #									ZDF-Funktionen
 #
 @route(PREFIX + '/ZDF_Search')	# Suche - Verarbeitung der Eingabe. Neu ab 28.10.2016 (nach ZDF-Relaunch)
-	# 	Voreinstellungen: alle DF-Sender, ganze Sendungen, sortiert nach Datum
-	#	Anzahl Suchergebnisse: 25 - nicht beeinflussbar
+# 	Voreinstellungen: alle DF-Sender, ganze Sendungen, sortiert nach Datum
+#	Anzahl Suchergebnisse: 25 - nicht beeinflussbar
 def ZDF_Search(query=None, title=L('Search'), s_type=None, pagenr='', **kwargs):
 	# query = urllib.quote(query)
 	query = query.replace(' ', '+')		# Leer-Trennung bei ZDF-Suche mit +
