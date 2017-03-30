@@ -2,8 +2,14 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------			gelöschte Releases: älter als  2.6.5	
 
+00.00.2017 2.8.7	Funktion Parseplaylist: unterschiedliche Behandlung von http- und https-Url's. Das
+			Laden der m3u8-Datei mittels ssl.SSLContext führt auf manchen Systemen zu Problemen
+			bei http-Url's (github:dkappe issue #1)
+			Funktion test_downloads: Abfangen, falls Downloadverzeichnis unbelegt
+			Ordner Ressources: Grafiken > 300 KByte behandelt (überflüssige Farben entfernt)
+
 26.03.2017 2.8.6	Funktionen CreateTrackObject, PlayAudio: kwargs-Parameter hinzugefügt (verhindert Plugin-Crash
-			bei unbekannten Extra-Parametern
+			bei unbekannten Extra-Parametern)
 			
 19.03.2017 2.8.5	EPG-Modul: erweitert zum Blättern (12 Tage gesamt)
 			Bereinigung Kommentare (div. Stellen): Korrekturen, Einrückungen usw. 	

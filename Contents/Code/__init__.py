@@ -17,8 +17,8 @@ import EPG
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.8.6'		
-VDATE = '26.03.2017'
+VERSION =  '2.8.7'		
+VDATE = '30.03.2017'
 
 # 
 #	
@@ -1014,9 +1014,9 @@ def SingleSendung(path, title, thumb, duration, summary, tagline, offset=0):	# -
 # test_downloads: prüft ob Curl-Downloads freigeschaltet sind + erstellt den Downloadbutton
 # high (int): Index für einzelne + höchste Video-Qualität in download_list
 def test_downloads(oc,download_list,title_org,summary_org,tagline_org,thumb,high):  # Downloadbuttons (ARD + ZDF)
-	Log(test_downloads)
+	Log('test_downloads')
 	Log(Prefs['pref_use_downloads']) 							# Voreinstellung: False 
-	if Prefs['pref_use_downloads'] == True:
+	if Prefs['pref_use_downloads'] == True and Prefs['pref_curl_download_path']:
 		# Log(Prefs['pref_show_qualities'])
 		if Prefs['pref_show_qualities'] == False:				# nur 1 (höchste) Qualität verwenden
 			download_items = []
@@ -3246,6 +3246,7 @@ def Parseplaylist(container, url_m3u8, thumb):		# master.m3u8 auswerten, Url mus
 #	ARTE ab 10.03.2017:	 die m3u8-Links	enthalten nun komplette Pfade. Allerdings ist SSL-Handshake erforderlich zum
 #		Laden der master.m3u8 erforderlich (s.u.). Zusätzlich werden in	CreateVideoStreamObject die https-Links durch 
 #		http ersetzt (die Streaming-Links funktionieren auch mit http).	
+#		SSL-Handshake für ARTE ist außerhalb von Plex nicht notwendig!
 #  2. Besonderheit: fast identische URL's zu einer Auflösung (...av-p.m3u8, ...av-b.m3u8) Unterschied n.b.
 #  3. Besonderheit: für manche Sendungen nur 1 Qual.-Stufe verfügbar (Bsp. Abendschau RBB)
 #  4. Besonderheit: manche Playlists enthalten zusätzlich abgeschaltete Links, gekennzeichnet mit #. Fehler Webplayer:
@@ -3256,11 +3257,13 @@ def Parseplaylist(container, url_m3u8, thumb):		# master.m3u8 auswerten, Url mus
   # seit ZDF-Relaunch 28.10.2016 dort nur noch https
   if url_m3u8.find('http://') == 0 or url_m3u8.find('https://') == 0:		# URL oder lokale Datei?	
 	try:
-		# playlist = HTTP.Request(url_m3u8).content  		# der Plex-interne Request wir manchmal abgewiesen, Bsp. N24
-		req = urllib2.Request(url_m3u8)
-		gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1)		# SSL-Handshake für Arte erforderlich (außerhalb von Plex nicht)
-		r = urllib2.urlopen(req, context=gcontext)
-		playlist = r.read()			 # Playlist als Text	laden
+		if url_m3u8.find('https://') == 0:						# HTTPS: mit SSL-Handshake laden (für Arte erforderlich)	
+			req = urllib2.Request(url_m3u8)
+			gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1)		
+			r = urllib2.urlopen(req, context=gcontext)
+			playlist = r.read()			
+		else:
+			playlist = HTTP.Request(url_m3u8).content  			# HTTP: konventionell laden			
 	except:
 		if playlist == '':
 			msg = 'Playlist kann nicht geladen werden. URL: \r'
