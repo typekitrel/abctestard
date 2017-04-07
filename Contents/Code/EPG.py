@@ -199,7 +199,7 @@ def stringextract(mFirstChar, mSecondChar, mString):  	# extrahiert Zeichenkette
 	#Log(pos1); Log(ind); Log(pos2);  Log(rString); 
 	return rString
 #----------------------------------------------------------------  
-def blockextract(blockmark, mString):  	# extrahiert Blöcke begrenzt durch blockmark aus mString
+def blockextract(blockmark, mString):  	# extrahiert Blöcke aus mString, begrenzt durch blockmark 
 	#	blockmark bleibt Bestandteil der Rückgabe
 	#	Rückgabe in Liste. Letzter Block reicht bis Ende mString (undefinierte Länge)
 	#	Verwendung, wenn xpath nicht funktioniert (Bsp. Tabelle EPG-Daten www.dw.com/de/media-center/live-tv/s-100817)

@@ -17,8 +17,8 @@ import EPG
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.8.7'		
-VDATE = '30.03.2017'
+VERSION =  '2.8.8'		
+VDATE = '07.04.2017'
 
 # 
 #	
@@ -50,89 +50,108 @@ PLAYLIST_Radio = 'livesenderRadio.xml'		# Liste der RadioAnstalten. Einzelne Sen
 											# 	vom Plugin ermittelt
 											# Radio-Sender-Logos erstellt von: Arauco (Plex-Forum). 
 
-ART = 'art.png'								# ARD 
-ICON = 'icon.png'							# ARD
-ICON_SEARCH = 'ard-suche.png'						
-ICON_ZDF_SEARCH = 'zdf-suche.png'						
+ART 					= 'art.png'			# ARD 
+ICON 					= 'icon.png'		# ARD
+ICON_SEARCH 			= 'ard-suche.png'						
+ICON_ZDF_SEARCH 		= 'zdf-suche.png'						
 
-ICON_MAIN_ARD = 'ard-mediathek.png'			
-ICON_MAIN_ZDF = 'zdf-mediathek.png'			
-ICON_MAIN_TVLIVE = 'tv-livestreams.png'		
-ICON_MAIN_RADIOLIVE = 'radio-livestreams.png' 	
-ICON_MAIN_UPDATER = 'plugin-update.png'		
-ICON_UPDATER_NEW = 'plugin-update-new.png'
-ICON_PREFS = 'plugin-preferences.png'
-
-
-ICON_ARD_AZ = 'ard-sendungen-az.png' 			
-ICON_ARD_VERP = 'ard-sendung-verpasst.png'			
-ICON_ARD_RUBRIKEN = 'ard-rubriken.png' 			
-ICON_ARD_Themen = 'ard-themen.png'	 			
-ICON_ARD_Filme = 'ard-ausgewaehlte-filme.png' 	
-ICON_ARD_FilmeAll = 'ard-alle-filme.png' 		
-ICON_ARD_Dokus = 'ard-ausgewaehlte-dokus.png'			
-ICON_ARD_DokusAll = 'ard-alle-dokus.png'		
-ICON_ARD_Serien = 'ard-serien.png'				
-ICON_ARD_MEIST = 'ard-meist-gesehen.png' 	
-ICON_ARD_NEUESTE = 'ard-neueste-videos.png' 	
-ICON_ARD_BEST = 'ard-am-besten-bewertet.png' 	
-
-ICON_ZDF_AZ = 'zdf-sendungen-az.png' 		
-ICON_ZDF_VERP = 'zdf-sendung-verpasst.png'	
-ICON_ZDF_RUBRIKEN = 'zdf-rubriken.png' 		
-ICON_ZDF_Themen = 'zdf-themen.png'			
-ICON_ZDF_MEIST = 'zdf-meist-gesehen.png' 	
-ICON_ZDF_BARRIEREARM = 'zdf-barrierearm.png' 
-ICON_ZDF_HOERFASSUNGEN = 'zdf-hoerfassungen.png' 
-ICON_ZDF_UNTERTITEL = 'zdf-untertitel.png'
-ICON_ZDF_INFOS = 'zdf-infos.png'
-ICON_ZDF_BILDERSERIEN = 'zdf-bilderserien.png'
-ICON_ZDF_NEWCONTENT = 'zdf-newcontent.png'
-
-ICON_OK = "icon-ok.png"
-ICON_WARNING = "icon-warning.png"
-ICON_NEXT = "icon-next.png"
-ICON_CANCEL = "icon-error.png"
-ICON_MEHR = "icon-mehr.png"
-ICON_DOWNL = "icon-downl.png"
-ICON_DOWNL_DIR = "icon-downl-dir.png"
-ICON_DELETE = "icon-delete.png"
-
-ICON_DIR_CURL = "Dir-curl.png"
-ICON_DIR_FOLDER = "Dir-folder.png"
-ICON_DIR_PRG = "Dir-prg.png"
-ICON_DIR_IMG = "Dir-img.png"
-ICON_DIR_TXT = "Dir-text.png"
-ICON_DIR_MOVE = "Dir-move.png"
-ICON_DIR_MOVE_SINGLE = "Dir-move-single.png"
-ICON_DIR_MOVE_ALL = "Dir-move-all.png"
-ICON_DIR_BACK = "Dir-back.png"
-ICON_DIR_SAVE = "Dir-save.png"
-ICON_DIR_VIDEO = "Dir-video.png"
-ICON_DIR_WORK = "Dir-work.png"
-ICON_MOVEDIR_DIR = "Dir-moveDir.png"
+ICON_MAIN_ARD 			= 'ard-mediathek.png'			
+ICON_MAIN_ZDF 			= 'zdf-mediathek.png'			
+ICON_MAIN_TVLIVE 		= 'tv-livestreams.png'		
+ICON_MAIN_RADIOLIVE 	= 'radio-livestreams.png' 	
+ICON_MAIN_UPDATER 		= 'plugin-update.png'		
+ICON_UPDATER_NEW 		= 'plugin-update-new.png'
+ICON_PREFS 				= 'plugin-preferences.png'
 
 
+ICON_ARD_AZ 			= 'ard-sendungen-az.png' 			
+ICON_ARD_VERP 			= 'ard-sendung-verpasst.png'			
+ICON_ARD_RUBRIKEN 		= 'ard-rubriken.png' 			
+ICON_ARD_Themen 		= 'ard-themen.png'	 			
+ICON_ARD_Filme 			= 'ard-ausgewaehlte-filme.png' 	
+ICON_ARD_FilmeAll 		= 'ard-alle-filme.png' 		
+ICON_ARD_Dokus 			= 'ard-ausgewaehlte-dokus.png'			
+ICON_ARD_DokusAll 		= 'ard-alle-dokus.png'		
+ICON_ARD_Serien 		= 'ard-serien.png'				
+ICON_ARD_MEIST 			= 'ard-meist-gesehen.png' 	
+ICON_ARD_NEUESTE 		= 'ard-neueste-videos.png' 	
+ICON_ARD_BEST 			= 'ard-am-besten-bewertet.png' 	
 
-BASE_URL = 'http://www.ardmediathek.de'
-ARD_VERPASST = '/tv/sendungVerpasst?tag='		# ergänzt mit 0, 1, 2 usw.
-ARD_AZ = '/tv/sendungen-a-z?buchstabe='			# ergänzt mit 0-9, A, B, usw.
-ARD_Suche = '/tv/suche?searchText='				# ergänzt mit Suchbegriff
-ARD_Live = '/tv/live'
+ICON_ZDF_AZ 			= 'zdf-sendungen-az.png' 		
+ICON_ZDF_VERP 			= 'zdf-sendung-verpasst.png'	
+ICON_ZDF_RUBRIKEN 		= 'zdf-rubriken.png' 		
+ICON_ZDF_Themen 		= 'zdf-themen.png'			
+ICON_ZDF_MEIST 			= 'zdf-meist-gesehen.png' 	
+ICON_ZDF_BARRIEREARM 	= 'zdf-barrierearm.png' 
+ICON_ZDF_HOERFASSUNGEN	= 'zdf-hoerfassungen.png' 
+ICON_ZDF_UNTERTITEL 	= 'zdf-untertitel.png'
+ICON_ZDF_INFOS 			= 'zdf-infos.png'
+ICON_ZDF_BILDERSERIEN 	= 'zdf-bilderserien.png'
+ICON_ZDF_NEWCONTENT 	= 'zdf-newcontent.png'
+
+ICON_MAIN_POD			= 'radio-podcasts.png'
+ICON_POD_AZ				= 'pod-az.png'
+ICON_POD_FEATURE 		= 'pod-feature.png'
+ICON_POD_TATORT 		= 'pod-tatort.png'
+ICON_POD_RUBRIK	 		= 'pod-rubriken.png'
+ICON_POD_NEU			= 'pod-neu.png'
+ICON_POD_MEIST			= 'pod-meist.png'
+ICON_POD_REFUGEE 		= 'pod-refugee.png'
+
+
+ICON_OK 				= "icon-ok.png"
+ICON_WARNING 			= "icon-warning.png"
+ICON_NEXT 				= "icon-next.png"
+ICON_CANCEL 			= "icon-error.png"
+ICON_MEHR 				= "icon-mehr.png"
+ICON_DOWNL 				= "icon-downl.png"
+ICON_DOWNL_DIR			= "icon-downl-dir.png"
+ICON_DELETE 			= "icon-delete.png"
+
+ICON_DIR_CURL 			= "Dir-curl.png"
+ICON_DIR_FOLDER			= "Dir-folder.png"
+ICON_DIR_PRG 			= "Dir-prg.png"
+ICON_DIR_IMG 			= "Dir-img.png"
+ICON_DIR_TXT 			= "Dir-text.png"
+ICON_DIR_MOVE 			= "Dir-move.png"
+ICON_DIR_MOVE_SINGLE	= "Dir-move-single.png"
+ICON_DIR_MOVE_ALL 		= "Dir-move-all.png"
+ICON_DIR_BACK	 		= "Dir-back.png"
+ICON_DIR_SAVE 			= "Dir-save.png"
+ICON_DIR_VIDEO 			= "Dir-video.png"
+ICON_DIR_WORK 			= "Dir-work.png"
+ICON_MOVEDIR_DIR 		= "Dir-moveDir.png"
+
+
+
+BASE_URL 		= 'http://www.ardmediathek.de'
+ARD_VERPASST 	= '/tv/sendungVerpasst?tag='								# ergänzt mit 0, 1, 2 usw.
+ARD_AZ 			= '/tv/sendungen-a-z?buchstabe='							# ergänzt mit 0-9, A, B, usw.
+ARD_Suche 		= '/tv/suche?searchText=%s&words=and&source=tv&sort=date'	# Vorgabe UND-Verknüpfung
+ARD_Live 		= '/tv/live'
 
 # Aktualisierung der ARD-ID's in Update_ARD_Path
-ARD_Rubriken = 'http://www.ardmediathek.de/tv/Rubriken/mehr?documentId=21282550'
-ARD_Themen = 'http://www.ardmediathek.de/tv/Themen/mehr?documentId=21301810'
-ARD_Serien = 'http://www.ardmediathek.de/tv/Serien/mehr?documentId=26402940'
-ARD_Dokus = 'http://www.ardmediathek.de/tv/Ausgew%C3%A4hlte-Dokus/mehr?documentId=33649086'
-ARD_DokusAll = 'http://www.ardmediathek.de/tv/Alle-Dokus-Reportagen/mehr?documentId=29897594'
-ARD_Filme = 'http://www.ardmediathek.de/tv/Ausgew%C3%A4hlte-Filme/mehr?documentId=33649088'
-ARD_FilmeAll = 'http://www.ardmediathek.de/tv/Alle-Filme/mehr?documentId=31610076'
-ARD_Meist = 'http://www.ardmediathek.de/tv/Meistabgerufene-Videos/mehr?documentId=23644244'
-ARD_Neu = 'http://www.ardmediathek.de/tv/Neueste-Videos/mehr?documentId=21282466'
-ARD_Best = 'http://www.ardmediathek.de/tv/Am-besten-bewertet/mehr?documentId=21282468'
-ARD_RadioAll = 'http://www.ardmediathek.de/radio/live?genre=Alle+Genres&kanal=Alle'
+ARD_Rubriken 	= 'http://www.ardmediathek.de/tv/Rubriken/mehr?documentId=21282550'
+ARD_Themen 		= 'http://www.ardmediathek.de/tv/Themen/mehr?documentId=21301810'
+ARD_Serien 		= 'http://www.ardmediathek.de/tv/Serien/mehr?documentId=26402940'
+ARD_Dokus 		= 'http://www.ardmediathek.de/tv/Ausgew%C3%A4hlte-Dokus/mehr?documentId=33649086'
+ARD_DokusAll	= 'http://www.ardmediathek.de/tv/Alle-Dokus-Reportagen/mehr?documentId=29897594'
+ARD_Filme 		= 'http://www.ardmediathek.de/tv/Ausgew%C3%A4hlte-Filme/mehr?documentId=33649088'
+ARD_FilmeAll 	= 'http://www.ardmediathek.de/tv/Alle-Filme/mehr?documentId=31610076'
+ARD_Meist 		= 'http://www.ardmediathek.de/tv/Meistabgerufene-Videos/mehr?documentId=23644244'
+ARD_Neu 		= 'http://www.ardmediathek.de/tv/Neueste-Videos/mehr?documentId=21282466'
+ARD_Best 		= 'http://www.ardmediathek.de/tv/Am-besten-bewertet/mehr?documentId=21282468'
+ARD_RadioAll 	= 'http://www.ardmediathek.de/radio/live?genre=Alle+Genres&kanal=Alle'
 
+# ARD-Podcasts
+POD_SEARCH  = '/suche?source=radio&sort=date&searchText=%s&pod=on&playtime=all&words=and&to=all='
+POD_AZ 		= 'http://www.ardmediathek.de/radio/sendungen-a-z?sendungsTyp=podcast&buchstabe=' 
+POD_RUBRIK 	= 'http://www.ardmediathek.de/radio/Rubriken/mehr?documentId=37981136'
+POD_FEATURE = 'http://www.ardmediathek.de/radio/das-ARD-radiofeature/Sendung?documentId=3743362&bcastId=3743362'
+POD_TATORT 	= 'http://www.ardmediathek.de/radio/ARD-Radio-Tatort/Sendung?documentId=1998988&bcastId=1998988'
+POD_NEU 	= 'http://www.ardmediathek.de/radio/Neueste-Audios/mehr?documentId=23644358'
+POD_MEIST 	= 'http://www.ardmediathek.de/radio/Meistabgerufene-Audios/mehr?documentId=23644364'
+POD_REFUGEE = 'http://www1.wdr.de/radio/cosmo/programm/refugee-radio/refugee-radio-112.html'	# z.Z. Refugee Radio via Suche
 
 # Relaunch der Mediathek beim ZDF ab 28.10.2016: xml-Service abgeschaltet
 ZDF_BASE				= 'https://www.zdf.de'
@@ -146,9 +165,9 @@ ZDF_BARRIEREARM		= 'https://www.zdf.de/barrierefreiheit-im-zdf'
 #	https://config-cdn.cellular.de/zdf/mediathek/config/android/4_0/zdf_mediathek_android_live_4_0.json
 #	Siehe https://github.com/raptor2101/Mediathek/issues/85 Kodi-Plugin Mediathek
 
-REPO_NAME = 'Plex-Plugin-ARDMediathek2016'
-GITHUB_REPOSITORY = 'rols1/' + REPO_NAME
-myhost = 'http://127.0.0.1:32400'
+REPO_NAME		 	= 'Plex-Plugin-ARDMediathek2016'
+GITHUB_REPOSITORY 	= 'rols1/' + REPO_NAME
+myhost			 	= 'http://127.0.0.1:32400'
 
 ''' 
 ####################################################################################################
@@ -184,7 +203,8 @@ def Start():
 @handler(PREFIX, NAME, art = ART, thumb = ICON)
 def Main():
 	Log('Funktion Main'); Log(PREFIX); Log(VERSION); Log(VDATE)
-	Log('Client: '); Log(Client.Platform);
+	Log('Client: ' + Client.Platform);
+	Log('Plattform: ' + sys.platform)
 	oc = ObjectContainer(view_group="InfoList", art=ObjectContainer.art)	# Plex akzeptiert nur InfoList + List, keine
 																			# Auswirkung auf Wiedergabe im Webplayer
 	# folgendes DirectoryObject ist Deko für das nicht sichtbare InputDirectoryObject dahinter:
@@ -198,9 +218,16 @@ def Main():
 		summary='', tagline='TV', thumb=R(ICON_MAIN_TVLIVE)))
 	oc.add(DirectoryObject(key=Callback(RadioLiveListe, path=ARD_RadioAll, title='Radio-Livestreams'), 
 		title='Radio-Livestreams', summary='', tagline='Radio', thumb=R(ICON_MAIN_RADIOLIVE)))
-
+		
+	if Prefs['pref_use_podcast'] == True:	# ARD-Radio-Podcasts
+		summary = 'ARD-Radio-Podcasts suchen, hören und herunterladen'
+		summary = summary.decode(encoding="utf-8", errors="ignore")
+		oc.add(DirectoryObject(key = Callback(Main_POD, name="PODCAST"), title = 'Radio-Podcasts', 
+			summary=summary, thumb = R(ICON_MAIN_POD)))
+								
 	if Prefs['pref_use_downloads'] == True:	# Download-Tools. zeigen, falls Downloads eingeschaltet
-		summary = 'Download-Tools: Videos und Einstellungen bearbeiten'
+		summary = 'Download-Tools: Verschieben, Löschen, Ansehen, Verzeichnisse bearbeiten'
+		summary = summary.decode(encoding="utf-8", errors="ignore")
 		oc.add(DirectoryObject(key = Callback(DownloadsTools), title = 'Download-Tools', 
 			summary=summary, thumb = R(ICON_DOWNL_DIR)))
 								
@@ -232,39 +259,39 @@ def Main_ARD(name):
 	oc.add(DirectoryObject(key=Callback(VerpasstWoche, name=name), title=title,
 		summary=title, tagline='TV', thumb=R(ICON_ARD_VERP)))
 	title = 'Sendungen A-Z'
-	oc.add(DirectoryObject(key=Callback(SendungenAZ, name='Sendungen 0-9 | A-Z'), title='Sendungen A-Z',
+	oc.add(DirectoryObject(key=Callback(SendungenAZ, name='Sendungen 0-9 | A-Z', ID='ARD'), title='Sendungen A-Z',
 		summary=title, tagline='TV', thumb=R(ICON_ARD_AZ)))
 						
 		
 	title = 'Ausgewählte Filme'.decode(encoding="utf-8", errors="ignore")
-	oc.add(DirectoryObject(key=Callback(ARDMore, title=title, morepath=ARD_Filme, next_cbKey='SingleSendung'),
+	oc.add(DirectoryObject(key=Callback(ARDMore, title=title, morepath=ARD_Filme, next_cbKey='SingleSendung', ID='ARD'),
 		title=title,summary=title, tagline='TV', thumb=R(ICON_ARD_Filme)))
 	title = 'Alle Filme'
-	oc.add(DirectoryObject(key=Callback(ARDMore, title=title, morepath=ARD_FilmeAll, next_cbKey='SingleSendung'),
+	oc.add(DirectoryObject(key=Callback(ARDMore, title=title, morepath=ARD_FilmeAll, next_cbKey='SingleSendung', ID='ARD'),
 		title=title,summary=title, tagline='TV', thumb=R(ICON_ARD_FilmeAll)))
 	title = 'Ausgewählte Dokus'.decode(encoding="utf-8", errors="ignore")
-	oc.add(DirectoryObject(key=Callback(ARDMore, title=title, morepath=ARD_Dokus, next_cbKey='SingleSendung'), 
+	oc.add(DirectoryObject(key=Callback(ARDMore, title=title, morepath=ARD_Dokus, next_cbKey='SingleSendung', ID='ARD'), 
 		title=title,summary=title, tagline='TV', thumb=R(ICON_ARD_Dokus)))
 	title = 'Alle Dokus'
-	oc.add(DirectoryObject(key=Callback(ARDMore, title=title, morepath=ARD_DokusAll, next_cbKey='SingleSendung'),
+	oc.add(DirectoryObject(key=Callback(ARDMore, title=title, morepath=ARD_DokusAll, next_cbKey='SingleSendung', ID='ARD'),
 		title=title,summary=title, tagline='TV', thumb=R(ICON_ARD_DokusAll)))
 	title = 'Themen'
-	oc.add(DirectoryObject(key=Callback(ARDMore, title=title, morepath=ARD_Themen, next_cbKey='SinglePage'),
+	oc.add(DirectoryObject(key=Callback(ARDMore, title=title, morepath=ARD_Themen, next_cbKey='SinglePage', ID='ARD'),
 		 title=title, summary=title, tagline='TV', thumb=R(ICON_ARD_Themen)))
 	title = 'Serien'
-	oc.add(DirectoryObject(key=Callback(ARDMore, title=title, morepath=ARD_Serien, next_cbKey='SinglePage'), 
+	oc.add(DirectoryObject(key=Callback(ARDMore, title=title, morepath=ARD_Serien, next_cbKey='SinglePage', ID='ARD'), 
 		title=title, summary=title, tagline='TV', thumb=R(ICON_ARD_Serien)))
 	title = 'Rubriken'
-	oc.add(DirectoryObject(key=Callback(ARDMore, title=title, morepath=ARD_Rubriken, next_cbKey='SinglePage'),
+	oc.add(DirectoryObject(key=Callback(ARDMore, title=title, morepath=ARD_Rubriken, next_cbKey='SinglePage', ID='ARD'),
 		 title=title, summary=title, tagline='TV', thumb=R(ICON_ARD_RUBRIKEN)))
 	title = 'Meist Gesehen'
-	oc.add(DirectoryObject(key=Callback(ARDMore, title=title, morepath=ARD_Meist, next_cbKey='SingleSendung'), 
+	oc.add(DirectoryObject(key=Callback(ARDMore, title=title, morepath=ARD_Meist, next_cbKey='SingleSendung', ID='ARD'), 
 		title=title, summary=title, tagline='TV', thumb=R(ICON_ARD_MEIST)))
 	title = 'neueste Videos'
-	oc.add(DirectoryObject(key=Callback(ARDMore, title=title, morepath=ARD_Neu, next_cbKey='SingleSendung'), 
+	oc.add(DirectoryObject(key=Callback(ARDMore, title=title, morepath=ARD_Neu, next_cbKey='SingleSendung', ID='ARD'), 
 		title=title, summary=title, tagline='TV', thumb=R(ICON_ARD_NEUESTE)))
 	title = 'am besten bewertet'
-	oc.add(DirectoryObject(key=Callback(ARDMore, title=title, morepath=ARD_Best, next_cbKey='SingleSendung'),
+	oc.add(DirectoryObject(key=Callback(ARDMore, title=title, morepath=ARD_Best, next_cbKey='SingleSendung', ID='ARD'),
 		 title=title, summary=title, tagline='TV', thumb=R(ICON_ARD_BEST)))
 	return oc	
 	
@@ -299,6 +326,45 @@ def Main_ZDF(name):
 	return oc	
 
 #----------------------------------------------------------------
+@route(PREFIX + '/Main_POD')
+def Main_POD(name):
+	oc = ObjectContainer(view_group="InfoList", art=ObjectContainer.art, title1=name)	
+	oc = home(cont=oc, ID=NAME)								# Home-Button	
+	
+	# folgendes DirectoryObject ist Deko für das nicht sichtbare InputDirectoryObject dahinter:
+	oc.add(DirectoryObject(key=Callback(Main_POD, name=name),title='Suche: im Suchfeld eingeben', 
+		summary='', tagline='TV', thumb=R(ICON_SEARCH)))
+	# die Suchfunktion nutzt die ARD-Mediathek-Suche
+	oc.add(InputDirectoryObject(key=Callback(Search,  channel='PODCAST', s_type='video', title=u'%s' % L('Search Video')),
+		title=u'%s' % L('Search'), prompt=u'%s' % L('Search Audio'), thumb=R(ICON_SEARCH)))
+		
+	title = 'Sendungen A-Z'
+	oc.add(DirectoryObject(key=Callback(SendungenAZ, name=title, ID='PODCAST'), title=title, thumb=R(ICON_ARD_AZ)))			
+	title = 'Rubriken'	
+	oc.add(DirectoryObject(key=Callback(ARDMore, title=title, morepath=POD_RUBRIK, next_cbKey='SinglePage', ID='PODCAST'),
+		 title=title, summary=title, thumb=R(ICON_POD_RUBRIK)))
+	title="Radio-Feature"	 
+	oc.add(DirectoryObject(key=Callback(ARDMore, title=title, morepath=POD_FEATURE, next_cbKey='SingleSendung', ID='PODCAST'),
+		 title=title, summary=title, thumb=R(ICON_POD_FEATURE)))
+	title="Radio-Tatort"	 
+	oc.add(DirectoryObject(key=Callback(ARDMore, title=title, morepath=POD_TATORT, next_cbKey='SingleSendung', ID='PODCAST'),
+		 title=title, summary=title, thumb=R(ICON_POD_TATORT)))
+	title="Neueste Audios"	 
+	oc.add(DirectoryObject(key=Callback(ARDMore, title=title, morepath=POD_NEU, next_cbKey='SingleSendung', ID='PODCAST'),
+		 title=title, summary=title, thumb=R(ICON_POD_NEU)))
+	title="Meist abgerufen"	 
+	oc.add(DirectoryObject(key=Callback(ARDMore, title=title, morepath=POD_MEIST, next_cbKey='SingleSendung', ID='PODCAST'),
+		 title=title, summary=title, thumb=R(ICON_POD_MEIST)))
+	
+	title="Refugee-Radio"; query='Refugee Radio'	# z.Z. Refugee Radio via Suche
+	oc.add(DirectoryObject(key=Callback(Search, query=query, channel='PODCAST'), title=title, thumb=R(ICON_POD_REFUGEE)))
+	
+	return oc
+
+################################################################
+################################################################	
+	
+#----------------------------------------------------------------
 def home(cont, ID):												# Home-Button, Aufruf: oc = home(cont=oc)	
 	title = 'Zurück zum Hauptmenü ' + ID
 	title = title.decode(encoding="utf-8", errors="ignore")
@@ -314,6 +380,10 @@ def home(cont, ID):												# Home-Button, Aufruf: oc = home(cont=oc)
 		name = "ZDF Mediathek"
 		cont.add(DirectoryObject(key=Callback(Main_ZDF,name=name),title=title, summary=summary, tagline=name, 
 			thumb=R('home-zdf.png')))
+	if ID == 'PODCAST':
+		name = "Radio-Podcasts"
+		cont.add(DirectoryObject(key=Callback(Main_POD,name=name),title=title, summary=summary, tagline=name, 
+			thumb=R(ICON_MAIN_POD)))
 
 	return cont
 	
@@ -492,10 +562,12 @@ def SearchUpdate(title):		#
 	
 ####################################################################################################
 @route(PREFIX + '/SendungenAZ')
-def SendungenAZ(name):		# Auflistung 0-9 (1 Eintrag), A-Z (einzeln) 
+# 	Auflistung 0-9 (1 Eintrag), A-Z (einzeln) 
+#	ID = PODCAST, ARD
+def SendungenAZ(name, ID):		
 	Log('SendungenAZ: ' + name)
 	oc = ObjectContainer(view_group="InfoList", title1=NAME, title2=name, art = ObjectContainer.art)
-	oc = home(cont=oc, ID='ARD')							# Home-Button
+	oc = home(cont=oc, ID=ID)							# Home-Button
 	
 	azlist = list(string.ascii_uppercase)					# A - Z, 0-9
 	azlist.append('0-9')
@@ -506,12 +578,11 @@ def SendungenAZ(name):		# Auflistung 0-9 (1 Eintrag), A-Z (einzeln)
 	Log(path)
 	page = HTTP.Request(path).content
 	Log(len(page))
-	try:										# inaktive Buchstaben?
-		inactive_range = stringextract('Aktuelle TV Auswahl:', 'subressort collapsed', page)
-		inactive_list = blockextract('class=\"inactive\"', inactive_range)
-		Log(inactive_list)		
-	except:
-		inactive_list = ""
+	
+	inactive_list = ""							# inaktive Buchstaben?
+	inactive_range = stringextract('Aktuelle TV Auswahl:', 'subressort collapsed', page)
+	inactive_list = blockextract('class=\"inactive\"', inactive_range)
+	Log('Inaktive: ' + str(len(inactive_list)))		
 
 	inactive_char = ""
 	if inactive_list:							# inaktive Buchstaben -> 1 String
@@ -519,58 +590,76 @@ def SendungenAZ(name):		# Auflistung 0-9 (1 Eintrag), A-Z (einzeln)
 			char = stringextract('<a>', '</a>', element)
 			char = char.strip()
 			inactive_char =  inactive_char + char
-	Log(inactive_char)							# z.B. XYXY
+	Log(inactive_char)							# z.B. XY
 	
 	for element in azlist:	
-		Log(element)
-		azPath = BASE_URL + ARD_AZ + element
+		# Log(element)
+		if ID == 'ARD':
+			azPath = BASE_URL + ARD_AZ + element
+		if ID == 'PODCAST':
+			azPath = POD_AZ + element
 		button = element
 		title = "Sendungen mit " + button
 		if inactive_char.find(button) >= 0:		# inaktiver Buchstabe?
 			title = "Sendungen mit " + button + ': keine gefunden'
-			oc.add(DirectoryObject(key=Callback(SendungenAZ, name = 'zuletzt: ' + button), 
+			oc.add(DirectoryObject(key=Callback(SendungenAZ, name = 'Sendungen 0-9 | A-Z', ID=ID), 
 					title=title, thumb=R(ICON_WARNING)))
 		else:
 			oc.add(DirectoryObject(key=Callback(SinglePage, title=title, path=azPath, next_cbKey=next_cbKey, 
-				mode='Sendereihen'), title=title,  thumb=R(ICON_ARD_AZ)))
+				mode='Sendereihen', ID=ID), title=title,  thumb=R(ICON_ARD_AZ)))
+	Log(len(oc))
 	return oc
    
 ####################################################################################################
 @route(PREFIX + '/Search')	# Suche - Verarbeitung der Eingabe
-	# Hinweis zur Suche in der Mediathek: miserabler unscharfer Algorithmus - findet alles mögliche
-def Search(query=None, title=L('Search'), s_type='video', offset=0, **kwargs):
-	Log('Search'); Log(query)
-	query = query.replace(' ', '+')		# Leer-Trennung bei ARD-Suche mit + (wie ZDF)
+	# Vorgabe UND-Verknüpfung (auch Podcast)
+def Search(query=None, title=L('Search'), channel='ARD', s_type='video', offset=0, **kwargs):
+	Log('Search'); Log(query); Log(channel)
+	query = query.replace(' ', '+')			# Leer-Trennung = UND-Verknüpfung bei Podcast-Suche 
+	query = urllib2.quote(query, "utf-8")
+	Log(query)
 	
-	name = 'Suchergebnis zu: ' + query
+	name = 'Suchergebnis zu: ' + urllib2.unquote(query)
+	name = name.decode(encoding="utf-8", errors="ignore")
 	oc = ObjectContainer(view_group="InfoList", title1=NAME, title2=name, art = ObjectContainer.art)
 	next_cbKey = 'SinglePage'	# cbKey = Callback für Container in PageControl
 			
-	path =  BASE_URL +  ARD_Suche + query + '&source=tv&sort=date'
+	if channel == 'ARD':		
+		path =  BASE_URL +  ARD_Suche 
+		path = path % query
+		ID='ARD'
+	if channel == 'PODCAST':	
+		path =  BASE_URL  + POD_SEARCH
+		path = path % query
+		ID=channel
 	Log(path) 
 	page = HTTP.Request(path).content
 	Log(len(page))
 	
-	err = test_fault(page, path)
+	err = test_fault(page, path)		# ARD-spezif. Error-Test
 	if err:
 		return err		
 		
-	i = page.find('<strong>keine Treffer</strong')
-	Log(i)
-	if i > 0:
+	if page.find('<strong>keine Treffer</strong') >= 0:
 		msg_notfound = 'Leider kein Treffer.'
 		title = msg_notfound.decode(encoding="utf-8", errors="ignore")
-		summary = 'zurück zu ' + NAME.decode(encoding="utf-8", errors="ignore")		
-		oc.add(DirectoryObject(key=Callback(Main_ARD, name=NAME), title=msg_notfound, 
-			summary=summary, tagline='TV', thumb=R(ICON_MAIN_ARD)))
-		return oc
+		if channel == 'ARD':		
+			summary = 'zurück zu ' + NAME
+			summary = summary.decode(encoding="utf-8", errors="ignore")
+			oc.add(DirectoryObject(key=Callback(Main_ARD, name=NAME), title=msg_notfound, 
+				summary=summary, tagline='TV', thumb=R(ICON_MAIN_ARD)))
+		if channel == 'PODCAST':		
+			summary = 'zurück zu ' + "Radio-Podcasts"
+			summary = summary.decode(encoding="utf-8", errors="ignore")
+			oc.add(DirectoryObject(key=Callback(Main_POD, name="Radio-Podcasts"), title=msg_notfound, 
+				summary=summary, tagline='Radio', thumb=R(ICON_MAIN_POD)))
 	else:
-		oc = PageControl(title=name, path=path, cbKey=next_cbKey, mode='Suche') 	# wir springen direkt
+		oc = PageControl(title=name, path=path, cbKey=next_cbKey, mode='Suche', ID=ID) 	# wir springen direkt
 	 
 	return oc
  
 #-----------------------
-def test_fault(page, path):	# testet ARD-Seite auf ARD-spezif. Error-Test
+def test_fault(page, path):	# testet geladene ARD-Seite auf ARD-spezif. Error-Test
  	error_txt = '<title>Leider liegt eine Störung vor | ARD Mediathek</title>'
 	if page.find(error_txt) >= 0:
 		error_txt = 'Leider liegt eine Störung vor | ARD Mediathek | interne Serverprobleme'			 			 	 
@@ -633,7 +722,7 @@ def VerpasstWoche(name):	# Wochenliste zeigen
 		cbKey = 'SinglePage'	# cbKey = Callback für Container in PageControl
 		if name.find('ARD') == 0 :
 			oc.add(DirectoryObject(key=Callback(PageControl, title=title, path=iPath, cbKey='SinglePage', 
-				mode='Verpasst'), title=title, thumb=R(ICON_ARD_VERP)))				
+				mode='Verpasst', ID='ARD'), title=title, thumb=R(ICON_ARD_VERP)))				
 		else:
 			oc.add(DirectoryObject(key=Callback(ZDF_Verpasst, title=title, zdfDate=zdfDate),	  
 				title=title, thumb=R(ICON_ZDF_VERP)))
@@ -652,16 +741,19 @@ def transl_wtag(tag):	# Wochentage engl./deutsch wg. Problemen mit locale-Settin
 	return wt_ret
 		
 ####################################################################################################
-@route(PREFIX + '/ARDMore')	# Seiten die nur 1 Beitrag pro Eintrag enhalten
-def ARDMore(title, morepath, next_cbKey):	# next_cbKey: Vorgabe für nächsten Callback in SinglePage
+@route(PREFIX + '/ARDMore')	# Dachfunktion für 'Ausgewählte Filme' .. 'am besten bewertet' bis einschl. 'Rubriken'
+							# ab 06.04.2017 auch Podcasts: 'Rubriken' .. 'Meist abgerufen'
+def ARDMore(title, morepath, next_cbKey, ID):	# next_cbKey: Vorgabe für nächsten Callback in SinglePage
 	Log('ARDMore'); Log(morepath)
 	title2=title.decode(encoding="utf-8", errors="ignore")
 	oc = ObjectContainer(view_group="InfoList", title1=NAME, title2=title2, art = ObjectContainer.art)
-	oc = home(cont=oc, ID='ARD')							# Home-Button
+	oc = home(cont=oc, ID=ID)							# Home-Button
 					 
-	path = Update_ARD_Path(morepath)			# Pfad aktualisieren
-	page = HTTP.Request(morepath).content
-	err = test_fault(page, morepath)
+	path = morepath
+	path = Update_ARD_Path(morepath)		# Pfad aktualisieren - bei Podcast i.d.R. unverändert
+	page = HTTP.Request(path).content
+	page = HTTP.Request(path).content
+	err = test_fault(page, path)			# ARD-spezif. Error-Test: 'Leider liegt eine..'
 	if err:
 		return err		
 							
@@ -669,24 +761,32 @@ def ARDMore(title, morepath, next_cbKey):	# next_cbKey: Vorgabe für nächsten C
 	Log(pagenr_path)
 	if pagenr_path:
 		del pagenr_path[-1]						# letzten Eintrag entfernen (Doppel) - OK
-	Log(pagenr_path)	
+	Log(pagenr_path)
+	Log(path)	
 	
-	mode = 'Sendereihen'						# steuert Ausschnittbildung in SinglePage 
+	if page.find('mcontents=page.') >= 0: 		# Podcast
+		prefix = 'mcontents=page.'
+	if page.find('mcontent=page') >= 0: 		# Default
+		prefix = 'mcontent=page.'
+	if page.find('mresults=page') >= 0: 		# Suche (hier i.d.R. nicht relevant, Direktsprung zu PageControl)
+		prefix = 'mresults=page.'
+
+	mode = 'Sendereihen'						# steuert Ausschnitt in SinglePage + bei Podcast Kopfauswertung 1.Satz
 	if pagenr_path:	 							# bei Mehrfachseiten Liste Weiter bauen, beginnend mit 1. Seite
 		title = 'Weiter zu Seite 1'
-		path = morepath + '&' + 'mcontent=page.1'  # 1. Seite, morepath würde auch reichen
+		path = morepath + '&' + prefix + '1' # 1. Seite, morepath würde auch reichen
 		Log(path)
-		oc.add(DirectoryObject(key=Callback(SinglePage, path=path, title=title, next_cbKey=next_cbKey, mode=mode), 
-			title=title, tagline='', summary='', thumb='', art=ICON))			
+		oc.add(DirectoryObject(key=Callback(SinglePage, path=path, title=title, next_cbKey=next_cbKey, mode=mode, ID=ID), 
+			title=title, tagline='', summary='',  thumb=R(ICON_NEXT)))			
 		
 		for page_nr in pagenr_path:
-			path = morepath + '&' + 'mcontent=page.' + page_nr
+			path = morepath + '&' + prefix + page_nr
 			title = 'Weiter zu Seite ' + page_nr
 			Log(path)
 			oc.add(DirectoryObject(key=Callback(SinglePage, path=path, title=title, next_cbKey=next_cbKey, 
-				mode=mode), title=title, tagline='', summary='', thumb='', art=ICON))			
+				mode=mode, ID=ID), title=title, tagline='', summary='', thumb=R(ICON_NEXT)))			
 	else:										# bei nur 1 Seite springen wir direkt, z.Z. bei Rubriken
-		oc = SinglePage(path=path, title=title, next_cbKey=next_cbKey, mode='Sendereihen')
+		oc = SinglePage(path=path, title=title, next_cbKey=next_cbKey, mode='Sendereihen', ID=ID)
 		
 	return oc
 
@@ -695,22 +795,25 @@ def Update_ARD_Path(path):		# aktualisiert den Zugriffspfad fallls mötig, z.B. 
 	try:
 		Log('Update_ARD_Path old: ' + path)	
 		search_path = stringextract(BASE_URL, '?', path) 	# Base + documentId abschneiden
-		#Log(search_path)
+		Log(search_path)
 		page = HTTP.Request(BASE_URL).content
 		pos = page.find(search_path)
 		if pos >= 0:	# Pfad (einschl. http://) + Länge documentId (20) + 10 Reserve:
 			new_path = page[pos-6:pos + len(search_path) + 30]	
-			#Log(new_path)	
+			Log(new_path)	
 			new_path =  stringextract('\"', '\"',  new_path)
-			#Log(new_path)	
+			Log(new_path)	
 			new_path = BASE_URL + new_path
-			#Log(new_path)	
+			Log(new_path)	
 			if new_path == path:
 				Log('Update_ARD_Path new=old: ' + path)	
 				return path
 			else:
 				Log('Update_ARD_Path new: ' + path)	
 				return new_path
+		else:
+			Log('Update_ARD_Path: Basispfad nicht gefunden - kein Update')
+			return path			# weiter mit altem Pfad - bei Podcast üblich
 			
 	except:						# bei Zugriffsproblemen mit altem Pfad arbeiten
 		Log('Update_ARD_Path: Zugriffsproblem')	
@@ -721,13 +824,13 @@ def Update_ARD_Path(path):		# aktualisiert den Zugriffspfad fallls mötig, z.B. 
 	# Wir laden beim 1. Zugriff alle Seitenverweise in eine Liste. Bei den Folgezugriffen können die Seiten-
 	# verweise entfallen - der Rückschritt zur Liste ist dem Anwender nach jedem Listenelement  möglich.
 	# Dagegen wird in der Mediathek geblättert.
-def PageControl(cbKey, title, path, mode, offset=0):  # 
+def PageControl(cbKey, title, path, mode, ID, offset=0):  # ID='ARD', 'POD', mode='Suche', 'VERPASST', 'Sendereihen'
 	Log('PageControl'); Log('cbKey: ' + cbKey); Log(path)
+	Log('mode: ' + mode); Log('ID: ' + str(ID))
 	title1='Folgeseiten: ' + title.decode(encoding="utf-8", errors="ignore")
-	Log('mode: ' + mode)
-
+	
 	oc = ObjectContainer(view_group="InfoList", title1=title1, title2=title1, art = ObjectContainer.art)
-	oc = home(cont=oc, ID='ARD')							# Home-Button
+	oc = home(cont=oc, ID=ID)							# Home-Button
 	
 	page = HTTP.Request(path).content
 	path_page1 = path							# Pfad der ersten Seite sichern, sonst gehts mit Seite 2 weiter	
@@ -740,8 +843,11 @@ def PageControl(cbKey, title, path, mode, offset=0):  #
 		Log('PageControl: Mehrfach-Seite mit Folgeseiten')
 	else:												# keine Folgeseiten -> SinglePage
 		Log('PageControl: Einzelseite, keine Folgeseiten'); Log(cbKey); Log(path); Log(title)
-		oc = SinglePage(title=title, path=path, next_cbKey='SingleSendung', mode=mode ) # wir springen direkt, 
-		return oc																# erspart dem Anwender 1 Klick
+		oc = SinglePage(title=title, path=path, next_cbKey='SingleSendung', mode=mode, ID=ID) # wir springen direkt 
+		if len(oc) == 1:								# 1 = Home
+			msgH = 'Error'; msg = 'Keine Inhalte gefunden.'		
+			return ObjectContainer(header=msgH, message=msg)		
+		return oc																				
 
 	# pagenr_path =  re.findall("&mresults{0,1}=page.(\d+)", page) # lange Form funktioniert nicht
 	pagenr_path =  re.findall("=page.(\d+)", page) # 
@@ -779,11 +885,11 @@ def PageControl(cbKey, title, path, mode, offset=0):  #
 		next_cbKey = 'SingleSendung'
 			
 		Log(first_site); Log(path_page1); Log(next_cbKey)
-		oc.add(DirectoryObject(key=Callback(SinglePage, title=title, path=path_page1, next_cbKey=next_cbKey, mode=mode), 
-				title=title, thumb=ICON))
+		oc.add(DirectoryObject(key=Callback(SinglePage, title=title, path=path_page1, next_cbKey=next_cbKey, mode=mode, 
+				ID=ID), title=title, thumb=ICON))
 	else:	# Folgeseite einer Mehrfachseite - keine Liste mehr notwendig
 		Log(first_site)													# wir springen wieder direkt:
-		oc = SinglePage(title=title, path=path, next_cbKey='SingleSendung', mode=mode) 
+		oc = SinglePage(title=title, path=path, next_cbKey='SingleSendung', mode=mode, ID=ID) 
 	for element in list:	# [@class='entry'] 
 		pagenr_suche = ''; pagenr_andere = ''; title = ''; href = ''
 		href = stringextract(' href=\"', '\"', element)
@@ -806,8 +912,8 @@ def PageControl(cbKey, title, path, mode, offset=0):  #
 			
 		Log('href: ' + href); Log('title: ' + title)
 		next_cbKey = 'SingleSendung'
-		oc.add(DirectoryObject(key=Callback(SinglePage, title=title, path=href, next_cbKey=next_cbKey, mode=mode), 
-				title=title, thumb=ICON))
+		oc.add(DirectoryObject(key=Callback(SinglePage, title=title, path=href, next_cbKey=next_cbKey, mode=mode, ID=ID), 
+				title=title, thumb=R(ICON_NEXT)))
 	    
 	Log(len(oc))
 	return oc
@@ -815,12 +921,12 @@ def PageControl(cbKey, title, path, mode, offset=0):  #
 ####################################################################################################
 @route(PREFIX + '/SinglePage')	# Liste der Sendungen eines Tages / einer Suche 
 								# durchgehend angezeigt (im Original collapsed)
-def SinglePage(title, path, next_cbKey, mode, offset=0):	# path komplett
+def SinglePage(title, path, next_cbKey, mode, ID, offset=0):	# path komplett
 	Log('Funktion SinglePage: ' + path)
-	Log('mode: ' + mode); Log('next_cbKey. ' + next_cbKey); 
+	Log('mode: ' + mode); Log('next_cbKey: ' + next_cbKey); Log('ID: ' + str(ID))
 	title = title.decode(encoding="utf-8", errors="ignore")
 	oc = ObjectContainer(view_group="InfoList", title1=title, art=ICON)
-	oc = home(cont=oc, ID='ARD')					# Home-Button
+	oc = home(cont=oc, ID=ID)					# Home-Button
 	
 	func_path = path								# für Vergleich sichern
 					
@@ -833,24 +939,28 @@ def SinglePage(title, path, next_cbKey, mode, offset=0):	# path komplett
 	if mode == 'Verpasst':								
 		page = stringextract('"boxCon isCollapsible', 'class=\"socialMedia\"', page)	
 		sendungen = blockextract('<h3 class="headline"', page) 
-	if mode == 'Sendereihen':							# auch A-Z, 
-		page = stringextract('data-ctrl-layoutable', 'class=\"socialMedia\"', page)	
-		sendungen = blockextract('class=\"teaser\"', page) 
-		
-		
+	if mode == 'Sendereihen':	
+		if ID == 'PODCAST':						       # auch A-Z 
+			# Filter nach next_cbKey (PageControl, 	SinglePage, SingleSendung) hier nicht erforderlich	
+			page = stringextract('class=\"section onlyWithJs sectionA\">', '<!--googleoff: snippet-->', page)
+		else:
+			page = stringextract('data-ctrl-layoutable', 'class=\"socialMedia\"', page)	
+	sendungen = blockextract('class=\"teaser\"', page)	# Sendungsblöcke in PODCAST: 1. teaser=Sendungskopf, 
+														#   Rest Beiträge - Auswertung in get_sendungen	
 	if len(sendungen) == 0:								# Fallback 	
-		sendungen = blockextract('class=\"entry\"', page) 
-				
+		sendungen = blockextract('class=\"entry\"', page) 				
 	Log(len(sendungen))
-	send_arr = get_sendungen(oc, sendungen)	# send_arr enthält pro Satz 8 Listen 
+	
+	send_arr = get_sendungen(oc, sendungen, ID, mode)	# send_arr enthält pro Satz 9 Listen 
 	# Rückgabe send_arr = (send_path, send_headline, send_img_src, send_millsec_duration)
 	#Log(send_arr); Log('Länge send_arr: ' + str(len(send_arr)))
 	send_path = send_arr[0]; send_headline = send_arr[1]; send_subtitel = send_arr[2];
 	send_img_src = send_arr[3]; send_img_alt = send_arr[4]; send_millsec_duration = send_arr[5]
-	send_dachzeile = send_arr[6]; send_sid = send_arr[7]
+	send_dachzeile = send_arr[6]; send_sid = send_arr[7]; send_teasertext = send_arr[8]
+
 	#Log(send_path); Log(send_arr)
 	Log(len(send_path));
-	for i in range(len(send_path)):	
+	for i in range(len(send_path)):					# Anzahl in allen send_... gleich
 		path = send_path[i]
 		headline = send_headline[i]
 		headline = unescape(headline)				# HTML-Escapezeichen  im Titel	
@@ -865,12 +975,15 @@ def SinglePage(title, path, next_cbKey, mode, offset=0):	# path komplett
 		Log(dachzeile)
 		sid = send_sid[i]
 		summary = ''
-		if dachzeile != "":
-			summary = dachzeile 
-		if  subtitel != "":
-			summary = subtitel
-			if  dachzeile != "":
-				summary = dachzeile + ' | ' + subtitel
+		if send_teasertext[i] != "":				# teasertext z.B. bei Podcast
+			summary = send_teasertext[i]
+		else:  
+			if dachzeile != "":
+				summary = dachzeile 
+			if  subtitel != "":
+				summary = subtitel
+				if  dachzeile != "":
+					summary = dachzeile + ' | ' + subtitel
 		summary = unescape(summary)
 		summary = summary.decode(encoding="utf-8", errors="ignore")
 		summary = cleanhtml(summary)
@@ -882,6 +995,7 @@ def SinglePage(title, path, next_cbKey, mode, offset=0):	# path komplett
 		Log('next_cbKey: ' + next_cbKey); Log('summary: ' + summary);
 		if next_cbKey == 'SingleSendung':		# Callback verweigert den Funktionsnamen als Variable
 			Log('path: ' + path); Log('func_path: ' + func_path); Log('subtitel: ' + subtitel); Log(sid)
+			Log(ID)
 			if func_path == BASE_URL + path: 	# überspringen - in ThemenARD erscheint der Dachdatensatz nochmal
 				Log('BASE_URL + path == func_path | Satz überspringen');
 				continue
@@ -891,20 +1005,26 @@ def SinglePage(title, path, next_cbKey, mode, offset=0):	# path komplett
 				subtitel = img_alt.decode(encoding="utf-8", errors="ignore")
 			
 			path = BASE_URL + '/play/media/' + sid			# -> *.mp4 (Quali.-Stufen) + master.m3u8-Datei (Textform)
+			Log('Medien-Url: ' + path)
 			oc.add(DirectoryObject(key=Callback(SingleSendung, path=path, title=headline, thumb=img_src, 
-				duration=millsec_duration, tagline=subtitel, summary=summary), title=headline, tagline=subtitel, 
-				summary=summary, thumb=img_src, art=ICON))
+				duration=millsec_duration, tagline=subtitel, ID=ID, summary=summary), title=headline, tagline=subtitel, 
+				summary=summary, thumb=img_src))
 		if next_cbKey == 'SinglePage':						# mit neuem path nochmal durchlaufen
+			Log('next_cbKey: SinglePage in SinglePage')
 			path = BASE_URL + path
 			Log('path: ' + path);
-			oc.add(DirectoryObject(key=Callback(SinglePage, path=path, title=headline, next_cbKey='SingleSendung', 
-				mode=mode), title=headline, tagline=subtitel, summary=summary, thumb=img_src, art=ICON))
+			if mode == 'Sendereihen':			# Seitenkontrolle erforderlich, dto. Rubriken in Podcasts
+				oc.add(DirectoryObject(key=Callback(PageControl, path=path, title=headline, cbKey='SinglePage', 
+					mode='Sendereihen', ID=ID), title=headline, tagline=subtitel, summary=summary, thumb=img_src))
+			else:
+				oc.add(DirectoryObject(key=Callback(SinglePage, path=path, title=headline, next_cbKey='SingleSendung', 
+					mode=mode, ID=ID), title=headline, tagline=subtitel, summary=summary, thumb=img_src))
 		if next_cbKey == 'PageControl':		
 			path = BASE_URL + path
 			Log('path: ' + path);
 			Log('next_cbKey: PageControl in SinglePage')
 			oc.add(DirectoryObject(key=Callback(PageControl, path=path, title=headline, cbKey='SingleSendung', 
-				mode='Sendereihen'), title=headline, tagline=subtitel, summary=summary, thumb=img_src, art=ICON))
+				mode='Sendereihen', ID=ID), title=headline, tagline=subtitel, summary=summary, thumb=img_src))
 
 	Log(len(oc))	# Anzahl Einträge
 						
@@ -916,19 +1036,29 @@ def SinglePage(title, path, next_cbKey, mode, offset=0):	# path komplett
 #		im Listenformat, nicht m3u8-Format, die verlinkte master.m3u8 ist aber im 3u8-Format
 #	2. Text-Seite mit rtmp-Streams (Listenformat ähnlich Zif. 1, rtmp-Pfade müssen zusammengesetzt
 #		werden
-#  
-def SingleSendung(path, title, thumb, duration, summary, tagline, offset=0):	# -> CreateVideoClipObject
+#   ab 01.04.2017 mit Podcast-Erweiterung auch Verabeitung von Audio-Dateien
+def SingleSendung(path, title, thumb, duration, summary, tagline, ID, offset=0):	# -> CreateVideoClipObject
 	title = title.decode(encoding="utf-8", errors="ignore")	# ohne: Exception All strings must be XML compatible
 	title_org=title; summary_org=summary; tagline_org=tagline	# Backup 
 
 	Log('SingleSendung path: ' + path)					# z.B. http://www.ardmediathek.de/play/media/11177770
+	Log('ID: ' + str(ID))
+	
 	oc = ObjectContainer(view_group="InfoList", title1=title, art=ICON)
-	oc = home(cont=oc, ID='ARD')						# Home-Button
+	oc = home(cont=oc, ID=ID)							# Home-Button
 	# Log(path)
-	page = HTTP.Request(path).content  # als Text, nicht als HTML-Element
+	page = HTTP.Request(path).content  # als Text, nicht als HTML-Element. 
+	if ID == 'PODCAST':
+		Format = 'Podcast-Format: MP3'					# Verwendung in summmary
+	else:
+		Format = 'Video-Format: MP4'
 
-	link_path,link_img, m3u8_master = parseLinks_Mp4_Rtmp(page)	# link_img kommt bereits mit thumb,  hier auf Vorrat						
-	Log(link_img); Log(m3u8_master); # Log(link_path);  
+	# Bei Podcasts enthält page i.d.R. 1 Link zur mp3-Datei
+	Log('vor parseLinks_Mp4_Rtmp')
+	link_path,link_img, m3u8_master = parseLinks_Mp4_Rtmp(page)	# link_img kommt bereits mit thumb, außer bei Podcasts						
+	Log(link_img); Log(m3u8_master); # Log(link_path); 
+	if thumb == None or thumb == '': 
+		thumb = link_img
 
  	if link_path == []:	      		# keine Videos gefunden		
 		Log('link_path == []') 		 
@@ -996,17 +1126,27 @@ def SingleSendung(path, title, thumb, duration, summary, tagline, offset=0):	# -
 				continue
 						
 			if url.find('rtmp://') >= 0:	# 2. rtmp-Links:	
-				summary='Video-Format: RTMP-Stream'	
+				summary = Format + 'RTMP-Stream'	
 				oc.add(CreateVideoStreamObject(url=url, title=title, 
 					summary=summary, tagline=title, meta=path, thumb=thumb, duration=duration, rtmp_live='nein', 
 					resolution=''))					
 			else:
-				summary='Video-Format: MP4'	# 3. mp4-Links:	
-				oc.add(CreateVideoClipObject(url=url, title=title, 
-					summary=summary, meta=path, thumb=thumb, tagline='', duration=duration, resolution=''))
+				summary = Format			# 3. mp4-Links, Podcasts mp3-Links
+				if ID == 'PODCAST':
+					oc.add(CreateTrackObject(url=url, title=title, summary=summary, fmt='mp3', thumb=thumb))	
+				else:
+					oc.add(CreateVideoClipObject(url=url, title=title, 
+						summary=summary, meta=path, thumb=thumb, tagline='', duration=duration, resolution=''))
 	Log(download_list)
 	if 	download_list:			
 		# high=-1: letztes Video bisher höchste Qualität
+		if summary_org == None:		# Absicherungen für MakeDetailText
+			summary_org=''
+		if tagline_org == None:
+			tagline_org=''
+		if thumb == None:
+			thumb=''		
+		Log(title);Log(summary_org);Log(tagline_org);Log(thumb);
 		oc = test_downloads(oc,download_list,title_org,summary_org,tagline_org,thumb,high=-1)  # Downloadbutton(s)
 	return oc
 
@@ -1027,28 +1167,34 @@ def test_downloads(oc,download_list,title_org,summary_org,tagline_org,thumb,high
 		
 		for item in download_items:
 			quality,url = item.split('#')
-			Log(url); Log(quality); 
+			Log(url); Log(quality); Log(title_org)
 			if url.find('.m3u8') == -1 and url.find('rtmp://') == -1:
-				# detailtxt =  Begleitdatei mit Textinfos zum video
+				# detailtxt =  Begleitdatei mit Textinfos zum Video / Podcast:
 				detailtxt = MakeDetailText(title=title_org,thumb=thumb,quality=quality,
 					summary=summary_org,tagline=tagline_org,url=url)
 				now = datetime.datetime.now()
-				mydate = now.strftime("%Y-%m-%d_%H-%M-%S")				
-				dfname = 'Download_' + mydate + '.mp4'   			# Bsp.: Download_2016-12-18_09-15-00.mp4
-				title = 'Curl-Download Video: ' + title_org + ' --> ' + dfname
+				mydate = now.strftime("%Y-%m-%d_%H-%M-%S")	
+				if url.endswith('.mp3'):
+					suffix = '.mp3'  
+					Format = 'Podcast ' 			
+				else:	
+					suffix = '.mp4'   			
+					Format = 'Video ' 			
+				dfname = 'Download_' + mydate + suffix			# Bsp.: Download_2016-12-18_09-15-00.mp4  oder ...mp3	
+				title = Format + 'Curl-Download: ' + title_org + ' --> ' + dfname
 				dest_path = Prefs['pref_curl_download_path'] 
+				summary = Format + '>' + dfname + '< wird in ' + dest_path + ' gespeichert' 									
 				tagline = 'Der Download erfolgt durch Curl im Hintergrund | ' + quality
-				summary = 'Video >' + dfname + '< wird in ' + dest_path + ' gespeichert' 				
 				summary=summary.decode(encoding="utf-8", errors="ignore")
 				tagline=tagline.decode(encoding="utf-8", errors="ignore")
 				title=title.decode(encoding="utf-8", errors="ignore")
 				oc.add(DirectoryObject(key=Callback(DownloadExtern, url=url, title=title, dest_path=dest_path,
 					dfname=dfname, detailtxt=detailtxt), title=title, summary=summary, thumb=R(ICON_DOWNL), 
-					tagline=tagline))		
+					tagline=tagline))
 	return oc
 	
 #-----------------------
-def MakeDetailText(title, summary,tagline,quality,thumb,url):	# Textdatei für Downloadvideo
+def MakeDetailText(title, summary,tagline,quality,thumb,url):	# Textdatei für Download-Video / -Podcast
 	Log('MakeDetailText')
 		
 	detailtxt = ''
@@ -1069,26 +1215,32 @@ def MakeDetailText(title, summary,tagline,quality,thumb,url):	# Textdatei für D
 # Die experimentelle interne Download-Variante mit Bordmitteln wurde wieder entfernt, da nach ca. 15 
 #	sec der Server die Verbindung zum Client mit timeout abbricht (unter Linux wurde der Download 
 #	trotzdem weiter fortgesetzt).
-# url=Videoquelle, dest_path=Downloadverz.
+# url=Video-/Podcast-Quelle, dest_path=Downloadverz.
 #
 def DownloadExtern(url, title, dest_path, dfname, detailtxt):  # Download mittels Curl
 	Log('DownloadExtern: ' + title + ' -> ' + dfname)
 	Log(url); Log(dest_path); 
 	# title=title.decode(encoding="utf-8", errors="ignore")	 # Titel zu lang 
-	title='Curl-Download Video'		
+	title='Curl-Download'		
 	oc = ObjectContainer(view_group="InfoList", title1=title, art=ICON)
 	oc = home(cont=oc, ID=NAME)					# Home-Button	
 
-	summary = 'Download-Tools: Videos und Einstellungen bearbeiten'	# wie in Main()
+	summary = 'Download-Tools: Verschieben, Löschen, Ansehen, Verzeichnisse bearbeiten'	# wie in Main()
+	summary = summary.decode(encoding="utf-8", errors="ignore")
 	oc.add(DirectoryObject(key = Callback(DownloadsTools), title = 'Download-Tools', 
 		summary = summary, thumb = R(ICON_DOWNL_DIR)))		
 	
-	try:												
-		textfile = dfname.split('.mp4')[0]			# Textfile zum Video
+	try:
+		if dfname.endswith('.mp3'):
+			textfile = dfname.split('.mp3')[0]		# Textfile zum Podcast
+			dtyp = 'Podcast '
+		else:										
+			textfile = dfname.split('.mp4')[0]			# Textfile zum Video
+			dtyp = 'Video '
 		textfile = textfile + '.txt'
 		pathtextfile = os.path.join(dest_path, textfile)	# kompl. Speicherpfad für Textfile
 		Log(pathtextfile)
-		storetxt = 'Details zum Video ' +  dfname + ':\r\n\r\n' + detailtxt		
+		storetxt = 'Details zum ' + dtyp +  dfname + ':\r\n\r\n' + detailtxt		
 		Core.storage.save(pathtextfile, storetxt)			# Text speichern
 		
 		AppPath = Prefs['pref_curl_path']
@@ -1100,7 +1252,7 @@ def DownloadExtern(url, title, dest_path, dfname, detailtxt):  # Download mittel
 			
 		# i = os.access(curl_dest_path, os.W_OK)		# Zielverz. prüfen - nicht relevant für curl
 														# 	Anwender muss Schreibrecht sicherstellen
-		curl_fullpath = os.path.join(dest_path, dfname)	# kompl. Speicherpfad für Video
+		curl_fullpath = os.path.join(dest_path, dfname)	# kompl. Speicherpfad für Video/Podcast
 		Log(curl_fullpath)
 
 		# http://stackoverflow.com/questions/3516007/run-process-and-dont-wait
@@ -1151,14 +1303,14 @@ def DownloadsTools():
 			dirlist = os.listdir(path)						# Größe Inhalt? 		
 			
 	Log(len(dirlist))
-	mp4cnt=0; vidsize=0
+	mpcnt=0; vidsize=0
 	for entry in dirlist:
-		if entry.find('.mp4') > 0:
-			mp4cnt = mp4cnt + 1	
+		if entry.find('.mp4') > 0 or entry.find('.mp3') > 0:
+			mpcnt = mpcnt + 1	
 			fname = os.path.join(path, entry)					
 			vidsize = vidsize + os.path.getsize(fname) 
 	vidsize	= vidsize / 1000000
-	title1 = 'Downloadverzeichnis: %s Video(s), %s MBytes' % (mp4cnt, str(vidsize))
+	title1 = 'Downloadverzeichnis: %s Download(s), %s MBytes' % (mpcnt, str(vidsize))
 		
 	oc = ObjectContainer(view_group="InfoList", title1=title1, art=ICON)
 	oc = home(cont=oc, ID=NAME)								# Home-Button	
@@ -1203,24 +1355,24 @@ def DownloadsTools():
 	oc.add(DirectoryObject(key=Callback(DirectoryNavigator,settingKey = 'pref_VideoDest_path', fileFilter='DIR',
 		newDirectory=videst), title = title, tagline=tagline, summary=summary, thumb = R(ICON_MOVEDIR_DIR)))
 
-	title = 'Videos bearbeiten: %s Video(s)' % (mp4cnt)				# Button Bearbeiten
-	summary = 'Videos im Downloadverzeichnis ansehen, löschen, verschieben'
+	title = 'Downloads bearbeiten: %s Downloads(s)' % (mpcnt)				# Button Bearbeiten
+	summary = 'Downloads im Downloadverzeichnis ansehen, löschen, verschieben'
 	summary=summary.decode(encoding="utf-8", errors="ignore")
 	oc.add(DirectoryObject(key=Callback(DownloadsList),title = title, summary=summary, thumb = R(ICON_DIR_WORK)))
 
 	if dirlist:
 		dlpath = Prefs['pref_curl_download_path'] 
 		if videst and movie_path:
-			title = 'alle Videos verschieben: %s Video(s)' % (mp4cnt)	# Button Verschieben (alle)
+			title = 'alle Downloads verschieben: %s Downloads(s)' % (mpcnt)	# Button Verschieben (alle)
 			tagline = 'Verschieben erfolgt ohne Rückfrage!' 
 			tagline=tagline.decode(encoding="utf-8", errors="ignore")			
-			summary = 'alle Videos verschieben nach: %s'  % (videst)
+			summary = 'alle Downloads verschieben nach: %s'  % (videst)
 			summary=summary.decode(encoding="utf-8", errors="ignore")
 			oc.add(DirectoryObject(key=Callback(DownloadsMove, dfname='', textname='', dlpath=dlpath, 
 				destpath=videst, single=False), title=title, tagline=tagline, summary=summary, 
 				thumb=R(ICON_DIR_MOVE_ALL)))		
 		
-		title = 'alle Videos löschen: %s Video(s)' % (mp4cnt)			# Button Leeren (alle)
+		title = 'alle Downloads löschen: %s Downloads(s)' % (mpcnt)			# Button Leeren (alle)
 		title=title.decode(encoding="utf-8", errors="ignore")			
 		tagline = 'Leeren erfolgt ohne Rückfrage!'						
 		tagline=tagline.decode(encoding="utf-8", errors="ignore")
@@ -1231,7 +1383,7 @@ def DownloadsTools():
 	return oc
 	
 #---------------------------
-@route(PREFIX + '/DownloadsList')	 	# Videos im Downloadverzeichnis zur Bearbeitung listen
+@route(PREFIX + '/DownloadsList')	 	# Downloads im Downloadverzeichnis zur Bearbeitung listen
 def DownloadsList():
 	Log('DownloadsList')	
 	path = Prefs['pref_curl_download_path']
@@ -1248,29 +1400,34 @@ def DownloadsList():
 	dlpath = path
 
 	Log(len(dirlist))
-	mp4cnt=0; vidsize=0
+	mpcnt=0; vidsize=0
 	for entry in dirlist:
-		if entry.find('.mp4') > 0:
-			mp4cnt = mp4cnt + 1	
+		if entry.find('.mp4') > 0 or entry.find('.mp3') > 0:
+			mpcnt = mpcnt + 1	
 			fname = os.path.join(path, entry)					
 			vidsize = vidsize + os.path.getsize(fname) 
 	vidsize	= vidsize / 1000000
-	title1 = 'Downloadverzeichnis: %s Video(s), %s MBytes' % (mp4cnt, str(vidsize))
+	title1 = 'Downloadverzeichnis: %s Downloads(s), %s MBytes' % (mpcnt, str(vidsize))
 	
-	if mp4cnt == 0:
-		msg='Kein Video gefunden | Pfad: %s' % (dlpath)
+	if mpcnt == 0:
+		msg='Kein Download vorhanden | Pfad: %s' % (dlpath)
 		return ObjectContainer(header='Error', message=msg)
 		
 		
 	oc = ObjectContainer(view_group="InfoList", title1=title1, art=ICON)
 	oc = home(cont=oc, ID='ARD')								# Home-Button	
-	# Videos listen:
-	for entry in dirlist:							# Video + Beschreibung -> DirectoryObject
-		if entry.find('.mp4') > 0:
+	# Downloads listen:
+	for entry in dirlist:							# Download + Beschreibung -> DirectoryObject
+		if entry.find('.mp4') > 0 or entry.find('.mp3') > 0:
 			localpath = entry
 			title = ''; tagline = ''; summary = ''
-			txtfile = entry.split('.mp4')[0] + '.txt'
+			if entry.endswith('.mp4'):
+				txtfile = entry.split('.mp4')[0] + '.txt'
+			if entry.endswith('.mp3'):
+				txtfile = entry.split('.mp3')[0] + '.txt'
 			txtpath = os.path.join(path, txtfile)
+			Log('entry: ' + entry)
+			# Log('txtpath: ' + txtpath)
 			txt = Core.storage.load(txtpath)		# Beschreibung laden
 			if txt != None:			
 				title = stringextract("Titel: '", "'", txt)
@@ -1285,25 +1442,29 @@ def DownloadsList():
 				else:
 					tagline = quality + ' | ' + tagline
 			# Log(txt); Log(httpurl); Log(tagline); Log(quality)
-			Log('txtpath: ' + txtpath)
 			if title == '' or httpurl == '':			# könnte manuell entfernt worden sein
 				continue
 			
+			if httpurl.endswith('mp3'):
+				oc_title = 'Bearbeiten: Podcast | ' + title
+			else:
+				oc_title='Bearbeiten: ' + title
 			summary=summary.decode(encoding="utf-8", errors="ignore")
 			tagline=tagline.decode(encoding="utf-8", errors="ignore")
 			title=title.decode(encoding="utf-8", errors="ignore")
+			oc_title=oc_title.decode(encoding="utf-8", errors="ignore")
 
 			oc.add(DirectoryObject(key=Callback(VideoTools, httpurl=httpurl, path=localpath, dlpath=dlpath, 
 				txtpath=txtpath, title=title,summary=summary, thumb=thumb, tagline=tagline), 
-				title='Bearbeiten: ' + title, summary=summary, thumb=thumb, tagline=tagline))	
+				title=oc_title, summary=summary, thumb=thumb, tagline=tagline))	
 	return oc				
 
 #---------------------------
-@route(PREFIX + '/VideoTools')	# 			# Videos im Downloadverzeichnis ansehen, löschen, verschieben
+@route(PREFIX + '/VideoTools')	# 			# Downloads im Downloadverzeichnis ansehen, löschen, verschieben
 #	zum  Ansehen muss das Video  erneut angefordert werden - CreateVideoClipObject verweigert die Wiedergabe
 #		lokaler Videos: networking.py line 224, in load ... 'file' object has no attribute '_sock'
 #	httpurl=HTTP-Videoquelle, path=Videodatei (Name), dlpath=Downloadverz., txtpath=Textfile (kompl. Pfad)
-#
+#	
 def VideoTools(httpurl,path,dlpath,txtpath,title,summary,thumb,tagline):
 	Log('VideoTools: ' + path)
 	
@@ -1315,8 +1476,12 @@ def VideoTools(httpurl,path,dlpath,txtpath,title,summary,thumb,tagline):
 	
 	title = title_org + ' | Ansehen' 												# 1. Ansehen
 	title=title.decode(encoding="utf-8", errors="ignore")
-	oc.add(CreateVideoClipObject(url=httpurl, title=title , 		
-		summary=summary, meta=httpurl, thumb=thumb, tagline=tagline, duration='leer', resolution='leer'))
+	if httpurl.endswith('mp4'):
+		oc.add(CreateVideoClipObject(url=httpurl, title=title , summary=summary, 
+			meta=httpurl, thumb=thumb, tagline=tagline, duration='leer', resolution='leer'))
+	else:											# 'mp3' = Podcast
+		oc.add(CreateTrackObject(url=httpurl, title=title, summary=summary,
+			 thumb=thumb, fmt='mp3'))				# funktioniert hier auch mit aac
 		
 	title = title_org + ' | löschen ohne Rückfrage' 								# 2. Löschen
 	title=title.decode(encoding="utf-8", errors="ignore")
@@ -1444,7 +1609,8 @@ def parseLinks_Mp4_Rtmp(page):		# extrahiert aus Textseite .mp4- und rtmp-Links 
 	
 	if page.find('http://www.ardmediathek.de/image') >= 0:
 		#link_img = teilstring(page, 'http://www.ardmediathek.de/image', '\",\"_subtitleUrl')
-		link_img = stringextract('_previewImage\":\"', '\",\"_subtitle', page)
+		#link_img = stringextract('_previewImage\":\"', '\",\"_subtitle', page)
+		link_img = stringextract('_previewImage\":\"', '\",', page)
 	else:
 		link_img = ""
 
@@ -1503,22 +1669,32 @@ def parseLinks_Mp4_Rtmp(page):		# extrahiert aus Textseite .mp4- und rtmp-Links 
 	return link_path, link_img, m3u8_master				 		
 		
 ####################################################################################################
-def get_sendungen(container, sendungen): # Sendungen ausgeschnitten mit class='teaser', aus Verpasst + A-Z,
+def get_sendungen(container, sendungen, ID, mode): # Sendungen ausgeschnitten mit class='teaser', aus Verpasst + A-Z,
 	# 										Suche, Einslike
 	# Headline + Subtitel sind nicht via xpath erreichbar, daher Stringsuche:
 	# ohne linklist + Subtitel weiter (teaser Seitenfang od. Verweis auf Serie, bei A-Z teaser-Satz fast identisch,
 	#	nur linklist fehlt )
 	# Die Rückgabe-Liste send_arr nimmt die Datensätze auf (path, headline usw.)
-	
-	Log('get_sendungen'); 
+	# ab 02.04.2017: ID=PODCAST	- bei Sendereihen enthält der 1. Satz Bild + Teasertext
+	Log('get_sendungen'); Log(ID); Log(mode); 
+
+	img_src_header=''; img_alt_header=''; teasertext_header=''; teasertext=''
+	if ID == 'PODCAST' and mode == 'Sendereihen':							# PODCAST: Bild + teasertext nur im Kopf vorhanden
+		# Log(sendungen[0])		# bei Bedarf
+		if sendungen[0].find('urlScheme') >= 0:	# Bild ermitteln, versteckt im img-Knoten
+			text = stringextract('urlScheme', '/noscript', sendungen[0])
+			img_src_header, img_alt_header = img_urlScheme(text, 320, ID) # Format quadratisch bei Podcast
+			teasertext_header = stringextract('<h4 class=\"teasertext\">', '</p>', sendungen[0])
+		del sendungen[0]						# nicht mehr benötigt, Beiträge folgen dahinter
+			
 	# send_arr nimmt die folgenden Listen auf (je 1 Datensatz pro Sendung)
 	send_path = []; send_headline = []; send_subtitel = []; send_img_src = [];
 	send_img_alt = []; send_millsec_duration = []; send_dachzeile = []; send_sid = []; 
+	send_teasertext = []; 
 	arr_ind = 0
 	for s in sendungen:	
-		# Log(s)				# bei Bedarf
 		found_sendung = False
-		if s.find('<div class="linklist">') == -1:
+		if s.find('<div class="linklist">') == -1 or ID == 'PODCAST':  # PODCAST-Inhalte ohne linklistG::;
 			if  s.find('subtitle') >= 0: 
 				found_sendung = True
 			if  s.find('dachzeile') >= 0: # subtitle in ARDThemen nicht vorhanden
@@ -1527,6 +1703,7 @@ def get_sendungen(container, sendungen): # Sendungen ausgeschnitten mit class='t
 				found_sendung = True
 				
 		Log(found_sendung)
+		# Log(s)				# bei Bedarf
 		if found_sendung:				
 			dachzeile = re.search("<p class=\"dachzeile\">(.*?)</p>\s+?", s)  # Bsp. <p class="dachzeile">Weltspiegel</p>
 			if dachzeile:									# fehlt komplett bei ARD_SENDUNG_VERPASST
@@ -1571,31 +1748,40 @@ def get_sendungen(container, sendungen): # Sendungen ausgeschnitten mit class='t
 			else:
 				millsec_duration = ''
 			
-			try:
-				extr_path = stringextract('class=\"media mediaA\"', '/noscript', s)
+			sid = ''
+			if ID == 'PODCAST' and s.find('class=\"textWrapper\"') >= 0:	# PODCAST: textWrapper erst im 2. Durchlauf (Einzelseite)
+				extr_path = stringextract('class=\"textWrapper\"', '</div>', s)
 				id_path = stringextract('href=\"', '\"', extr_path)
-				# Log(extr_path); Log(id_path)
-				sid = ""
-				if id_path.find('documentId=') >= 0:		# documentId
-					sid = id_path.split('documentId=')[1]
-				Log(sid)
-				path = id_path	# korrigiert in SinglePage für Einzelsendungen in  '/play/media/' + sid
-				# Log(path)							
-			except:
-				Log('xpath-Fehler in Liste class=teaserbox, sendung: ' + s )	# Satz überspringen
-				continue
-				
-			pos = s.find('urlScheme')						# Bild ermitteln, versteckt im img-Knoten
-			if  pos >= 0:									
-				text = stringextract('urlScheme', '/noscript', s)
-				img_src, img_alt = img_urlScheme(text, 320)
 			else:
-				img_src=''; img_alt=''				
+				extr_path = stringextract('class=\"media mediaA\"', '/noscript', s)
+				# Log(extr_path)
+				id_path = stringextract('href=\"', '\"', extr_path)
+			id_path = unescape(id_path)
+			if id_path.find('documentId=') >= 0:		# documentId am Pfadende
+				sid = id_path.split('documentId=')[1]	# ../Video-Podcast?bcastId=7262908&documentId=24666340
 				
-		
+			Log('sid: ' + sid)
+			path = id_path	# korrigiert in SinglePage für Einzelsendungen in  '/play/media/' + sid
+			Log(path)
+							
+			if s.find('urlScheme') >= 0:			# Bild ermitteln, versteckt im img-Knoten
+				text = stringextract('urlScheme', '/noscript', s)
+				img_src, img_alt = img_urlScheme(text, 320, ID)
+			else:
+				img_src=''; img_alt=''	
+			if ID == 'PODCAST' and img_src == '':		# PODCAST: Inhalte aus Episodenkopf verwenden
+				if img_src_header and img_alt_header:
+					img_src=img_src_header; img_alt=img_alt_header
+				if teasertext_header:
+					teasertext = teasertext_header
+							
+			if path == '':								# Satz nicht verwendbar
+					continue							
+						
 			Log('neuer Satz')
 			Log(sid); Log(id_path); Log(path); Log(img_src); Log(img_alt); Log(headline);  
-			Log(subtitel); Log(send_duration); Log(millsec_duration); Log(dachzeile); 
+			Log(subtitel); Log(send_duration); Log(millsec_duration); 
+			Log(dachzeile); Log(teasertext); 
 
 			send_path.append(path)			# erst die Listen füllen
 			send_headline.append(headline)
@@ -1605,18 +1791,19 @@ def get_sendungen(container, sendungen): # Sendungen ausgeschnitten mit class='t
 			send_millsec_duration.append(millsec_duration)
 			send_dachzeile.append(dachzeile)		
 			send_sid.append(sid)	
+			send_teasertext.append(teasertext)	
 			
 											# dann der komplette Listen-Satz ins Array		
 	send_arr = [send_path, send_headline, send_subtitel, send_img_src, send_img_alt, send_millsec_duration, 
-		send_dachzeile, send_sid]
-	# Log(send_arr)					# umfangreich - nur bei Bedarf
+		send_dachzeile, send_sid, send_teasertext]
+	Log(len(send_path))	 # Anzahl send_path = Anzahl Sätze		
 	return send_arr
 #-------------------
 # def img_urlScheme: img-Url ermitteln für get_sendungen, ARDRubriken. text = string, dim = Dimension
-def img_urlScheme(text, dim):
+def img_urlScheme(text, dim, ID):
 	Log('img_urlScheme: ' + text[0:40])
 	Log(dim)
-	pos = text.find('class=\"mediaCon\">')				# img erst danach
+	pos = 	text.find('class=\"mediaCon\">')			# img erst danach
 	if pos >= 0:
 		text = text[pos:]
 		img_src = stringextract("urlScheme':'", '##width', text)
@@ -1632,6 +1819,8 @@ def img_urlScheme(text, dim):
 		
 	if img_src and img_alt:
 		img_src = BASE_URL + img_src + str(dim)			# dim getestet: 160,265,320,640
+		if ID == 'PODCAST':								# Format Quadrat klappt nur bei PODCAST,
+			img_src = img_src.replace('16x9', '16x16')	# Sender liefert Ersatz, falls n.v.
 		Log('img_urlScheme: ' + img_src)
 		img_alt = img_alt.decode(encoding="utf-8", errors="ignore")	 # kommt vor:  utf8-decode-error bate 0xc3
 		Log('img_urlScheme: ' + img_alt[0:40])
@@ -2002,6 +2191,7 @@ def CreateVideoStreamObject(url, title, summary, tagline, meta, thumb, rtmp_live
 	Log('CreateVideoStreamObject: '); Log(url); Log(rtmp_live) 
 	Log('include_container: '); Log(include_container)
 	Log(Client.Platform)
+	Log('Plattform: ' + sys.platform)
 
 	if url.find('rtmp:') >= 0:	# rtmp = Protokoll für flash, Quellen: rtmpdump, shark, Chrome/Entw.-Tools
 		if rtmp_live == 'ja':
@@ -2181,14 +2371,7 @@ def RadioAnstalten(path, title,sender,thumbs):
 			element = element[0:pos]
 		# Log(element[0:80])						#  nur bei Bedarf)	
 		
-		img_src = ""						# img_src = Sender-Icon, thumbs = lokale Icons
-		#if element.find('urlScheme') >= 0:					# nicht mehr verwenden - Schema passt nicht mehr
-		#	img_src, img_alt = img_urlScheme(element,320)	# bei Radiosendern 04.01.2016
-		
-		#img_src = stringextract('urlScheme&#039;:&#039;', '##width##', element)  # OK aber abgeschaltet,
-		#if img_src:															  # damit Senderwechsel auffallen
-		#	img_src = BASE_URL + img_src + '320'
-		#Log(img_src)
+		img_src = ""						
 			
 		headline = ''; subtitel = ''		# nicht immer beide enthalten
 		if element.find('headline') >= 0:			# h4 class="headline" enthält den Sendernamen
@@ -2287,9 +2470,22 @@ def RadioEinzel(url, title, summary, fmt, thumb,):
 # 15.03.2017: die Parameter location und includeBandwidths werden für die Android-App benötigt 	
 # 26.03.2017: **kwargs - siehe Funktion PlayAudio
 #	 **kwargs als Parameter früher für PHT hier nicht geeignet - Test 26.03.2017: OK
-# def CreateTrackObject(url, title, summary, fmt, thumb, include_container=False):
-def CreateTrackObject(url, title, summary, fmt, thumb, include_container=False, location=None, includeBandwidths=None, **kwargs):
+# trotz **kwargs werden hier die None-Parameter im Kopf verwendet, um die Abfrage in der Funktion zu ermöglichen,
+#	dto. in PlayAudio
+
+# def CreateTrackObject(url, title, summary, fmt, thumb, include_container=False, **kwargs):
+def CreateTrackObject(url, title, summary, fmt, thumb, include_container=False, location=None, includeBandwidths=None, autoAdjustQuality=None, hasMDE=None, **kwargs):
 	Log('CreateTrackObject: ' + url); Log(include_container)
+	Log(summary);Log(fmt);Log(thumb);
+	
+	if location is not None: 
+		Log(location); 
+	if includeBandwidths is not None: 
+		Log(includeBandwidths); 
+	if autoAdjustQuality is not None : 
+		Log(autoAdjustQuality); 
+	if hasMDE is not None: 
+		Log(hasMDE); 
 
 	if fmt == 'mp3':
 		container = Container.MP3
@@ -2324,10 +2520,6 @@ def CreateTrackObject(url, title, summary, fmt, thumb, include_container=False, 
 		]
 	)
 
-	if location: 
-		Log(location); 
-	if includeBandwidths: 
-		Log(includeBandwidths); 
 
 	if include_container:
 		return ObjectContainer(objects=[track_object])
@@ -2340,17 +2532,27 @@ def CreateTrackObject(url, title, summary, fmt, thumb, include_container=False, 
 # 15.03.2017: die Parameter location, includeBandwidths usw. werden für die Android-App benötigt.	
 # 26.03.2017: **kwargs für eventuelle weitere Extra-Parameter angefügt, siehe
 #		https://forums.plex.tv/discussion/comment/1405423/#Comment_1405423
-#		**kwargs allein würde reichen - Android-Parameter verbleiben zunächst zum Debuggen
+#		**kwargs allein würde reichen - None-Parameter verbleiben zunächst zum Debuggen
 def PlayAudio(url, location=None, includeBandwidths=None, autoAdjustQuality=None, hasMDE=None, **kwargs):	
 	Log('PlayAudio: ' + url)	
-	if location: 
-		Log(location); 
-	if includeBandwidths: 
-		Log(includeBandwidths); 
-	if autoAdjustQuality: 
-		Log(autoAdjustQuality);
-	if hasMDE: 
-		Log(hasMDE); 
+	if location is not None: 
+		Log(location); 					# Bsp. lan
+	if includeBandwidths is not None: 
+		Log(includeBandwidths); 		
+	if autoAdjustQuality is not None: 
+		Log(autoAdjustQuality);			# Bsp. 0
+	if hasMDE is not None: 
+		Log(hasMDE); 					# Bsp. 1
+		
+	ret = urllib2.urlopen(url)		# Test auf Existenz
+	Log('PlayAudio: ' + str(ret.code))
+	if ret.code != 200:
+		error_txt = 'Server meldet: ' + str(ret.code)
+		error_txt = error_txt + '\r\n' + url			 			 	 
+		msgH = 'Error'; msg = error_txt
+		msg =  msg.decode(encoding="utf-8", errors="ignore")
+		Log(msg)
+		return ObjectContainer(header=msgH, message=msg)
 	return Redirect(url)
 		
 ####################################################################################################
@@ -2360,7 +2562,7 @@ def PlayAudio(url, location=None, includeBandwidths=None, autoAdjustQuality=None
 # 	Voreinstellungen: alle DF-Sender, ganze Sendungen, sortiert nach Datum
 #	Anzahl Suchergebnisse: 25 - nicht beeinflussbar
 def ZDF_Search(query=None, title=L('Search'), s_type=None, pagenr='', **kwargs):
-	# query = urllib.quote(query)
+	query = urllib2.quote(query, "utf-8")
 	query = query.replace(' ', '+')		# Leer-Trennung bei ZDF-Suche mit +
 	Log('ZDF_Search'); Log(query); Log(pagenr); Log(s_type)
 
