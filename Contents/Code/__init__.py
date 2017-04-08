@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import string
+import random			# Zufallswerte für rating_key
 import urllib			# urllib.quote(), 
 import urllib2			# urllib2.Request
 import ssl				# HTTPS-Handshake
@@ -17,8 +18,8 @@ import EPG
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.8.8'		
-VDATE = '07.04.2017'
+VERSION =  '2.8.9'		
+VDATE = '08.04.2017'
 
 # 
 #	
@@ -1355,7 +1356,7 @@ def DownloadsTools():
 	oc.add(DirectoryObject(key=Callback(DirectoryNavigator,settingKey = 'pref_VideoDest_path', fileFilter='DIR',
 		newDirectory=videst), title = title, tagline=tagline, summary=summary, thumb = R(ICON_MOVEDIR_DIR)))
 
-	title = 'Downloads bearbeiten: %s Downloads(s)' % (mpcnt)				# Button Bearbeiten
+	title = 'Downloads bearbeiten: %s Download(s)' % (mpcnt)				# Button Bearbeiten
 	summary = 'Downloads im Downloadverzeichnis ansehen, löschen, verschieben'
 	summary=summary.decode(encoding="utf-8", errors="ignore")
 	oc.add(DirectoryObject(key=Callback(DownloadsList),title = title, summary=summary, thumb = R(ICON_DIR_WORK)))
@@ -1363,7 +1364,7 @@ def DownloadsTools():
 	if dirlist:
 		dlpath = Prefs['pref_curl_download_path'] 
 		if videst and movie_path:
-			title = 'alle Downloads verschieben: %s Downloads(s)' % (mpcnt)	# Button Verschieben (alle)
+			title = 'alle Downloads verschieben: %s Download(s)' % (mpcnt)	# Button Verschieben (alle)
 			tagline = 'Verschieben erfolgt ohne Rückfrage!' 
 			tagline=tagline.decode(encoding="utf-8", errors="ignore")			
 			summary = 'alle Downloads verschieben nach: %s'  % (videst)
@@ -1372,7 +1373,7 @@ def DownloadsTools():
 				destpath=videst, single=False), title=title, tagline=tagline, summary=summary, 
 				thumb=R(ICON_DIR_MOVE_ALL)))		
 		
-		title = 'alle Downloads löschen: %s Downloads(s)' % (mpcnt)			# Button Leeren (alle)
+		title = 'alle Downloads löschen: %s Download(s)' % (mpcnt)			# Button Leeren (alle)
 		title=title.decode(encoding="utf-8", errors="ignore")			
 		tagline = 'Leeren erfolgt ohne Rückfrage!'						
 		tagline=tagline.decode(encoding="utf-8", errors="ignore")
@@ -1407,7 +1408,7 @@ def DownloadsList():
 			fname = os.path.join(path, entry)					
 			vidsize = vidsize + os.path.getsize(fname) 
 	vidsize	= vidsize / 1000000
-	title1 = 'Downloadverzeichnis: %s Downloads(s), %s MBytes' % (mpcnt, str(vidsize))
+	title1 = 'Downloadverzeichnis: %s Download(s), %s MBytes' % (mpcnt, str(vidsize))
 	
 	if mpcnt == 0:
 		msg='Kein Download vorhanden | Pfad: %s' % (dlpath)
@@ -1474,12 +1475,14 @@ def VideoTools(httpurl,path,dlpath,txtpath,title,summary,thumb,tagline):
 	oc = ObjectContainer(view_group="InfoList", title1=title1, art=ICON)
 	oc = home(cont=oc, ID=NAME)					# Home-Button	
 	
-	title = title_org + ' | Ansehen' 												# 1. Ansehen
-	title=title.decode(encoding="utf-8", errors="ignore")
 	if httpurl.endswith('mp4'):
+		title = title_org + ' | Ansehen' 												# 1. Ansehen
+		title=title.decode(encoding="utf-8", errors="ignore")
 		oc.add(CreateVideoClipObject(url=httpurl, title=title , summary=summary, 
 			meta=httpurl, thumb=thumb, tagline=tagline, duration='leer', resolution='leer'))
 	else:											# 'mp3' = Podcast
+		title = title_org + ' | Anhören' 												# 1. Anhören
+		title=title.decode(encoding="utf-8", errors="ignore")
 		oc.add(CreateTrackObject(url=httpurl, title=title, summary=summary,
 			 thumb=thumb, fmt='mp3'))				# funktioniert hier auch mit aac
 		
@@ -1491,7 +1494,7 @@ def VideoTools(httpurl,path,dlpath,txtpath,title,summary,thumb,tagline):
 	oc.add(DirectoryObject(key=Callback(DownloadsDelete, dlpath=fullpath, single='True'),
 		title=title, tagline=tagline, summary=summary, thumb=R(ICON_DELETE)))
 		
-	if Prefs['pref_VideoDest_path']:							# 3. Verschieben nur mit Zielpfad, 1 Video
+	if Prefs['pref_VideoDest_path']:							# 3. Verschieben nur mit Zielpfad, einzeln
 		textname = os.path.basename(txtpath)
 		title = title_org + ' | verschieben nach: '	+ Prefs['pref_VideoDest_path']									
 		title=title.decode(encoding="utf-8", errors="ignore")
@@ -1519,7 +1522,10 @@ def DownloadsDelete(dlpath, single):
 				os.remove(fullpath)
 			error_txt = 'Downloadverzeichnis geleert'
 		else:
-			txturl = dlpath.split('.mp4')[0] + '.txt' # url hier kompl. Pfad
+			if dlpath.endswith('mp4'):			 # url hier kompl. Pfad
+				txturl = dlpath.split('.mp4')[0] + '.txt' # Video
+			if dlpath.endswith('mp3'):
+				txturl = dlpath.split('.mp3')[0] + '.txt' # Podcast			
 			os.remove(dlpath)					# Video löschen
 			os.remove(txturl)				# Textdatei löschen
 			error_txt = 'Video gelöscht: ' + dlpath
@@ -2472,6 +2478,8 @@ def RadioEinzel(url, title, summary, fmt, thumb,):
 #	 **kwargs als Parameter früher für PHT hier nicht geeignet - Test 26.03.2017: OK
 # trotz **kwargs werden hier die None-Parameter im Kopf verwendet, um die Abfrage in der Funktion zu ermöglichen,
 #	dto. in PlayAudio
+# 08.04.2017: eindeutige ID für rating_key via random - url führte zu Error bei Client BRAVIA 2015 Android 5.1.1
+#
 
 # def CreateTrackObject(url, title, summary, fmt, thumb, include_container=False, **kwargs):
 def CreateTrackObject(url, title, summary, fmt, thumb, include_container=False, location=None, includeBandwidths=None, autoAdjustQuality=None, hasMDE=None, **kwargs):
@@ -2500,10 +2508,18 @@ def CreateTrackObject(url, title, summary, fmt, thumb, include_container=False, 
 		container = 'mpegts'
 		audio_codec = AudioCodec.AAC	
 
+	title = title.decode(encoding="utf-8", errors="ignore")
+	summary = summary.decode(encoding="utf-8", errors="ignore")
+	
+	random.seed()						
+	rating_id = random.randint(1,10000)
+	rating_key = 'rating_key-' + str(rating_id)
+	Log(rating_key)
+	
 	track_object = TrackObject(
 		key = Callback(CreateTrackObject, url=url, title=title, summary=summary, fmt=fmt, thumb=thumb, include_container=True, 
 				location=None, includeBandwidths=None, autoAdjustQuality=None, hasMDE=None),
-		rating_key = url,	
+		rating_key = rating_key,	
 		title = title,
 		summary = summary,
 		thumb=thumb,
@@ -2561,8 +2577,9 @@ def PlayAudio(url, location=None, includeBandwidths=None, autoAdjustQuality=None
 @route(PREFIX + '/ZDF_Search')	# Suche - Verarbeitung der Eingabe. Neu ab 28.10.2016 (nach ZDF-Relaunch)
 # 	Voreinstellungen: alle DF-Sender, ganze Sendungen, sortiert nach Datum
 #	Anzahl Suchergebnisse: 25 - nicht beeinflussbar
+# def ZDF_Search(query=None, title=L('Search'), s_type=None, pagenr='', **kwargs):
 def ZDF_Search(query=None, title=L('Search'), s_type=None, pagenr='', **kwargs):
-	query = urllib2.quote(query, "utf-8")
+#	query = urllib2.quote(query, "utf-8")
 	query = query.replace(' ', '+')		# Leer-Trennung bei ZDF-Suche mit +
 	Log('ZDF_Search'); Log(query); Log(pagenr); Log(s_type)
 
@@ -2956,12 +2973,15 @@ def ZDF_get_content(oc, page, ref_path, ID=None):	# ID='Search' od. 'VERPASST' -
 		if teaser_cat.find('|') > 0:  	# häufig über 3 Zeilen verteilt
 			tclist = teaser_cat.split('|')
 			teaser_cat = str.strip(tclist[0]) + ' | ' + str.strip(tclist[1])			# zusammenführen
-		#Log('teaser_cat: ' + teaser_cat)	
+		Log('teaser_cat: ' + teaser_cat)
 			
 		href_title = stringextract('<a href=\"', '>', rec)		# href-link hinter teaser-cat kann Titel enthalten
 		href_title = stringextract('title="', '\"', href_title)
 		href_title = unescape(href_title)
-		#Log(href_title)
+		Log('href_title: ' + href_title)
+		if 	href_title == 'ZDF Livestream':
+			continue
+		
 		genre = stringextract('itemprop=\"genre\">', '</span>', rec)
 		genre = mystrip(genre)
 		if genre.find('|') > 0:  	# häufig über 3 Zeilen verteilt
@@ -2973,6 +2993,7 @@ def ZDF_get_content(oc, page, ref_path, ID=None):	# ID='Search' od. 'VERPASST' -
 			description = stringextract('class=\"item-description\">', '<', rec) 	# Bsp. Satz b-playerbox
 		description = description.strip()	
 		description = unescape(description)
+		Log('description: ' + description)
 		
 		# Titel + Beschreibung (einschl. Datum + Zeit) zusammenstellen
 		if teaser_cat:
@@ -3021,8 +3042,8 @@ def ZDF_get_content(oc, page, ref_path, ID=None):	# ID='Search' od. 'VERPASST' -
 			title, tagline = tagline, title
 			
 		Log('neuer Satz')
-		Log(teaser_cat);Log(actionDetail);Log(genre);Log(description);			
-		Log(thumb);Log(path);Log(title);Log(summary);Log(tagline);Log(multi);
+		Log(teaser_cat);Log(actionDetail);Log(genre);Log(thumb);			
+		Log(path);Log(title);Log(summary);Log(tagline);Log(multi);
 		title = title.decode(encoding="utf-8", errors="ignore")
 		summary = summary.decode(encoding="utf-8", errors="ignore")
 		tagline = tagline.decode(encoding="utf-8", errors="ignore")
