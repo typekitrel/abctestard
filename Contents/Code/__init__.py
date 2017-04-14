@@ -18,8 +18,8 @@ import EPG
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.8.9'		
-VDATE = '08.04.2017'
+VERSION =  '2.9.0'		
+VDATE = '14.04.2017'
 
 # 
 #	
@@ -43,13 +43,14 @@ VDATE = '08.04.2017'
 
 ####################################################################################################
 
-NAME = 'ARD Mediathek 2016'
-PREFIX = '/video/ardmediathek2016'			
+NAME			= 'ARD Mediathek 2016'
+PREFIX 			= '/video/ardmediathek2016'			
 												
-PLAYLIST = 'livesenderTV.xml'				# TV-Sender-Logos erstellt von: Arauco (Plex-Forum). 											
-PLAYLIST_Radio = 'livesenderRadio.xml'		# Liste der RadioAnstalten. Einzelne Sender und Links werden 
+PLAYLIST 		= 'livesenderTV.xml'		# TV-Sender-Logos erstellt von: Arauco (Plex-Forum). 											
+PLAYLIST_Radio  = 'livesenderRadio.xml'		# Liste der RadioAnstalten. Einzelne Sender und Links werden 
 											# 	vom Plugin ermittelt
 											# Radio-Sender-Logos erstellt von: Arauco (Plex-Forum). 
+FAVORITS_Pod 	= 'podcast-favorits.txt' 	# Lesezeichen für Podcast-Erweiterung 
 
 ART 					= 'art.png'			# ARD 
 ICON 					= 'icon.png'		# ARD
@@ -98,6 +99,7 @@ ICON_POD_RUBRIK	 		= 'pod-rubriken.png'
 ICON_POD_NEU			= 'pod-neu.png'
 ICON_POD_MEIST			= 'pod-meist.png'
 ICON_POD_REFUGEE 		= 'pod-refugee.png'
+ICON_POD_FAVORITEN		= 'pod-favoriten.png'
 
 
 ICON_OK 				= "icon-ok.png"
@@ -108,6 +110,8 @@ ICON_MEHR 				= "icon-mehr.png"
 ICON_DOWNL 				= "icon-downl.png"
 ICON_DOWNL_DIR			= "icon-downl-dir.png"
 ICON_DELETE 			= "icon-delete.png"
+ICON_STAR 				= "icon-star.png"
+ICON_NOTE 				= "icon-note.png"
 
 ICON_DIR_CURL 			= "Dir-curl.png"
 ICON_DIR_FOLDER			= "Dir-folder.png"
@@ -122,6 +126,7 @@ ICON_DIR_SAVE 			= "Dir-save.png"
 ICON_DIR_VIDEO 			= "Dir-video.png"
 ICON_DIR_WORK 			= "Dir-work.png"
 ICON_MOVEDIR_DIR 		= "Dir-moveDir.png"
+ICON_DIR_FAVORITS		= "Dir-favorits.png"
 
 
 
@@ -203,7 +208,8 @@ def Start():
 @route(PREFIX)
 @handler(PREFIX, NAME, art = ART, thumb = ICON)
 def Main():
-	Log('Funktion Main'); Log(PREFIX); Log(VERSION); Log(VDATE)
+	Log('Funktion Main'); Log(PREFIX); 
+	Log('Plugin-Version: ' + VERSION); Log('Plugin-Datum: ' + VDATE)
 	Log('Client: ' + Client.Platform);
 	Log('Plattform: ' + sys.platform)
 	oc = ObjectContainer(view_group="InfoList", art=ObjectContainer.art)	# Plex akzeptiert nur InfoList + List, keine
@@ -343,22 +349,26 @@ def Main_POD(name):
 	oc.add(DirectoryObject(key=Callback(SendungenAZ, name=title, ID='PODCAST'), title=title, thumb=R(ICON_ARD_AZ)))			
 	title = 'Rubriken'	
 	oc.add(DirectoryObject(key=Callback(ARDMore, title=title, morepath=POD_RUBRIK, next_cbKey='SinglePage', ID='PODCAST'),
-		 title=title, summary=title, thumb=R(ICON_POD_RUBRIK)))
+		title=title, summary=title, thumb=R(ICON_POD_RUBRIK)))
 	title="Radio-Feature"	 
 	oc.add(DirectoryObject(key=Callback(ARDMore, title=title, morepath=POD_FEATURE, next_cbKey='SingleSendung', ID='PODCAST'),
-		 title=title, summary=title, thumb=R(ICON_POD_FEATURE)))
+		title=title, summary=title, thumb=R(ICON_POD_FEATURE)))
 	title="Radio-Tatort"	 
 	oc.add(DirectoryObject(key=Callback(ARDMore, title=title, morepath=POD_TATORT, next_cbKey='SingleSendung', ID='PODCAST'),
-		 title=title, summary=title, thumb=R(ICON_POD_TATORT)))
+		title=title, summary=title, thumb=R(ICON_POD_TATORT)))
 	title="Neueste Audios"	 
 	oc.add(DirectoryObject(key=Callback(ARDMore, title=title, morepath=POD_NEU, next_cbKey='SingleSendung', ID='PODCAST'),
-		 title=title, summary=title, thumb=R(ICON_POD_NEU)))
+		title=title, summary=title, thumb=R(ICON_POD_NEU)))
 	title="Meist abgerufen"	 
 	oc.add(DirectoryObject(key=Callback(ARDMore, title=title, morepath=POD_MEIST, next_cbKey='SingleSendung', ID='PODCAST'),
-		 title=title, summary=title, thumb=R(ICON_POD_MEIST)))
+		title=title, summary=title, thumb=R(ICON_POD_MEIST)))
 	
 	title="Refugee-Radio"; query='Refugee Radio'	# z.Z. Refugee Radio via Suche
-	oc.add(DirectoryObject(key=Callback(Search, query=query, channel='PODCAST'), title=title, thumb=R(ICON_POD_REFUGEE)))
+	oc.add(DirectoryObject(key=Callback(Search, query=query, channel='PODCAST'), title=title, 
+		summary=title, thumb=R(ICON_POD_REFUGEE)))
+	
+	title="Podcast-Favoriten"; ICON_POD_FAVORITEN
+	oc.add(DirectoryObject(key=Callback(PodFavoritenListe, title=title),title=title, summary=title, thumb=R(ICON_POD_FAVORITEN)))
 	
 	return oc
 
@@ -742,6 +752,84 @@ def transl_wtag(tag):	# Wochentage engl./deutsch wg. Problemen mit locale-Settin
 	return wt_ret
 		
 ####################################################################################################
+@route(PREFIX + '/PodFavoritenListe')		# Format: Title | HTTP-Link
+def PodFavoritenListe(title, offset=0):
+	Log('PodFavoritenListe'); 
+	title_org = title
+	
+	import Pod_content
+	
+	fname =  Prefs['pref_podcast_favorits']		# Default: podcast-favorits.txt im Ressourcenverz.
+	Log(fname)
+	if os.path.isfile(fname) == False:					
+		Inhalt = Resource.Load(FAVORITS_Pod)	
+	else:										
+		try:
+			Inhalt = Core.storage.load(fname)	# pers. Datei verwenden (Name ebenfalls podcast-favorits.txt)	
+		except:
+			Inhalt = ''
+
+	if  Inhalt is None or Inhalt == '':	
+		msg='Datei podcast-favorits.txt nicht gefunden oder nicht lesbar.\nBitte Einstellungen prüfen.'
+		return NotFound(msg)
+							
+	# Log(Inhalt) 
+	bookmarks = []
+	lines = Inhalt.splitlines()
+	for line in lines:						# Kommentarzeilen + Leerzeilen löschen
+		if line.startswith('#'):			
+			continue
+		if line.strip() == '':		
+			continue
+		bookmarks.append(line)
+		
+	rec_per_page = 20								# Anzahl pro Seite
+	max_len = len(bookmarks)						# Anzahl Sätze gesamt
+	start_cnt = int(offset) 						# Startzahl diese Seite
+	end_cnt = int(start_cnt) + int(rec_per_page)	# Endzahl diese Seite
+				
+	title2 = 'Favoriten %s - %s (%s)' % (start_cnt+1, min(end_cnt,max_len) , max_len)
+	oc = ObjectContainer(view_group="InfoList", title1='Favoriten', title2=title2, art = ObjectContainer.art)
+	oc = home(cont=oc, ID='PODCAST')							# Home-Button
+
+	for i in range(len(bookmarks)):
+		cnt = int(i) + int(offset)
+		# Log(cnt); Log(i)
+		if int(cnt) >= max_len:			# Gesamtzahl überschritten?
+			break
+		if i >= rec_per_page:			# Anzahl pro Seite überschritten?
+			break
+		line = bookmarks[cnt]
+		try:		
+			title = line.split('|')[0]	
+			path = line.split('|')[1]
+			title = title.strip(); path = path.strip() 
+		except:
+			title=''; path=''
+		Log(title); Log(path)
+		if path == '':						# ohne Link kein verwertbarer Favorit
+			continue
+			
+		title=title.decode(encoding="utf-8", errors="ignore")
+		summary='Favoriten: ' + title
+		summary=summary.decode(encoding="utf-8", errors="ignore")
+		oc.add(DirectoryObject(key=Callback(Pod_content.PodFavoriten, title=title, path=path, offset=0), 
+			title=title, tagline=path, summary=summary,  thumb=R(ICON_STAR)))
+				
+	
+	# Mehr Seiten anzeigen:
+	Log(offset); Log(cnt); Log(max_len);
+	if int(cnt) +1 < max_len: 						# Gesamtzahl noch nicht ereicht?
+		new_offset = cnt + int(offset)
+		# Log(new_offset)
+		summ = 'Mehr (insgesamt ' + str(max_len) + ' Favoriten)'
+		summ = summ.decode(encoding="utf-8", errors="ignore")
+		oc.add(DirectoryObject(key=Callback(PodFavoritenListe, title=title_org, offset=new_offset), 
+			title=title_org, tagline='Favoriten', summary=summ,  thumb=R(ICON_MEHR)))	
+	
+	return oc
+
+####################################################################################################
 @route(PREFIX + '/ARDMore')	# Dachfunktion für 'Ausgewählte Filme' .. 'am besten bewertet' bis einschl. 'Rubriken'
 							# ab 06.04.2017 auch Podcasts: 'Rubriken' .. 'Meist abgerufen'
 def ARDMore(title, morepath, next_cbKey, ID):	# next_cbKey: Vorgabe für nächsten Callback in SinglePage
@@ -752,7 +840,6 @@ def ARDMore(title, morepath, next_cbKey, ID):	# next_cbKey: Vorgabe für nächst
 					 
 	path = morepath
 	path = Update_ARD_Path(morepath)		# Pfad aktualisieren - bei Podcast i.d.R. unverändert
-	page = HTTP.Request(path).content
 	page = HTTP.Request(path).content
 	err = test_fault(page, path)			# ARD-spezif. Error-Test: 'Leider liegt eine..'
 	if err:
@@ -1355,7 +1442,17 @@ def DownloadsTools():
 	# summary =    # s.o.
 	oc.add(DirectoryObject(key=Callback(DirectoryNavigator,settingKey = 'pref_VideoDest_path', fileFilter='DIR',
 		newDirectory=videst), title = title, tagline=tagline, summary=summary, thumb = R(ICON_MOVEDIR_DIR)))
-
+		
+	Log(Prefs['pref_podcast_favorits'])					# Pfad zur persoenlichen Podcast-Favoritenliste
+	s =  Prefs['pref_podcast_favorits']								
+	title = 'Einstellungen: persönliche Podcast-Favoritenliste festlegen/ändern (%s)' %s			
+	title=title.decode(encoding="utf-8", errors="ignore")
+	tagline = 'Die Liste muss für Plex lesbar sein. Format siehe podcast-favorits.txt (Ressourcenverzeichnis)'
+	tagline=tagline.decode(encoding="utf-8", errors="ignore")
+	# summary =    # s.o.
+	oc.add(DirectoryObject(key=Callback(DirectoryNavigator,settingKey = 'pref_podcast_favorits', fileFilter='podcast-favorits.txt',
+		newDirectory=s), title = title, tagline=tagline, summary=summary, thumb = R(ICON_DIR_FAVORITS)))
+			
 	title = 'Downloads bearbeiten: %s Download(s)' % (mpcnt)				# Button Bearbeiten
 	summary = 'Downloads im Downloadverzeichnis ansehen, löschen, verschieben'
 	summary=summary.decode(encoding="utf-8", errors="ignore")
@@ -2473,6 +2570,7 @@ def RadioEinzel(url, title, summary, fmt, thumb,):
 #-----------------------------
 @route(PREFIX + '/CreateTrackObject')
 # 	@route('/music/ardmediathek2016/CreateTrackObject')  # funktioniert nicht, dto. in PlayAudio
+# tagline im TrackObject nicht erlaubt.
 # 15.03.2017: die Parameter location und includeBandwidths werden für die Android-App benötigt 	
 # 26.03.2017: **kwargs - siehe Funktion PlayAudio
 #	 **kwargs als Parameter früher für PHT hier nicht geeignet - Test 26.03.2017: OK
@@ -2548,6 +2646,8 @@ def CreateTrackObject(url, title, summary, fmt, thumb, include_container=False, 
 # 15.03.2017: die Parameter location, includeBandwidths usw. werden für die Android-App benötigt.	
 # 26.03.2017: **kwargs für eventuelle weitere Extra-Parameter angefügt, siehe
 #		https://forums.plex.tv/discussion/comment/1405423/#Comment_1405423
+#		https://forums.plex.tv/discussion/comment/1417389#Comment_1417389
+#		http://stackoverflow.com/questions/36901/what-does-double-star-and-star-do-for-parameters
 #		**kwargs allein würde reichen - None-Parameter verbleiben zunächst zum Debuggen
 def PlayAudio(url, location=None, includeBandwidths=None, autoAdjustQuality=None, hasMDE=None, **kwargs):	
 	Log('PlayAudio: ' + url)	
@@ -2560,7 +2660,10 @@ def PlayAudio(url, location=None, includeBandwidths=None, autoAdjustQuality=None
 	if hasMDE is not None: 
 		Log(hasMDE); 					# Bsp. 1
 		
-	ret = urllib2.urlopen(url)		# Test auf Existenz
+	req = urllib2.Request(url)						# Test auf Existenz, SSLContext für HTTPS erforderlich,
+	gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1)  	#	Bsp.: SWR3 https://pdodswr-a.akamaihd.net/swr3
+	ret = urllib2.urlopen(req, context=gcontext)
+	
 	Log('PlayAudio: ' + str(ret.code))
 	if ret.code != 200:
 		error_txt = 'Server meldet: ' + str(ret.code)
@@ -3566,10 +3669,11 @@ def GetAttribute(text, attribute, delimiter1 = '=', delimiter2 = ','):
 
 #----------------------------------------------------------------  
 def NotFound(msg):
-    return ObjectContainer(
-        header=u'%s' % L('Error'),
-        message=u'%s' % (msg)
-    )
+	msg = msg.decode(encoding="utf-8", errors="ignore")
+	return ObjectContainer(
+		header=u'%s' % L('Error'),
+		message=u'%s' % (msg)
+	)
 
 #----------------------------------------------------------------  
 def CalculateDuration(timecode):
@@ -3695,7 +3799,8 @@ def mystrip(line):	# Ersatz für unzuverlässige strip-Funktion
 	line_ret = line_ret.strip()	
 	# Log(line_ret)		# bei Bedarf
 	return line_ret
-#----------------------------------------------------------------  	
+#---------------------------------------------------------------- 
+		
 ####################################################################################################
 # Directory-Browser - Verzeichnis-Listing
 #	Vorlage: Funktion DirectoryNavigator aus Caster (https://github.com/MrHistamine/Caster - nur Windows)
@@ -3752,6 +3857,7 @@ def DirectoryNavigator(settingKey, newDirectory = None, fileFilter=None):
 		else:										# Dateiname -> Verz. ermitteln
 			Dir = os.path.dirname(os.path.abspath(basePath)) 
 			subItems = os.listdir(Dir)
+		subItems.sort()
 		# Log.Debug(subItems)						# bei Bedarf
 		Log.Debug(len(subItems))					# Windows: ohne .Debug hier keine Ausgabe
 	except Exception as exception:

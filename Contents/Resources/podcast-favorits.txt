@@ -1,0 +1,38 @@
+# Radio-Podcast Favoriten - für Podcast-Seiten der einzelnen ARD-Radio-Sender außerhalb von www.ardmediathek.de/radio
+# 	
+#	gehört zu: 	Plex-Plugin-ARDMediathek2016 (Ressourcenverzeichnis)
+# 	Name: 		podcast-favorits.txt 
+# 
+# 	Bei Verwendung einer persönlichen Datei (siehe Einstellungen) muss
+#  	der Name podcast-favorits.txt beibehalten werden!
+#
+# 	Zeilen, die mit # beginnen, bleiben unbeachtet.
+#
+# 	Format: 2-teilig, getrennt durch |, Muster:
+#		Titel | HTTP-Link
+# 
+#	Unterstützte Seiten/Sender - weitere Auswahl dort:	
+#			www.br-online.de			http://www.br-online.de/podcast/index.shtml
+#			www.swr3.de/mehr/podcasts	https://www.swr3.de/mehr/podcasts/-/id=279178/1hsl7ys/index.html
+#			www.deutschlandfunk.de		http://www.deutschlandfunk.de/podcasts.2516.de.html?drpp%3Ahash=displayAllBroadcasts
+#
+#  Fehler hierhin melden (bitte vorher die Seite mittels Webbrowser testen):
+#			https://forums.plex.tv/discussion/213947/plex-plugin-ardmediathek2016#latest
+         
+Dossier Politik - Bayern 2  			| http://www.br-online.de/podcast/mp3-download/bayern2/mp3-download-podcast-dossier-politik.shtml
+IQ - Wissenschaft und Forschung - Bayern 2  	| http://www.br-online.de/podcast/mp3-download/bayern2/mp3-download-podcast-iq.shtml
+radioWissen - Bayern 2  			| http://www.br-online.de/podcast/mp3-download/bayern2/mp3-download-podcast-radiowissen.shtml
+Das Campusmagazin - B5 aktuell  		| http://www.br-online.de/podcast/mp3-download/b5aktuell/mp3-download-podcast-campusmagazin.shtml
+Das Computermagazin - B5 aktuell  		| http://www.br-online.de/podcast/mp3-download/b5aktuell/mp3-download-podcast-computermagazin.shtml
+Das Gesundheitsmagazin - B5 aktuell 		| http://www.br-online.de/podcast/mp3-download/b5aktuell/mp3-download-podcast-gesundheitsmagazin.shtml
+Das Verbrauchermagazin - B5 aktuell 		| http://www.br-online.de/podcast/mp3-download/b5aktuell/mp3-download-podcast-verbrauchermagazin.shtml
+Magazin für Wirtschaft und Soziales - B5 aktuell| http://www.br-online.de/podcast/mp3-download/b5aktuell/mp3-download-podcast-magazin-fuer-wirtschaft-und-soziales.shtml
+Aus Wissenschaft und Technik - B5 aktuell 	| http://www.br-online.de/podcast/mp3-download/b5aktuell/mp3-download-podcast-aus-wissenschaft-und-technik.shtml
+
+Botski und Trollstoi						| https://www.swr3.de/mehr/podcasts/SWR3-Botski-und-Trollstoi-russische-Hacker-abgehoert/-/id=279178/did=4300716/i2852k/index.html
+Tatort mit Til Schweiger					| https://www.swr3.de/mehr/podcasts/Tatort-mit-Til/-/id=279178/did=1442354/1p9bh1o/index.html
+
+Computer und Kommunikation				| http://www.deutschlandfunk.de/podcast-computer-und-kommunikation-beitraege.685.de.podcast
+Dossier - Deutschlandfunk				| http://www.deutschlandfunk.de/podcast-dossier.1171.de.podcast.xml
+Forschung Aktuell - Deutschlandfunk		| http://www.deutschlandfunk.de/podcast-forschung-aktuell.677.de.podcast.xml
+
