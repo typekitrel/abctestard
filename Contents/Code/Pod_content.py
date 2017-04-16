@@ -6,39 +6,48 @@
 # 	Liste enthält weitere  Infos zum Format und zu bereits unterstützten Podcast-Seiten
 # 	- siehe nachfolgende Liste Podcast_Scheme_List
 
+
 Podcast_Scheme_List = [		# Liste vorhandener Auswertungs-Schemata
-	'www.br-online.de', 'www.swr3.de/mehr/podcasts',  
-	'www.deutschlandfunk.de']	
+	'http://www.br-online.de', 'https://www.swr3.de/mehr/podcasts',  
+	'http://www.deutschlandfunk.de', 'http://mediathek.rbb-online.de',
+	'http://www.ardmediathek.de', 'http://www1.wdr.de/mediathek/podcast',
+	'www1.wdr.de/mediathek/audio', 'http://www.ndr.de']	
 
 
 ####################################################################################################
+PREFIX 			= '/video/ardmediathek2016'			
 @route(PREFIX + '/PodFavoriten')
 def PodFavoriten(title, path, offset=1):
 	Log('PodFavoriten'); Log(offset)
-	
-	rec_per_page = 20		# Anzahl pro Seite - berücksichtigt in Pod_content.get_pod_content	
+			
+	rec_per_page = 20							# Anzahl pro Seite 
 	title_org = title
 
 	Scheme = ''
 	for s in Podcast_Scheme_List:				# Prüfung: Schema für path vorhanden?
-		Log(s); Log(path)
+		Log(s); Log(path[:80])
 		if path.find(s) >= 0:
 			Scheme = s
 			break			
 	if Scheme == '':			
 		msg='Auswertungs-Schema fehlt für Url:\n' +  path
 		msg = msg.decode(encoding="utf-8", errors="ignore")
+		Log(msg)
 		return ObjectContainer(header='Error', message=msg)
 		
 	# Indices: 	0. Gesamtzahl, 1. Url, 2. Originaltitel, 3. Summary, 4. Datum,
-	#			5. Dauer, 6. Größe, 7. Titel (zusammengesetzt), 8. Bild	
-	POD_rec = get_pod_content(url=path, rec_per_page=rec_per_page, mode=Scheme, offset=offset)
+	#			5. Dauer, 6. Größe, 7. Titel (zusammengesetzt), 8. Bild	, 9. Tagline
+	POD_rec = get_pod_content(url=path, rec_per_page=rec_per_page, baseurl=Scheme, offset=offset)
 	
 	rec_cnt = len(POD_rec)							# Anzahl gelesener Sätze
 	start_cnt = int(offset) + 1						# Startzahl diese Seite
 	end_cnt = int(start_cnt) + int(rec_per_page)-1	# Endzahl diese Seite
 	
-	title2 = 'Pocasts %s - %s (%s)' % (start_cnt,  min(end_cnt,POD_rec[0][0]), POD_rec[0][0])
+	try:
+		title2 = 'Pocasts %s - %s (%s)' % (start_cnt,  min(end_cnt,POD_rec[0][0]), POD_rec[0][0])
+	except:
+		title2=''
+		
 	oc = ObjectContainer(view_group="InfoList", title1='Favoriten', title2=title2, art = ObjectContainer.art)
 	oc = home(cont=oc, ID='PODCAST')					# Home-Button
 	
@@ -51,46 +60,72 @@ def PodFavoriten(title, path, offset=1):
 		max_len=rec[0]
 		url=rec[1]; summ=rec[3]; title=rec[7];
 		img = R(ICON_NOTE)	
+		Log(title); Log(summ); Log(url); 
 		if rec[8]:
 			img = rec[8]
-		Log(title); Log(summ); Log(url); 
-		oc.add(CreateTrackObject(url=url, title=title, summary=summ, fmt='mp3', thumb=img))
+		if rec[8] == 'PageControl':					# Schemata mit Seitenkontrolle, Bsp. RBB
+			pagenr = url[len(url)-1:]				# Bsp.: ..mcontents=page.1
+			if url.endswith('.html'):				# Bsp.: ..podcast2958_page1.html
+				pagenr = stringextract('_page', '.html', url)
+			Log(pagenr)
+			oc.add(DirectoryObject(key=Callback(PodFavoriten, title=title, path=url, offset=pagenr), 
+				title=title, tagline=path, summary=summ,  thumb=R(ICON_STAR)))
+		else:
+			oc.add(CreateTrackObject(url=url, title=title, summary=summ, fmt='mp3', thumb=img))
 		
 	# Mehr Seiten anzeigen:
 	Log(rec_cnt);Log(offset);Log(max_len)
 	if rec_cnt + int(offset) < max_len: 
 		new_offset = rec_cnt + int(offset)
 		Log(new_offset)
+		title=title_org.decode(encoding="utf-8", errors="ignore")
 		summ = 'Mehr (insgesamt ' + str(max_len) + ' Podcasts)'
 		summ = summ.decode(encoding="utf-8", errors="ignore")
-		oc.add(DirectoryObject(key=Callback(PodFavoriten, title=title_org, path=path, offset=new_offset), 
-			title=title_org, tagline='Favoriten', summary=summ,  thumb=R(ICON_MEHR)))	
+		oc.add(DirectoryObject(key=Callback(PodFavoriten, title=title, path=path, offset=new_offset), 
+			title=title, tagline='Favoriten', summary=summ,  thumb=R(ICON_MEHR)))	
 			 
 	return oc
 
 #------------------------	
-def get_pod_content(url, rec_per_page, mode, offset):
-	Log('get_pod_content'); Log(rec_per_page); Log(mode); Log(offset);
-	
+def get_pod_content(url, rec_per_page, baseurl, offset):
+	Log('get_pod_content'); Log(rec_per_page); Log(baseurl); Log(offset);
+
+	url = unescape(url)							# einige url enthalten html-escapezeichen
 	page, err = get_page(path=url)				# Absicherung gegen Connect-Probleme
-	if err:
-		return err	
+	if page == '':
+		return err
 	Log(len(page))
 
-	if mode == 'www.br-online.de':
+	# baseurl aus Podcast_Scheme_List 
+	if baseurl == 'http://www.br-online.de':
 		return Scheme_br_online(page, rec_per_page, offset)
-	if mode == 'www.swr3.de/mehr/podcasts':
+	if baseurl == 'https://www.swr3.de/mehr/podcasts':
 		return Scheme_swr3(page, rec_per_page, offset)
-	if mode == 'www.deutschlandfunk.de':
+	if baseurl == 'http://www.deutschlandfunk.de':
 		return Scheme_deutschlandfunk(page, rec_per_page, offset)
+	if baseurl == 'http://mediathek.rbb-online.de':
+		sender = ''								# mp3-url mittels documentId zusammensetzen
+		if url.find('documentId=24906530') > 0:
+			sender = 'Fritz'					# mp3-url auf Ziel-url ermitteln
+		return Scheme_rbb(page, rec_per_page, offset, sender, baseurl)
 		
+	if baseurl == 'http://www1.wdr.de/mediathek/podcast' or baseurl == 'www1.wdr.de/mediathek/audio':
+		return Scheme_wdr(page, rec_per_page, offset)
+	if baseurl == 'http://www.ndr.de':
+		return Scheme_ndr(page, rec_per_page, offset)
 		
+	if baseurl == 'http://www.ardmediathek.de':
+		return Scheme_ARD(page, rec_per_page, offset, baseurl)
+		
+# todo: NDR
+#	Plex-Plugin-KIKA_und_tivi: Podcasts
 #------------------------
 def Scheme_br_online(page, rec_per_page, offset):		# Schema www.br-online.de
 	Log('Scheme_br_online')
 	sendungen = blockextract('<table class="ci"', page)
 	max_len = len(sendungen)					# Gesamtzahl gefundener Sätze
 	Log(max_len)
+	tagline = ''
 	
 	POD_rec = []			# Datensaetze gesamt (1. Dim.)
 	for i in range(len(sendungen)):
@@ -121,21 +156,23 @@ def Scheme_br_online(page, rec_per_page, offset):		# Schema www.br-online.de
 		summ=summ.decode(encoding="utf-8", errors="ignore")
 		
 		# Indices: 	0. Gesamtzahl, 1. Url, 2. Originaltitel, 3. Summary, 4. Datum,
-		#			5. Dauer, 6. Größe, 7. Titel (zusammengesetzt), 8. Bild
+		#			5. Dauer, 6. Größe, 7. Titel (zusammengesetzt), 8. Bild, 9. Tagline
 		single_rec.append(max_len); single_rec.append(url); single_rec.append(title_org); 
 		single_rec.append(summ); single_rec.append(datum); single_rec.append(dauer); 
 		single_rec.append(groesse); single_rec.append(title); single_rec.append(img);
+		single_rec.append(tagline);
 		POD_rec.append(single_rec)
 		
 	Log(len(POD_rec))	
 	return POD_rec
 	
 # ------------------------
-def Scheme_swr3(page, rec_per_page, offset):					# Schema www.br-online.de
+def Scheme_swr3(page, rec_per_page, offset):	# Schema www.br-online.de
 	Log('Scheme_swr3')
 	sendungen = blockextract('<li id=\"audio-', page)
 	max_len = len(sendungen)					# Gesamtzahl gefundener Sätze
 	Log(max_len)
+	tagline = ''
 	
 	POD_rec = []			# Datensaetze gesamt (1. Dim.)
 	for i in range(len(sendungen)):
@@ -170,21 +207,23 @@ def Scheme_swr3(page, rec_per_page, offset):					# Schema www.br-online.de
 		summ=summ.decode(encoding="utf-8", errors="ignore")
 		
 		# Indices: 	0. Gesamtzahl, 1. Url, 2. Originaltitel, 3. Summary, 4. Datum,
-		#			5. Dauer, 6. Größe, 7. Titel (zusammengesetzt), 8. Bild
+		#			5. Dauer, 6. Größe, 7. Titel (zusammengesetzt), 8. Bild, 9. Tagline
 		single_rec.append(max_len); single_rec.append(url); single_rec.append(title_org); 
 		single_rec.append(summ); single_rec.append(datum); single_rec.append(dauer); 
 		single_rec.append(groesse); single_rec.append(title); single_rec.append(img);
+		single_rec.append(tagline);
 		POD_rec.append(single_rec)
 		
 	Log(len(POD_rec))	
 	return POD_rec
 		
 # ------------------------
-def Scheme_deutschlandfunk(page, rec_per_page, offset):					# Schema www.deutschlandfunk.de, XML-Format
-	Log('Scheme_Scheme_swr3')
+def Scheme_deutschlandfunk(page, rec_per_page, offset):		# Schema www.deutschlandfunk.de, XML-Format
+	Log('Scheme_deutschlandfunk')
 	sendungen = blockextract('<item>', page)
-	max_len = len(sendungen)					# Gesamtzahl gefundener Sätze
+	max_len = len(sendungen)								# Gesamtzahl gefundener Sätze
 	Log(max_len)
+	tagline = ''
 	
 	POD_rec = []			# Datensaetze gesamt (1. Dim.)
 	for i in range(len(sendungen)):
@@ -221,35 +260,394 @@ def Scheme_deutschlandfunk(page, rec_per_page, offset):					# Schema www.deutsch
 		summ=summ.decode(encoding="utf-8", errors="ignore")
 		
 		# Indices: 	0. Gesamtzahl, 1. Url, 2. Originaltitel, 3. Summary, 4. Datum,
-		#			5. Dauer, 6. Größe, 7. Titel (zusammengesetzt), 8. Bild
+		#			5. Dauer, 6. Größe, 7. Titel (zusammengesetzt), 8. Bild, 9. Tagline
 		single_rec.append(max_len); single_rec.append(url); single_rec.append(title_org); 
 		single_rec.append(summ); single_rec.append(datum); single_rec.append(dauer); 
 		single_rec.append(groesse); single_rec.append(title); single_rec.append(img);
+		single_rec.append(tagline);
 		POD_rec.append(single_rec)
 		
 	Log(len(POD_rec))	
 	return POD_rec
 		
+# ------------------------
+def Scheme_rbb(page, rec_per_page, offset,sender, baseurl):		# Schema mediathek.rbb-online.de
+# 	Besonderheit: offset = Seitennummer
+# 	1. Aufruf kommt mit ..&mcontent=page.1
+	Log('Scheme_rbb'); Log(offset); Log(sender)
+
+	POD_rec = []			# Datensaetze gesamt (1. Dim.)
+	pages = blockextract('entry" data-ctrl-contentLoader-source', page)		# Seiten-Urls
+	max_len = len(pages)
+	Log(max_len)
+	page_href = baseurl + stringextract('href="', '">', pages[0])
+	page_href = page_href.split('mcontent=')[0]		# Basis-url ohne Seitennummer
+	tagline = ''
+	
+	if offset == '0':								# 1. Durchlauf - Seitenkontrolle 
+		pagenr = 1
+		for p in pages:
+			single_rec = []							# Datensatz einzeln (2. Dim.)
+			url = page_href + 'mcontent=page.' + str(pagenr)	 # url mit Seitennr, ergänzen
+			title = 'Weiter zu Seite %s' % pagenr
+			img = 'PageControl';					# 'PageControl' steuert 
+			summ = ''; title_org = ''; datum = ''; dauer = ''; groesse = ''; 
+			pagenr = pagenr + 1
+			
+			Log(title); Log(url); 
+			title=title.decode(encoding="utf-8", errors="ignore")
+			summ=summ.decode(encoding="utf-8", errors="ignore")
+			
+			# Indices: 	0. Gesamtzahl, 1. Url, 2. Originaltitel, 3. Summary, 4. Datum,
+			#			5. Dauer, 6. Größe, 7. Titel (zusammengesetzt), 8. Bild, 9. Tagline
+			single_rec.append(max_len); single_rec.append(url); single_rec.append(title_org); 
+			single_rec.append(summ); single_rec.append(datum); single_rec.append(dauer); 
+			single_rec.append(groesse); single_rec.append(title); single_rec.append(img);
+			single_rec.append(tagline);
+			POD_rec.append(single_rec)
+		return POD_rec
+	
+	sendungen = blockextract('class="teaser"', page)  # Struktur wie ARD-Mediathek
+	del sendungen[0]; del sendungen[1]			# Sätze 1 + 2 keine Podcasts
+	max_len = len(sendungen)					# Gesamtzahl gefundener Sätze dieser Seite
+	Log(max_len)
+	
+	for i in range(len(sendungen)):
+		cnt = int(i) 		# + int(offset) Offset entfällt (pro Seite Ausgabe aller Sätze)
+		# Log(cnt); Log(i)
+		#if int(cnt) >= max_len:		# Gesamtzahl überschritten? - entf. hier
+		s = sendungen[cnt]
+		
+		single_rec = []		# Datensatz einzeln (2. Dim.)
+		title_org = stringextract('dachzeile">', '</p>', s) 
+		summ = stringextract('subtitle">', '<', s) 		# Bsp.: Do 13.04.17 00:00 | 03:28 min	
+		headline = stringextract('headline">', '</h4>', s)  # häufig mehr Beschreibung als Headline
+		
+		url_local = stringextract('<a href="', '"', s) 		# Homepage der Sendung
+		url_local = baseurl + url_local
+		Log(url_local)
+		if sender == 'Fritz':								# mp3-url auf Ziel-url ermitteln
+			url_local = unescape(url_local)
+			page, err = get_page(path=url_local)			# Absicherung gegen Connect-Probleme
+			if page == '':
+				return err
+			url = stringextract('<div data-ctrl-ta-source', 'target="_blank"', page)
+			url = stringextract('a href="', '"', url)		
+		else:												# mp3-url mittels documentId zusammensetzen
+			documentId =  re.findall("documentId=(\d+)", url_local)[0]
+			url = baseurl + '/play/media/%s?devicetype=pc&features=hls' % documentId
+			url_content, err = get_page(path=url)			# Textdatei, Format ähnlich parseLinks_Mp4_Rtmp
+			Log(url_content)
+			if page == '':
+				return err
+			url = teilstring(url_content, 'http://', '.mp3') # i.d.R. 2 identische url	
+			
+		text = stringextract('urlScheme', '/noscript', s)
+		img, img_alt = img_urlScheme(text, 320, ID='PODCAST') # img_alt nicht verwendet
+		
+		author = ''	  										# fehlt
+		groesse = ''	  										# fehlt
+		datum = summ.split('|')[0]
+		dauer = summ.split('|')[1]
+				
+		title = ' %s | %s  | %s' % (title_org, datum, dauer)
+		summ = headline
+		summ = unescape(summ)
+		
+		Log(title); Log(summ); Log(url); 
+		title=title.decode(encoding="utf-8", errors="ignore")
+		summ=summ.decode(encoding="utf-8", errors="ignore")
+		
+		# Indices: 	0. Gesamtzahl, 1. Url, 2. Originaltitel, 3. Summary, 4. Datum,
+		#			5. Dauer, 6. Größe, 7. Titel (zusammengesetzt), 8. Bild, 9. Tagline
+		single_rec.append(max_len); single_rec.append(url); single_rec.append(title_org); 
+		single_rec.append(summ); single_rec.append(datum); single_rec.append(dauer); 
+		single_rec.append(groesse); single_rec.append(title); single_rec.append(img);
+		single_rec.append(tagline);
+		POD_rec.append(single_rec)
+		
+	Log(len(POD_rec))	
+	return POD_rec
+		
+# ------------------------
+def Scheme_wdr(page, rec_per_page, offset):		# Schema WDR, XML-Format
+	Log('Scheme_wdr')
+	sendungen = blockextract('<item>', page)
+	max_len = len(sendungen)									# Gesamtzahl gefundener Sätze
+	Log(max_len)
+	title_channel = stringextract('<title>', '</title>', page)	# Channel-Titel
+	tagline = ''
+	
+	POD_rec = []			# Datensaetze gesamt (1. Dim.)
+	for i in range(len(sendungen)):
+		cnt = int(i) + int(offset)
+		# Log(cnt); Log(i)
+		if int(cnt) >= max_len:			# Gesamtzahl überschritten?
+			break
+		if i >= rec_per_page:			# Anzahl pro Seite überschritten?
+			break
+		s = sendungen[cnt]
+		
+		single_rec = []		# Datensatz einzeln (2. Dim.)
+		title_org = stringextract('<title>', '</title>', s) 
+		title = title_org.strip()
+		summ = stringextract('<description>', '</description>', s) 			
+		summ = summ.strip()
+		url = stringextract('<enclosure url="', '"', s) 
+		img =  stringextract('<img src="', '\"', s) 
+		img_alt =  stringextract('alt="', '\"', s) 						# 
+		
+		author = stringextract('itunes:author>', '</itunes:author>', s) 
+		datum = stringextract('<pubDate>', '</pubDate>', s)
+		datum = datum.replace('GMT', '')	
+		dauer = stringextract('duration>', '</itunes', s) 
+		groesse = stringextract('length="', '"', s) 					# fehlt
+		#groesse = float(int(groesse)) / 1000000						# Konvert. nach MB, auf 2 Stellen gerundet
+		#groesse = '%.2f MB' % groesse
+		
+		title = ' %s | %s'			% (title, datum)
+		summ = ' Autor %s | %s' 	% (author, summ)
+		
+		Log(title); Log(summ); Log(url); 
+		title=title.decode(encoding="utf-8", errors="ignore")
+		summ=summ.decode(encoding="utf-8", errors="ignore")
+		
+		# Indices: 	0. Gesamtzahl, 1. Url, 2. Originaltitel, 3. Summary, 4. Datum,
+		#			5. Dauer, 6. Größe, 7. Titel (zusammengesetzt), 8. Bild, 9. Tagline
+		single_rec.append(max_len); single_rec.append(url); single_rec.append(title_org); 
+		single_rec.append(summ); single_rec.append(datum); single_rec.append(dauer); 
+		single_rec.append(groesse); single_rec.append(title); single_rec.append(img);
+		single_rec.append(tagline);
+		POD_rec.append(single_rec)
+		
+	Log(len(POD_rec))	
+	return POD_rec
+		
+# ------------------------
+def Scheme_ndr(page, rec_per_page, offset):		# Schema NDR
+	Log('Scheme_ndr'); Log(offset);
+
+	baseurl = 'http://www.ndr.de'
+	POD_rec = []			# Datensaetze gesamt (1. Dim.)	
+	pages = stringextract('<div class="pagination">', 'googleoff: index', page)	# Seiten-Urls für Seitenkontrolle
+	page_href = baseurl + stringextract('href="', '"', pages)
+	entry_type = '_page-'
+	page_href = page_href.split(entry_type)[0]						# Basis-url ohne Seitennummer
+	last_page = stringextract('class="page">', 'pseudobutton', pages)
+	last_page = stringextract('title="Zeige Seite ', '"', last_page) # Bsp.: title="Zeige Seite 9" 
+	Log(page_href); Log(last_page)
+	tagline = ''
+	
+	if offset == '0':									# 1. Durchlauf - Seitenkontrolle:
+		pagenr = 0
+		for i in range(int(last_page)):
+			title_org=''; 
+			max_len = last_page
+			single_rec = []								# Datensatz einzeln (2. Dim.)
+			pagenr = i + 1
+			if pagenr >= last_page:
+				break
+			url = page_href + entry_type + str(pagenr) + '.html' # url mit Seitennr. ergänzen
+			title = 'Weiter zu Seite %s' % pagenr
+			img = 'PageControl';						# 'PageControl' steuert in PodFavoriten
+			summ = ''; title_org = ''; datum = ''; dauer = ''; groesse = ''; 
+			
+			Log(title); Log(url); Log(pagenr); Log(last_page)
+			title=title.decode(encoding="utf-8", errors="ignore")
+			summ=summ.decode(encoding="utf-8", errors="ignore")
+			
+			# Indices: 	0. Gesamtzahl, 1. Url, 2. Originaltitel, 3. Summary, 4. Datum,
+			#			5. Dauer, 6. Größe, 7. Titel (zusammengesetzt), 8. Bild, 9. Tagline
+			single_rec.append(max_len); single_rec.append(url); single_rec.append(title_org); 
+			single_rec.append(summ); single_rec.append(datum); single_rec.append(dauer); 
+			single_rec.append(groesse); single_rec.append(title); single_rec.append(img);
+			single_rec.append(tagline);
+			POD_rec.append(single_rec)
+		return POD_rec							# Rückkehr aus Seitenkontrolle
+
+												# 2. Durchlauf - Inhalte der einzelnen Seiten:
+	sendungen = blockextract('class="module list w100">', page) 
+	if sendungen[2].find('urlScheme') >= 0:								# 2 = Episodendach
+		text = stringextract('urlScheme', '/noscript', sendungen[2])
+		img_src_header, img_alt_header = img_urlScheme(text, 320, ID='PODCAST') 
+		teasertext = stringextract('class="teasertext">', '</p>', sendungen[2])
+		Log(img_src_header);Log(img_alt_header);Log(teasertext);
+	
+	max_len = len(sendungen)					# Gesamtzahl gefundener Sätze dieser Seite
+	Log(max_len)
+	
+	for i in range(len(sendungen)):
+		# cnt = int(i) 		# + int(offset) Offset entfällt (pro Seite Ausgabe aller Sätze)
+		# Log(cnt); Log(i)
+		# if int(cnt) >= max_len:		# Gesamtzahl überschritten? - entf. hier
+		# s = sendungen[cnt]
+		s = sendungen[i]
+		# Log(s)
+		
+		single_rec = []		# Datensatz einzeln (2. Dim.)
+		title_org = stringextract('title="Zum Audiobeitrag: ', '"', s) 
+		subtitle =  stringextract('subline">', '<', s)		# Bsp.: 06.04.2017 06:50 Uhr
+		summ = stringextract('<p>', '<a title', s) 			
+		dachzeile = ''										# fehlt		
+		headline = ''										# fehlt	
+		
+		pod = stringextract('podcastbuttons">', 'class="button"', s)
+		pod = pod.strip()
+		Log(pod[40:])
+		url = stringextract('href=\"', '\"', pod)		# kompl. Pfad
+		if url == '':									# kein verwertbarer Satz 
+			continue			
+			
+		img = ''											# fehlt	
+		author = ''	  										# fehlt
+		groesse = ''	  									# fehlt
+		datum = subtitle
+		dauer = stringextract('class="cta " >', '</a>', s) 
+		
+		title = '%s | %s' % (subtitle, title_org)
+		tagline = '%s | %s' % (subtitle, dauer)
+						
+		Log(title); Log(summ); Log(url); 
+		title=title.decode(encoding="utf-8", errors="ignore")
+		summ=summ.decode(encoding="utf-8", errors="ignore")
+		tagline=tagline.decode(encoding="utf-8", errors="ignore")
+		
+		# Indices: 	0. Gesamtzahl, 1. Url, 2. Originaltitel, 3. Summary, 4. Datum,
+		#			5. Dauer, 6. Größe, 7. Titel (zusammengesetzt), 8. Bild, 9. Tagline
+		single_rec.append(max_len); single_rec.append(url); single_rec.append(title_org); 
+		single_rec.append(summ); single_rec.append(datum); single_rec.append(dauer); 
+		single_rec.append(groesse); single_rec.append(title); single_rec.append(img);
+		single_rec.append(tagline);
+		POD_rec.append(single_rec)
+		
+	Log(len(POD_rec))	
+	return POD_rec	
+		
+# ------------------------
+def Scheme_ARD(page, rec_per_page, offset,baseurl):		# Schema ARD = www.ardmediathek.de
+# 	Schema für die Podcastangebote der ARD-Mediathek
+# 	1. Aufruf kommt mit ..&mcontents=page.1 (nicht ..content=..)
+	Log('Scheme_ARD'); Log(offset);
+
+	POD_rec = []			# Datensaetze gesamt (1. Dim.)
+	page = stringextract('class="section onlyWithJs sectionA">', '<!--googleoff: snippet-->', page)
+	
+	pages = blockextract('class="entry"', page)			# Seiten-Urls für Seitenkontrolle
+	max_len = len(pages)
+	Log(max_len)
+	page_href = baseurl + stringextract('href="', '">', pages[0])
+	if page_href.find('mcontents=page.'):				# ..mcontents=page.1
+		entry_type = 'mcontents=page.'
+	if page_href.find('mcontent=page.'):				# # ..mcontent=page.1
+		entry_type = 'mcontent=page.'
+	page_href = page_href.split(entry_type)[0]			# Basis-url ohne Seitennummer
+	tagline = ''
+	
+	if offset == '0':									# 1. Durchlauf - Seitenkontrolle:
+		pagenr = 1
+		for p in pages:
+			single_rec = []								# Datensatz einzeln (2. Dim.)
+			url = page_href + entry_type + str(pagenr)	 # url mit Seitennr. ergänzen
+			title = 'Weiter zu Seite %s' % pagenr
+			img = 'PageControl';						# 'PageControl' steuert 
+			summ = ''; title_org = ''; datum = ''; dauer = ''; groesse = ''; 
+			pagenr = pagenr + 1
+			
+			Log(title); Log(url); 
+			title=title.decode(encoding="utf-8", errors="ignore")
+			summ=summ.decode(encoding="utf-8", errors="ignore")
+			
+			# Indices: 	0. Gesamtzahl, 1. Url, 2. Originaltitel, 3. Summary, 4. Datum,
+			#			5. Dauer, 6. Größe, 7. Titel (zusammengesetzt), 8. Bild, 9. Tagline
+			single_rec.append(max_len); single_rec.append(url); single_rec.append(title_org); 
+			single_rec.append(summ); single_rec.append(datum); single_rec.append(dauer); 
+			single_rec.append(groesse); single_rec.append(title); single_rec.append(img);
+			single_rec.append(tagline);
+			POD_rec.append(single_rec)
+		return POD_rec							# Rückkehr aus Seitenkontrolle
+
+												# 2. Durchlauf - Inhalte der einzelnen Seiten:
+	sendungen = blockextract('class="teaser"', page)  # Struktur für Podcasts + Videos ähnlich
+	if sendungen[2].find('urlScheme') >= 0:								# 2 = Episodendach
+		text = stringextract('urlScheme', '/noscript', sendungen[2])
+		img_src_header, img_alt_header = img_urlScheme(text, 320, ID='PODCAST') 
+		teasertext = stringextract('class="teasertext">', '</p>', sendungen[2])
+		Log(img_src_header);Log(img_alt_header);Log(teasertext);
+	
+	max_len = len(sendungen)					# Gesamtzahl gefundener Sätze dieser Seite
+	Log(max_len)
+	
+	for i in range(len(sendungen)):
+		# cnt = int(i) 		# + int(offset) Offset entfällt (pro Seite Ausgabe aller Sätze)
+		# Log(cnt); Log(i)
+		# if int(cnt) >= max_len:		# Gesamtzahl überschritten? - entf. hier
+		# s = sendungen[cnt]
+		s = sendungen[i]
+		# Log(s)
+		
+		single_rec = []		# Datensatz einzeln (2. Dim.)
+		title_org = stringextract('dachzeile">', '</p>', s) 
+		subtitle =  stringextract('subtitle">', '<', s)		# Bsp.: 06.02.2017 | 1 Min.
+		summ = stringextract('teasertext">', '<', s) 			
+		dachzeile = stringextract('dachzeile">', '</p>', s)  # Sendereihe		
+		headline = stringextract('headline">', '</h4>', s)  # Titel der einzelnen Sendung
+		
+		url_local = stringextract('<a href="', '"', s) 		# Homepage der Sendung
+		if url_local == '':									# kein verwertbarer Satz 
+			continue
+		url_local = baseurl + url_local
+		Log(url_local)
+		documentId =  re.findall("documentId=(\d+)", url_local)[0]
+		url = baseurl + '/play/media/%s?devicetype=pc&features=hls' % documentId
+		url_content, err = get_page(path=url)			# Textdatei, Format ähnlich parseLinks_Mp4_Rtmp
+		Log(url_content)
+		if page == '':
+			return err
+		url = teilstring(url_content, 'http://', '.mp3') # i.d.R. 2 identische url	
+			
+		text = stringextract('urlScheme', '/noscript', s)
+		img, img_alt = img_urlScheme(text, 320, ID='PODCAST') # img_alt nicht verwendet
+		if img == '':										# Episodenbild 
+			img =img_src_header 
+		
+		author = ''	  										# fehlt
+		groesse = ''	  									# fehlt
+		datum = subtitle.split('|')[0]
+		dauer = subtitle.split('|')[1]
+		
+		if dachzeile:
+			title = ' %s | %s ' % (dachzeile, headline)
+			summ =  ' %s  | %s' % (datum, dauer)
+		else:
+			title = ' %s | %s  | %s' % (headline, datum, dauer)
+			if teasertext:
+				summ = teasertext
+				
+		tagline = teasertext									# aus Episodendach, falls vorh.
+		tagline = unescape(tagline)
+		
+		Log(title); Log(summ); Log(url); 
+		title=title.decode(encoding="utf-8", errors="ignore")
+		summ=summ.decode(encoding="utf-8", errors="ignore")
+		tagline=tagline.decode(encoding="utf-8", errors="ignore")
+		
+		# Indices: 	0. Gesamtzahl, 1. Url, 2. Originaltitel, 3. Summary, 4. Datum,
+		#			5. Dauer, 6. Größe, 7. Titel (zusammengesetzt), 8. Bild, 9. Tagline
+		single_rec.append(max_len); single_rec.append(url); single_rec.append(title_org); 
+		single_rec.append(summ); single_rec.append(datum); single_rec.append(dauer); 
+		single_rec.append(groesse); single_rec.append(title); single_rec.append(img);
+		single_rec.append(tagline);
+		POD_rec.append(single_rec)
+		
+	Log(len(POD_rec))	
+	return POD_rec	
+		
+#----------------------------------------------------------------  
+
 ####################################################################################################
 #									Hilfsfunktionen
 ####################################################################################################
-def get_page(path):		# holt kontrolliert raw-Content
-	try:
-		page = HTTP.Request(path).content
-		err = ''
-	except:
-		page = ''
-		
-	if page == '':	
-		error_txt = 'Seite nicht erreichbar'			 			 	 
-		msgH = 'Fehler'; msg = error_txt + ' | Seite: ' + path
-		Log(msg)
-		msg =  msg.decode(encoding="utf-8", errors="ignore")
-		err = ObjectContainer(header=msgH, message=msg)
-
-	return page, err	
-#----------------------------------------------------------------  
-def stringextract(mFirstChar, mSecondChar, mString):  	# extrahiert Zeichenkette zwischen 1. + 2. Zeichenkette
+#def stringextract(mFirstChar, mSecondChar, mString):  	# extrahiert Zeichenkette zwischen 1. + 2. Zeichenkette
 	pos1 = mString.find(mFirstChar)						# return '' bei Fehlschlag
 	ind = len(mFirstChar)
 	#pos2 = mString.find(mSecondChar, pos1 + ind+1)		
@@ -263,9 +661,21 @@ def stringextract(mFirstChar, mSecondChar, mString):  	# extrahiert Zeichenkette
 	#Log(pos1); Log(ind); Log(pos2);  Log(rString); 
 	return rString
 #----------------------------------------------------------------  
-def blockextract(blockmark, mString=''):  	# extrahiert Blöcke aus mString, begrenzt durch blockmark 
+def teilstring(zeile, startmarker, endmarker):  		# rfind: endmarker=letzte Fundstelle, return '' bei Fehlschlag
+  # die übergebenen Marker bleiben Bestandteile der Rückgabe (werden nicht abgeschnitten)
+  pos2 = zeile.find(endmarker, 0)
+  pos1 = zeile.rfind(startmarker, 0, pos2)
+  if pos1 & pos2:
+    teils = zeile[pos1:pos2+len(endmarker)]	# 
+  else:
+    teils = ''
+  #Log(pos1) Log(pos2) 
+  return teils 
+#----------------------------------------------------------------  
+def blockextract(blockmark, mString):  	# extrahiert Blöcke begrenzt durch blockmark aus mString
 	#	blockmark bleibt Bestandteil der Rückgabe
-	#	Rückgabe in Liste. Letzter Block reicht bis Ende mString (undefinierte Länge)
+	#	Rückgabe in Liste. Letzter Block reicht bis Ende mString (undefinierte Länge),
+	#		Variante mit definierter Länge siehe Plex-Plugin-TagesschauXL (extra Parameter blockendmark)
 	#	Verwendung, wenn xpath nicht funktioniert (Bsp. Tabelle EPG-Daten www.dw.com/de/media-center/live-tv/s-100817)
 	rlist = []				
 	if 	blockmark == '' or 	mString == '':
@@ -289,4 +699,13 @@ def blockextract(blockmark, mString=''):  	# extrahiert Blöcke aus mString, beg
 		mString = mString[pos2:]	# Rest von mString, Block entfernt	
 	return rlist  
 #----------------------------------------------------------------  
-
+def unescape(line):	# HTML-Escapezeichen in Text entfernen, bei Bedarf erweitern. ARD auch &#039; statt richtig &#39;
+#					# s.a.  ../Framework/api/utilkit.py
+	line_ret = (line.replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">")
+		.replace("&#39;", "'").replace("&#039;", "'").replace("&quot;", '"').replace("&#x27;", "'")
+		.replace("&ouml;", "ö").replace("&auml;", "ä").replace("&uuml;", "ü").replace("&szlig;", "ß")
+		.replace("&Ouml;", "Ö").replace("&Auml;", "Ä").replace("&Uuml;", "Ü").replace("&apos;", "'"))
+		
+	# Log(line_ret)		# bei Bedarf
+	return line_ret	
+#----------------------------------------------------------------  	

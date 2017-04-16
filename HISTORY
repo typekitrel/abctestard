@@ -2,8 +2,11 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------			gelöschte Releases: älter als  2.7.0	
 
+16.04.2017 2.9.1	PODCAST: Ergänzung der Favoriten-Funktion um die Podcasts von www.ardmediathek.de/radio
+			und Auswertungs-Schemata für RBB, WDR, NDR mit Beispielen in podcast-favorits.txt
+
 14.04.2017 2.9.0	PODCAST: Erweiterung um Favoriten für Podcast-Seiten der einzelnen ARD-Radio-Sender, 
-			Basis Textliste (erweiterbar).  	
+			Basis Textliste (erweiterbar) 	
 
 08.04.2017 2.8.9	Funktion CreateTrackObject: Zufallswert für rating_key, utf-8-encoding für title + summary
 			PODCAST: Fehler beim Löschen des Downloads abgestellt				

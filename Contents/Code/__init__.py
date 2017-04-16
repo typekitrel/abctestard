@@ -7,19 +7,20 @@ import ssl				# HTTPS-Handshake
 import os, subprocess 	# u.a. Behandlung von Pfadnamen
 import sys				# Plattformerkennung
 import shutil			# Dateioperationen
-import re			# u.a. Reguläre Ausdrücke, z.B. in CalculateDuration
+import re				# u.a. Reguläre Ausdrücke, z.B. in CalculateDuration
 import time
 import datetime
-import json			# json -> Textstrings
+import json				# json -> Textstrings
 
 import locale
 import updater
 import EPG
 
+
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.9.0'		
-VDATE = '14.04.2017'
+VERSION =  '2.9.1'		
+VDATE = '16.04.2017'
 
 # 
 #	
@@ -754,10 +755,10 @@ def transl_wtag(tag):	# Wochentage engl./deutsch wg. Problemen mit locale-Settin
 ####################################################################################################
 @route(PREFIX + '/PodFavoritenListe')		# Format: Title | HTTP-Link
 def PodFavoritenListe(title, offset=0):
+	import Pod_content
+	
 	Log('PodFavoritenListe'); 
 	title_org = title
-	
-	import Pod_content
 	
 	fname =  Prefs['pref_podcast_favorits']		# Default: podcast-favorits.txt im Ressourcenverz.
 	Log(fname)
@@ -795,26 +796,30 @@ def PodFavoritenListe(title, offset=0):
 	for i in range(len(bookmarks)):
 		cnt = int(i) + int(offset)
 		# Log(cnt); Log(i)
-		if int(cnt) >= max_len:			# Gesamtzahl überschritten?
+		if int(cnt) >= max_len:				# Gesamtzahl überschritten?
 			break
-		if i >= rec_per_page:			# Anzahl pro Seite überschritten?
+		if i >= rec_per_page:				# Anzahl pro Seite überschritten?
 			break
 		line = bookmarks[cnt]
 		try:		
 			title = line.split('|')[0]	
 			path = line.split('|')[1]
-			title = title.strip(); path = path.strip() 
+			title = title.strip(); 
+			path = path.strip() 
 		except:
 			title=''; path=''
 		Log(title); Log(path)
 		if path == '':						# ohne Link kein verwertbarer Favorit
 			continue
-			
+		
+		Log(title); Log(path)
 		title=title.decode(encoding="utf-8", errors="ignore")
 		summary='Favoriten: ' + title
 		summary=summary.decode(encoding="utf-8", errors="ignore")
 		oc.add(DirectoryObject(key=Callback(Pod_content.PodFavoriten, title=title, path=path, offset=0), 
 			title=title, tagline=path, summary=summary,  thumb=R(ICON_STAR)))
+#		oc.add(DirectoryObject(key=Callback(PodFavoriten, title=title, path=path, offset=0), 
+#			title=title, tagline=path, summary=summary,  thumb=R(ICON_STAR)))
 				
 	
 	# Mehr Seiten anzeigen:
@@ -2650,7 +2655,8 @@ def CreateTrackObject(url, title, summary, fmt, thumb, include_container=False, 
 #		http://stackoverflow.com/questions/36901/what-does-double-star-and-star-do-for-parameters
 #		**kwargs allein würde reichen - None-Parameter verbleiben zunächst zum Debuggen
 def PlayAudio(url, location=None, includeBandwidths=None, autoAdjustQuality=None, hasMDE=None, **kwargs):	
-	Log('PlayAudio: ' + url)	
+	Log('PlayAudio')
+	Log(url)	
 	if location is not None: 
 		Log(location); 					# Bsp. lan
 	if includeBandwidths is not None: 
@@ -2659,6 +2665,10 @@ def PlayAudio(url, location=None, includeBandwidths=None, autoAdjustQuality=None
 		Log(autoAdjustQuality);			# Bsp. 0
 	if hasMDE is not None: 
 		Log(hasMDE); 					# Bsp. 1
+		
+	if url is None or url == '':		# sollte hier nicht vorkommen
+		Log('Url fehlt!')
+		return ObjectContainer(header='Error', message='Url fehlt!') # Web-Player: keine Meldung
 		
 	req = urllib2.Request(url)						# Test auf Existenz, SSLContext für HTTPS erforderlich,
 	gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1)  	#	Bsp.: SWR3 https://pdodswr-a.akamaihd.net/swr3
