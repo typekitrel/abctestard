@@ -2,6 +2,9 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------			gelöschte Releases: älter als  2.7.0	
 
+17.04.2017 2.9.2	Funktion GetZDFVideoSources: unterschiedliche urllib2.urlopen für linux2- und andere
+			System-Plattformen
+
 16.04.2017 2.9.1	PODCAST: Ergänzung der Favoriten-Funktion um die Podcasts von www.ardmediathek.de/radio
 			und Auswertungs-Schemata für RBB, WDR, NDR mit Beispielen in podcast-favorits.txt
 

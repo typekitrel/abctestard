@@ -19,8 +19,8 @@ import EPG
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.9.1'		
-VDATE = '16.04.2017'
+VERSION =  '2.9.2'		
+VDATE = '17.04.2017'
 
 # 
 #	
@@ -3310,18 +3310,43 @@ def GetZDFVideoSources(url, title, thumb, tagline, segment_start=None, segment_e
 	videodat_url = videodat_url + videodat
 	Log('ptmd: ' + old_videodat_url); Log('uurl: ' + videodat); Log('videodat_url: ' + videodat_url)	
 
-	# Ab 19.02.2017 kann videodat_url nicht mehr normal angefordert werden - wie in GetZDFVideoSources
+	# Ab 19.02.2017 kann videodat_url nicht mehr normal angefordert werden - wie in ZDFotherSources
 	#	ZDF besteht auf Authentifizierung mit apiToken und zusätzlich SSL-Handshake
 	# 		Bsp.: https://api.zdf.de/tmd/2/portal/vod/ptmd/mediathek/161021_hsh_hsh' oder
 	#			  https://api.zdf.de/tmd/2/portal/vod/ptmd/mediathek/151213_camper_chaos_inf	
 	#	SSL-Handshake hier via Python urllib2.Request verwirklicht. für mehr Sicherheit ssl.CERT_REQUIRED 
 	#		verwenden (Plex-Zertifikate: ca.crt, certificate.p12)
+	# 	17.04.2017 Test von ca.crt, certificate.p12 fehlgeschlagen - r=urllib2.urlopen(req, cafile="..Cache/ca.crt"
+	#		dagegen OK auf Plattform: linux2 - r = urllib2.urlopen(req, cafile="/etc/ssl/ca-bundle.pem")	
 	req = urllib2.Request(videodat_url)
 	req.add_header('Api-Auth', 'Bearer d2726b6c8c655e42b68b0db26131b15b22bd1a32')
-	gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1)  
-	r = urllib2.urlopen(req, context=gcontext)
-	page =  r.read()
-	Log(page[:20])	# "attributes" ...
+	# r = urllib2.urlopen(req)				# klappt ohne SSL nur außerhalb von Plex (Server-Config egal)
+	
+	# Linux-Variante mit System-SSL-Certifikat nach Fehler (Plex-Forum, @captainpimpjunior, System OpenMediaVault):
+	#	[SSL: SSLV3_ALERT_BAD_RECORD_MAC] sslv3 alert bad record mac (_ssl.c:1754)
+	# 	
+	Log(sys.platform)
+	if sys.platform == 'linux2':
+		try:
+			cafile="/etc/ssl/ca-bundle.pem"
+			r = urllib2.urlopen(req, cafile=cafile)
+			page =  r.read()				
+			r.close()
+			Log('urllib2.urlopen linux2 erfolgreich, cafile: ' + cafile)		
+		except:
+			gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1) 
+			r = urllib2.urlopen(req, context=gcontext)
+			page =  r.read()				
+			r.close()	# Verbindung schließt auch autom.	
+			Log('urllib2.urlopen linux2 Fallback ohne cafile')		
+	else:	
+		gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1) 
+		r = urllib2.urlopen(req, context=gcontext)
+		page =  r.read()				
+		r.close()	# Verbindung schließt auch autom.	
+		Log('urllib2.urlopen Windows + andere')		
+
+	Log(page[:20])	# "{..attributes" ...
 		
 	subtitles = stringextract('\"captions\"', '\"documentVersion\"', page)	# Untertitel ermitteln, bisher in Plex-
 	subtitles = blockextract('\"class\"', subtitles)						# Channels nicht verwendbar
