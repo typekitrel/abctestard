@@ -13,9 +13,9 @@ Podcast_Scheme_List = [		# Liste vorhandener Auswertungs-Schemata
 	'http://www.ardmediathek.de', 'http://www1.wdr.de/mediathek/podcast',
 	'www1.wdr.de/mediathek/audio', 'http://www.ndr.de']	
 
+PREFIX 			= '/video/ardmediathek2016/Pod_content'			
 
 ####################################################################################################
-PREFIX 			= '/video/ardmediathek2016'			
 @route(PREFIX + '/PodFavoriten')
 def PodFavoriten(title, path, offset=1):
 	Log('PodFavoriten'); Log(offset)
@@ -56,11 +56,14 @@ def PodFavoriten(title, path, offset=1):
 		msg = msg.decode(encoding="utf-8", errors="ignore")
 		return ObjectContainer(header='Error', message=msg)
 			
+	url_list = []									# url-Liste für Sammel-Downloads (Dict['url_list'])		
 	for rec in POD_rec:
 		max_len=rec[0]
-		url=rec[1]; summ=rec[3]; title=rec[7];
+		url=rec[1]; summ=rec[3]; tagline=rec[9]; title=rec[7];
+		title = unescape(title)
+		url_list.append(url)
 		img = R(ICON_NOTE)	
-		Log(title); Log(summ); Log(url); 
+		Log(title); Log(summ[:40]); Log(url); 
 		if rec[8]:
 			img = rec[8]
 		if rec[8] == 'PageControl':					# Schemata mit Seitenkontrolle, Bsp. RBB
@@ -71,7 +74,11 @@ def PodFavoriten(title, path, offset=1):
 			oc.add(DirectoryObject(key=Callback(PodFavoriten, title=title, path=url, offset=pagenr), 
 				title=title, tagline=path, summary=summ,  thumb=R(ICON_STAR)))
 		else:
-			oc.add(CreateTrackObject(url=url, title=title, summary=summ, fmt='mp3', thumb=img))
+			# nicht direkt zum TrackObject, sondern zu SingleSendung, um Downloadfunktion zu nutzen
+			# oc.add(CreateTrackObject(url=url, title=title, summary=summ, fmt='mp3', thumb=img))
+			oc.add(DirectoryObject(key=Callback(SingleSendung, path=url, title=title, thumb=img, 
+				duration='leer', tagline=tagline, ID='PODCAST', summary=summ), title=title, tagline=tagline, 
+				summary=summ, thumb=img))
 		
 	# Mehr Seiten anzeigen:
 	Log(rec_cnt);Log(offset);Log(max_len)
@@ -82,10 +89,110 @@ def PodFavoriten(title, path, offset=1):
 		summ = 'Mehr (insgesamt ' + str(max_len) + ' Podcasts)'
 		summ = summ.decode(encoding="utf-8", errors="ignore")
 		oc.add(DirectoryObject(key=Callback(PodFavoriten, title=title, path=path, offset=new_offset), 
-			title=title, tagline='Favoriten', summary=summ,  thumb=R(ICON_MEHR)))	
-			 
+			title=title, tagline='Favoriten', summary=summ,  thumb=R(ICON_MEHR)))
+			
+	# Sammel-Downloads - alle angezeigten Favoriten-Podcasts downloaden?
+	#	für "normale" Podcasts erfolgt die Abfrage in SinglePage
+	title='Achtung! Alle angezeigten Podcasts ohne Rückfrage speichern?'
+	title = title.decode(encoding="utf-8", errors="ignore")
+	summ = 'Download von insgesamt %s Podcasts' % len(POD_rec)	
+	Dict['url_list'] = url_list			# als Dict - kann zu umfangreich sein als url-Parameter
+	Dict['POD_rec'] = POD_rec	
+	Dict.Save()
+	oc.add(DirectoryObject(key=Callback(DownloadMultiple, key_url_list='url_list', key_POD_rec='POD_rec'), 
+		title=title, tagline='', summary=summ,  thumb=R(ICON_DOWNL)))
+				 
 	return oc
 
+#------------------------	
+@route(PREFIX + '/DownloadMultiple')
+# Sammeldownload lädt alle angezeigten Podcasts herunter.
+# Im Gegensatz zum Einzeldownload wird keine Textdatei zum Podcast angelegt.
+# DownloadExtern kann nicht von hier aus verwendet werden, da der wiederholte Einzelaufruf 
+# 	von Curl kurz hintereinander auf Linux Prozessleichen hinterlässt: curl (defunct)
+# Zum Problem command-line splitting (curl-Aufruf) und shlex-Nutzung siehe:
+# 	http://stackoverflow.com/questions/33560364/python-windows-parsing-command-lines-with-shlex
+# Das Problem >curl "[Errno 36] File name too long"< betrifft die max. Pfadlänge auf verschiedenen
+#	Plattformen (Posix-Standard 4096). Teilweise ist die Pfadlänge manuell konfigurierbar.
+#	Die hier gewählte platform-abhängige Variante funktioniert unter Linux + Windows (Argumenten-Länge
+#	bis ca. 4 KByte getestet) 
+
+def DownloadMultiple(key_url_list, key_POD_rec):						# Sammeldownloads
+	Log('DownloadMultiple'); 
+	import shlex											# Parameter-Expansion
+	
+	url_list = Dict[key_url_list]
+	POD_rec = Dict[key_POD_rec]
+	
+	oc = ObjectContainer(view_group="InfoList", title1='Favoriten', title2='Sammel-Downloads', art = ObjectContainer.art)
+	oc = home(cont=oc, ID='PODCAST')						# Home-Button
+	
+	rec_len = len(POD_rec)
+	AppPath = Prefs['pref_curl_path']
+	AppPath = os.path.abspath(AppPath)
+	dest_path = Prefs['pref_curl_download_path']
+	curl_param_list = '-k '									# schaltet curl's certificate-verification ab
+
+	if os.path.exists(AppPath)	== False:					# Existenz Curl prüfen
+		msg='curl nicht gefunden'
+		return ObjectContainer(header='Error', message=msg)		
+	if os.path.isdir(dest_path)	== False:			
+		msg='Downloadverzeichnis nicht gefunden: ' + path	# Downloadverzeichnis prüfen
+		return ObjectContainer(header='Error', message=msg)	
+	
+	i = 0
+	for rec in POD_rec:										# Parameter-Liste für Curl erzeugen
+		i = i + 1
+		#if  i > 2:											# reduz. Testlauf
+		#	break
+		url = rec[1]; title = rec[7]
+		title = unescape(title)								# schon in PodFavoriten, hier erneut nötig 
+		if 	Prefs['pref_generate_filenames']:				# Dateiname aus Titel generieren
+			dfname = make_filenames(title) + '.mp3'
+		else:												# Bsp.: Download_2016-12-18_09-15-00.mp4  oder ...mp3
+			now = datetime.datetime.now()
+			mydate = now.strftime("%Y-%m-%d_%H-%M-%S")	
+			dfname = 'Download_' + mydate + '.mp3'
+
+		# Parameter-Format: -o Zieldatei_kompletter_Pfad Podcast-Url -o Zieldatei_kompletter_Pfad Podcast-Url ..
+		curl_fullpath = os.path.join(dest_path, dfname)		 
+		curl_fullpath = os.path.abspath(curl_fullpath)		# os-spezischer Pfad
+		curl_param_list = curl_param_list + ' -o '  + curl_fullpath + ' ' + url
+		
+	cmd = AppPath + ' ' + curl_param_list
+	Log(len(cmd))
+	
+	Log(sys.platform)
+	if sys.platform == 'win32':								# s. Funktionskopf
+		args = cmd
+	else:
+		args = shlex.split(cmd)
+	Log(len(args))
+
+	try:
+		call = subprocess.Popen(args, shell=False)			# shell=True entf. hier nach shlex-Nutzung	
+		output,error = call.communicate()					#  output,error = None falls Aufruf OK
+		Log('call = ' + str(call))	
+		if str(call).find('object at') > 0:  				# Bsp.: <subprocess.Popen object at 0x7fb78361a210>
+			title = 'curl: Download erfolgreich gestartet'	# trotzdem Fehlschlag möglich, z.B. ohne Schreibrecht								
+			summary = 'Anzahl der Podcast: %s' % rec_len
+			oc.add(DirectoryObject(key = Callback(DownloadsTools), title=title, summary=summary, 
+				thumb=R(ICON_OK)))						
+			return oc				
+		else:
+			raise Exception('Start von curl fehlgeschlagen')			
+	except Exception as exception:
+		msgH = 'Fehler'; 
+		summary = str(exception)
+		summary = summary.decode(encoding="utf-8", errors="ignore")
+		Log(summary)		
+		tagline='Exception: Download fehlgeschlagen'
+		oc.add(DirectoryObject(key = Callback(DownloadsTools), title = 'Fehler', summary=summary, 
+				thumb=R(ICON_CANCEL), tagline=tagline))		
+		return oc
+		
+	return oc
+	
 #------------------------	
 def get_pod_content(url, rec_per_page, baseurl, offset):
 	Log('get_pod_content'); Log(rec_per_page); Log(baseurl); Log(offset);
@@ -148,8 +255,9 @@ def Scheme_br_online(page, rec_per_page, offset):		# Schema www.br-online.de
 		datum = stringextract('Datum:</strong>', '<br/>', s) 				# im Titel bereits vorhanden
 		dauer = stringextract('L&auml;nge:</strong>', '<br/>', s) 
 		groesse = stringextract('Gr&ouml;&szlig;e:</strong>', '</span>', s)
-		groesse = groesse.strip()
+		
 		title = title_org + ' | %s | %s' % (dauer, groesse)
+		title = mystrip(title)
 		
 		Log(title); Log(summ); Log(url); 
 		title=title.decode(encoding="utf-8", errors="ignore")
@@ -536,11 +644,12 @@ def Scheme_ARD(page, rec_per_page, offset,baseurl):		# Schema ARD = www.ardmedia
 	max_len = len(pages)
 	Log(max_len)
 	page_href = baseurl + stringextract('href="', '">', pages[0])
-	if page_href.find('mcontents=page.'):				# ..mcontents=page.1
+	if page_href.find('mcontents=page.') > 0:			# ..mcontents=page.1
 		entry_type = 'mcontents=page.'
-	if page_href.find('mcontent=page.'):				# # ..mcontent=page.1
+	if page_href.find('mcontent=page.') > 0:			# ..mcontent=page.1
 		entry_type = 'mcontent=page.'
 	page_href = page_href.split(entry_type)[0]			# Basis-url ohne Seitennummer
+	Log(entry_type)
 	tagline = ''
 	
 	if offset == '0':									# 1. Durchlauf - Seitenkontrolle:
@@ -568,6 +677,7 @@ def Scheme_ARD(page, rec_per_page, offset,baseurl):		# Schema ARD = www.ardmedia
 
 												# 2. Durchlauf - Inhalte der einzelnen Seiten:
 	sendungen = blockextract('class="teaser"', page)  # Struktur für Podcasts + Videos ähnlich
+	img_src_header=''; img_alt_header=''; teasertext=''
 	if sendungen[2].find('urlScheme') >= 0:								# 2 = Episodendach
 		text = stringextract('urlScheme', '/noscript', sendungen[2])
 		img_src_header, img_alt_header = img_urlScheme(text, 320, ID='PODCAST') 
@@ -583,7 +693,7 @@ def Scheme_ARD(page, rec_per_page, offset,baseurl):		# Schema ARD = www.ardmedia
 		# if int(cnt) >= max_len:		# Gesamtzahl überschritten? - entf. hier
 		# s = sendungen[cnt]
 		s = sendungen[i]
-		# Log(s)
+		Log(len(s));    # Log(s)
 		
 		single_rec = []		# Datensatz einzeln (2. Dim.)
 		title_org = stringextract('dachzeile">', '</p>', s) 
@@ -593,14 +703,14 @@ def Scheme_ARD(page, rec_per_page, offset,baseurl):		# Schema ARD = www.ardmedia
 		headline = stringextract('headline">', '</h4>', s)  # Titel der einzelnen Sendung
 		
 		url_local = stringextract('<a href="', '"', s) 		# Homepage der Sendung
-		if url_local == '':									# kein verwertbarer Satz 
+		if url_local == '' or url_local.find('documentId=') == -1:	# kein verwertbarer Satz 
 			continue
 		url_local = baseurl + url_local
-		Log(url_local)
+		Log('url_local: ' + url_local)
 		documentId =  re.findall("documentId=(\d+)", url_local)[0]
 		url = baseurl + '/play/media/%s?devicetype=pc&features=hls' % documentId
 		url_content, err = get_page(path=url)			# Textdatei, Format ähnlich parseLinks_Mp4_Rtmp
-		Log(url_content)
+		Log('url_content: ' + url_content)
 		if page == '':
 			return err
 		url = teilstring(url_content, 'http://', '.mp3') # i.d.R. 2 identische url	
@@ -708,4 +818,11 @@ def unescape(line):	# HTML-Escapezeichen in Text entfernen, bei Bedarf erweitern
 		
 	# Log(line_ret)		# bei Bedarf
 	return line_ret	
+#----------------------------------------------------------------  	
+def mystrip(line):	# eigene strip-Funktion, die auch Zeilenumbrüche innerhalb des Strings entfernt
+	line_ret = line	
+	line_ret = line.replace('\t', '').replace('\n', '').replace('\r', '')
+	line_ret = line_ret.strip()	
+	# Log(line_ret)		# bei Bedarf
+	return line_ret
 #----------------------------------------------------------------  	

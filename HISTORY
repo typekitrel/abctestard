@@ -2,8 +2,16 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------			gelöschte Releases: älter als  2.7.0	
 
+22.04.2017 2.9.4	PODCAST: Sammeldownload ermöglicht (alle angezeigten Podcasts), beteiligte Funktionen
+			angepasst
+			PODCAST: Option "Dateinamen aus dem Titel erzeugen (statt Download_{Datum}_{Uhrzeit})"
+			PODCAST-Favoriten: Indexfehler für Seiten von www.ardmediathek.de/radio abgestellt
+
+18.04.2017 2.9.3	PODCAST: Integration der Favoriten in die Download-Funktion
+
 17.04.2017 2.9.2	Funktion GetZDFVideoSources: unterschiedliche urllib2.urlopen für linux2- und andere
-			System-Plattformen
+			System-Plattformen, Verwendung System-SSL-Certifikat bei Linux-Systemen (spez. für
+			OpenMediaVault)
 
 16.04.2017 2.9.1	PODCAST: Ergänzung der Favoriten-Funktion um die Podcasts von www.ardmediathek.de/radio
 			und Auswertungs-Schemata für RBB, WDR, NDR mit Beispielen in podcast-favorits.txt

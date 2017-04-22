@@ -19,8 +19,8 @@ import EPG
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.9.2'		
-VDATE = '17.04.2017'
+VERSION =  '2.9.4'		
+VDATE = '22.04.2017'
 
 # 
 #	
@@ -213,6 +213,7 @@ def Main():
 	Log('Plugin-Version: ' + VERSION); Log('Plugin-Datum: ' + VDATE)
 	Log('Client: ' + Client.Platform);
 	Log('Plattform: ' + sys.platform)
+	Dict.Reset()					# Speicherobjekte des Plugins löschen
 	oc = ObjectContainer(view_group="InfoList", art=ObjectContainer.art)	# Plex akzeptiert nur InfoList + List, keine
 																			# Auswirkung auf Wiedergabe im Webplayer
 	# folgendes DirectoryObject ist Deko für das nicht sichtbare InputDirectoryObject dahinter:
@@ -1130,6 +1131,8 @@ def SinglePage(title, path, next_cbKey, mode, ID, offset=0):	# path komplett
 #	2. Text-Seite mit rtmp-Streams (Listenformat ähnlich Zif. 1, rtmp-Pfade müssen zusammengesetzt
 #		werden
 #   ab 01.04.2017 mit Podcast-Erweiterung auch Verabeitung von Audio-Dateien
+#	18.04.2017 die Podcasts von PodFavoriten enthalten in path bereits mp3-Links, parseLinks_Mp4_Rtmp entfällt
+
 def SingleSendung(path, title, thumb, duration, summary, tagline, ID, offset=0):	# -> CreateVideoClipObject
 	title = title.decode(encoding="utf-8", errors="ignore")	# ohne: Exception All strings must be XML compatible
 	title_org=title; summary_org=summary; tagline_org=tagline	# Backup 
@@ -1140,23 +1143,30 @@ def SingleSendung(path, title, thumb, duration, summary, tagline, ID, offset=0):
 	oc = ObjectContainer(view_group="InfoList", title1=title, art=ICON)
 	oc = home(cont=oc, ID=ID)							# Home-Button
 	# Log(path)
-	page = HTTP.Request(path).content  # als Text, nicht als HTML-Element. 
+	
 	if ID == 'PODCAST':
 		Format = 'Podcast-Format: MP3'					# Verwendung in summmary
 	else:
 		Format = 'Video-Format: MP4'
 
-	# Bei Podcasts enthält page i.d.R. 1 Link zur mp3-Datei
-	Log('vor parseLinks_Mp4_Rtmp')
-	link_path,link_img, m3u8_master = parseLinks_Mp4_Rtmp(page)	# link_img kommt bereits mit thumb, außer bei Podcasts						
-	Log(link_img); Log(m3u8_master); # Log(link_path); 
-	if thumb == None or thumb == '': 
-		thumb = link_img
+	# Bei Podcasts enthält path i.d.R. 1 Link zur Seite mit einer mp3-Datei, bei Podcasts von PodFavoriten 
+	# wird der mp3-Link	direkt in path übergeben.
+	if path.endswith('.mp3') == False:
+		Log('vor parseLinks_Mp4_Rtmp')
+		page = HTTP.Request(path).content  # als Text, nicht als HTML-Element. 
+		link_path,link_img, m3u8_master = parseLinks_Mp4_Rtmp(page)	# link_img kommt bereits mit thumb, außer bei Podcasts						
+		Log(link_img); Log(m3u8_master); Log(link_path); 
+		if thumb == None or thumb == '': 
+			thumb = link_img
 
- 	if link_path == []:	      		# keine Videos gefunden		
-		Log('link_path == []') 		 
-		msgH = 'keine Videoquelle gefunden - Abbruch'; msg = 'keine Videoquelle gefunden - Abbruch. Seite: ' + path;
-		return ObjectContainer(header=msgH, message=msg)
+		if link_path == []:	      		# keine Videos gefunden		
+			Log('link_path == []') 		 
+			msgH = 'keine Videoquelle gefunden - Abbruch'; msg = 'keine Videoquelle gefunden - Abbruch. Seite: ' + path;
+			return ObjectContainer(header=msgH, message=msg)
+	else:
+		m3u8_master = False
+		# Nachbildung link_path, falls path == mp3-Link:
+		link_path = []; link_path.append('1|'  + path)	# Bsp.: ['1|http://mp3-download.ard.de/...mp3]
   
 	# *.m3u8-Datei vorhanden -> auswerten, falls ladefähig. die Alternative 'Client wählt selbst' (master.m3u8)
 	# stellen wir voran (WDTV-Live OK, VLC-Player auf Nexus7 'schwerwiegenden Fehler'), MXPlayer läuft dagegen
@@ -1258,6 +1268,7 @@ def test_downloads(oc,download_list,title_org,summary_org,tagline_org,thumb,high
 			download_items = download_list						# ganze Liste verwenden
 		# Log(download_items)
 		
+		i=0
 		for item in download_items:
 			quality,url = item.split('#')
 			Log(url); Log(quality); Log(title_org)
@@ -1265,25 +1276,23 @@ def test_downloads(oc,download_list,title_org,summary_org,tagline_org,thumb,high
 				# detailtxt =  Begleitdatei mit Textinfos zum Video / Podcast:
 				detailtxt = MakeDetailText(title=title_org,thumb=thumb,quality=quality,
 					summary=summary_org,tagline=tagline_org,url=url)
-				now = datetime.datetime.now()
-				mydate = now.strftime("%Y-%m-%d_%H-%M-%S")	
+				Dict['detailtxt'+str(i)] = detailtxt
 				if url.endswith('.mp3'):
-					suffix = '.mp3'  
 					Format = 'Podcast ' 			
 				else:	
-					suffix = '.mp4'   			
-					Format = 'Video ' 			
-				dfname = 'Download_' + mydate + suffix			# Bsp.: Download_2016-12-18_09-15-00.mp4  oder ...mp3	
-				title = Format + 'Curl-Download: ' + title_org + ' --> ' + dfname
+					Format = 'Video '
+				title = Format + 'Curl-Download: ' + title_org
 				dest_path = Prefs['pref_curl_download_path'] 
-				summary = Format + '>' + dfname + '< wird in ' + dest_path + ' gespeichert' 									
+				summary = Format + 'wird in ' + dest_path + ' gespeichert' 									
 				tagline = 'Der Download erfolgt durch Curl im Hintergrund | ' + quality
 				summary=summary.decode(encoding="utf-8", errors="ignore")
 				tagline=tagline.decode(encoding="utf-8", errors="ignore")
 				title=title.decode(encoding="utf-8", errors="ignore")
-				oc.add(DirectoryObject(key=Callback(DownloadExtern, url=url, title=title, dest_path=dest_path,
-					dfname=dfname, detailtxt=detailtxt), title=title, summary=summary, thumb=R(ICON_DOWNL), 
+				oc.add(DirectoryObject(key=Callback(DownloadExtern, url=url, title=title_org, dest_path=dest_path,
+					key_detailtxt='detailtxt'+str(i)), title=title, summary=summary, thumb=R(ICON_DOWNL), 
 					tagline=tagline))
+				i=i+1					# Dict-key-Zähler
+		Dict.Save()
 	return oc
 	
 #-----------------------
@@ -1310,12 +1319,12 @@ def MakeDetailText(title, summary,tagline,quality,thumb,url):	# Textdatei für D
 #	trotzdem weiter fortgesetzt).
 # url=Video-/Podcast-Quelle, dest_path=Downloadverz.
 #
-def DownloadExtern(url, title, dest_path, dfname, detailtxt):  # Download mittels Curl
-	Log('DownloadExtern: ' + title + ' -> ' + dfname)
-	Log(url); Log(dest_path); 
-	# title=title.decode(encoding="utf-8", errors="ignore")	 # Titel zu lang 
-	title='Curl-Download'		
-	oc = ObjectContainer(view_group="InfoList", title1=title, art=ICON)
+def DownloadExtern(url, title, dest_path, key_detailtxt):  # Download mittels Curl
+	Log('DownloadExtern: ' + title)
+	Log(url); Log(dest_path); Log(key_detailtxt)
+	title=title.decode(encoding="utf-8", errors="ignore")	
+	
+	oc = ObjectContainer(view_group="InfoList", title1='Curl-Download', art=ICON)
 	oc = home(cont=oc, ID=NAME)					# Home-Button	
 
 	summary = 'Download-Tools: Verschieben, Löschen, Ansehen, Verzeichnisse bearbeiten'	# wie in Main()
@@ -1323,17 +1332,30 @@ def DownloadExtern(url, title, dest_path, dfname, detailtxt):  # Download mittel
 	oc.add(DirectoryObject(key = Callback(DownloadsTools), title = 'Download-Tools', 
 		summary = summary, thumb = R(ICON_DOWNL_DIR)))		
 	
+	if 	Prefs['pref_generate_filenames']:				# Dateiname aus Titel generieren
+		dfname = make_filenames(title) 
+	else:												# Bsp.: Download_2016-12-18_09-15-00.mp4  oder ...mp3
+		now = datetime.datetime.now()
+		mydate = now.strftime("%Y-%m-%d_%H-%M-%S")	
+		dfname = 'Download_' + mydate 
+	
+	if url.endswith('.mp3'):
+		suffix = '.mp3'		
+		dtyp = 'Podcast '
+	else:										
+		suffix = '.mp4'		
+		dtyp = 'Video '
+		
+	title = dtyp + 'Curl-Download: ' + title
+	textfile = dfname + '.txt'
+	dfname = dfname + suffix							# suffix: '.mp4' oder '.mp3'
+	
+	pathtextfile = os.path.join(dest_path, textfile)	# kompl. Speicherpfad für Textfile
+	Log(pathtextfile)
+	detailtxt = Dict[key_detailtxt]					
+	storetxt = 'Details zum ' + dtyp +  dfname + ':\r\n\r\n' + detailtxt	
+			
 	try:
-		if dfname.endswith('.mp3'):
-			textfile = dfname.split('.mp3')[0]		# Textfile zum Podcast
-			dtyp = 'Podcast '
-		else:										
-			textfile = dfname.split('.mp4')[0]			# Textfile zum Video
-			dtyp = 'Video '
-		textfile = textfile + '.txt'
-		pathtextfile = os.path.join(dest_path, textfile)	# kompl. Speicherpfad für Textfile
-		Log(pathtextfile)
-		storetxt = 'Details zum ' + dtyp +  dfname + ':\r\n\r\n' + detailtxt		
 		Core.storage.save(pathtextfile, storetxt)			# Text speichern
 		
 		AppPath = Prefs['pref_curl_path']
@@ -1359,11 +1381,10 @@ def DownloadExtern(url, title, dest_path, dfname, detailtxt):  # Download mittel
 		if str(sp).find('object at') > 0:  				# subprocess.Popen object OK
 			tagline = 'Zusatz-Infos in Textdatei gespeichert:' + textfile
 			summary = 'Ablage: ' + curl_fullpath
-			summary = summary.decode(encoding="utf-8", errors="ignore")
-			oc.add(DirectoryObject(key=Callback(DownloadExtern, url=url, title='Erfolg', dest_path=dest_path,
-				dfname=dfname, detailtxt=detailtxt), title=msgH, summary=summary, thumb=R(ICON_OK), 
-				tagline=tagline))
-			return oc
+			summary = summary.decode(encoding="utf-8", errors="ignore")				
+			oc.add(DirectoryObject(key = Callback(DownloadsTools), title = 'Download-Tools', summary=summary, 
+				thumb=R(ICON_OK), tagline=tagline))						
+			return oc				
 		else:
 			raise Exception('Start von curl fehlgeschlagen')
 			
@@ -1373,9 +1394,8 @@ def DownloadExtern(url, title, dest_path, dfname, detailtxt):  # Download mittel
 		summary = summary.decode(encoding="utf-8", errors="ignore")
 		Log(summary)		
 		tagline='Download fehlgeschlagen'
-		oc.add(DirectoryObject(key=Callback(DownloadExtern, url=url, title='Fehler', dest_path=dest_path,
-			dfname=dfname, detailtxt=detailtxt), title=msgH, summary=summary, thumb=R(ICON_CANCEL), 
-			tagline=tagline))
+		oc.add(DirectoryObject(key = Callback(DownloadsTools), title = 'Fehler', summary=summary, 
+				thumb=R(ICON_CANCEL), tagline=tagline))		
 		return oc
 	
 #---------------------------
@@ -3288,7 +3308,7 @@ def GetZDFVideoSources(url, title, thumb, tagline, segment_start=None, segment_e
 	#	Api-Auth + Host reichen manchmal, aber nicht immer! 
 	# headers = {'Api-Auth': "Bearer %s" % apiToken, 'Host':"api.zdf.de", 'Accept-Encoding':"gzip, deflate, sdch, br", 'Accept':"application/vnd.de.zdf.v1.0+json"}
 	headers = {'Api-Auth': "Bearer d2726b6c8c655e42b68b0db26131b15b22bd1a32",'Host':"api.zdf.de", 'Accept-Encoding':"gzip, deflate, sdch, br", 'Accept':"application/vnd.de.zdf.v1.0+json"}
-	Log(headers)		# bei Bedarf
+	# Log(headers)		# bei Bedarf
 	
 	request = JSON.ObjectFromURL(profile_url, headers=headers)					# 3. Playerdaten ermitteln
 	request = json.dumps(request, sort_keys=True, indent=2, separators=(',', ': '))  # sortierte Ausgabe
@@ -3324,7 +3344,8 @@ def GetZDFVideoSources(url, title, thumb, tagline, segment_start=None, segment_e
 	
 	# Linux-Variante mit System-SSL-Certifikat nach Fehler (Plex-Forum, @captainpimpjunior, System OpenMediaVault):
 	#	[SSL: SSLV3_ALERT_BAD_RECORD_MAC] sslv3 alert bad record mac (_ssl.c:1754)
-	# 	
+	# 	Falls cafile fehlt, kann ca-certificates.crt verwendet werden (kopieren nach /etc/ssl/ca-bundle.pem), siehe
+	#		http://forums.plex.tv/discussion/comment/1424016/#Comment_1424016
 	Log(sys.platform)
 	if sys.platform == 'linux2':
 		try:
@@ -3350,7 +3371,7 @@ def GetZDFVideoSources(url, title, thumb, tagline, segment_start=None, segment_e
 		
 	subtitles = stringextract('\"captions\"', '\"documentVersion\"', page)	# Untertitel ermitteln, bisher in Plex-
 	subtitles = blockextract('\"class\"', subtitles)						# Channels nicht verwendbar
-	#Log(subtitles)
+	Log('subtitles: ' + str(len(subtitles)))
 	if len(subtitles) == 2:
 		sub_xml = subtitles[0]
 		sub_vtt = subtitles[1]
@@ -3828,13 +3849,33 @@ def cleanhtml(line): # ersetzt alle HTML-Tags zwischen < und >  mit 1 Leerzeiche
 	cleantext = re.sub(cleanre, ' ', line)
 	return cleantext
 #----------------------------------------------------------------  	
-def mystrip(line):	# Ersatz für unzuverlässige strip-Funktion
+def mystrip(line):	# eigene strip-Funktion, die auch Zeilenumbrüche innerhalb des Strings entfernt
 	line_ret = line	
 	line_ret = line.replace('\t', '').replace('\n', '').replace('\r', '')
 	line_ret = line_ret.strip()	
 	# Log(line_ret)		# bei Bedarf
 	return line_ret
 #---------------------------------------------------------------- 
+def make_filenames(title):
+	# erzeugt - hoffentlich - sichere Dateinamen (ohne Extension)
+	# zugeschnitten auf Titelerzeugung in meinen Plugins 
+	
+	fname = transl_umlaute(title)		# Umlaute
+	# Ersatz: 	Leerz., Pipe, mehrf. Unterstriche -> 1 Unterstrich, Doppelp. -> Bindestrich	
+	# Entferne: Frage-, Ausrufez., Hochkomma und #@!%^&*()
+	fname = (fname.replace(' ','_').replace('|','_').replace('___','_').replace('.','_')) 
+	fname = (fname.replace('__','_').replace(':','-'))
+	fname = (fname.replace('?','').replace('!','').replace('"','').replace('#','')
+		.replace('*','').replace('@','').replace('%','').replace('^','').replace('&','')
+		.replace('(','').replace(')',''))	
+	
+	# Die Variante .join entfällt leider, da die Titel hier bereits
+	# in Unicode ankommen -	Plex code/sandbox.py:  
+	# 		'str' object has no attribute '__iter__': 
+	# valid_chars = "-_ %s%s" % (string.ascii_letters, string.digits)
+	# fname = ''.join(c for c in fname if c in valid_chars)
+	return fname
+#----------------------------------------------------------------  
 		
 ####################################################################################################
 # Directory-Browser - Verzeichnis-Listing
