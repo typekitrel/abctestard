@@ -246,9 +246,9 @@ def Scheme_br_online(page, rec_per_page, offset):		# Schema www.br-online.de
 		
 		single_rec = []		# Datensatz einzeln (2. Dim.)
 		title_org = stringextract('<td class="ci01" colspan="3">', '</td', s) 
-		title = title_org.strip()
+		title = title_org.strip(); title=cleanhtml(title)
 		summ = stringextract('<td class="ci02" colspan="3">', '</td', s) 
-		summ = summ.strip()
+		summ = summ.strip(); summ=cleanhtml(summ)
 		url = stringextract('href="', '\"', s) 
 		img =  ''						# Bild nicht vorhanden
 		

@@ -2,6 +2,8 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------			gelöschte Releases: älter als  2.7.0	
 
+23.04.2017 2.9.5	FunktionZDFotherSources: urllib2.urlopen unterschiedlich wie im Update vom 17.04.2017
+
 22.04.2017 2.9.4	PODCAST: Sammeldownload ermöglicht (alle angezeigten Podcasts), beteiligte Funktionen
 			angepasst
 			PODCAST: Option "Dateinamen aus dem Titel erzeugen (statt Download_{Datum}_{Uhrzeit})"

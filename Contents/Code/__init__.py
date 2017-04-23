@@ -19,8 +19,8 @@ import EPG
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.9.4'		
-VDATE = '22.04.2017'
+VERSION =  '2.9.5'		
+VDATE = '23.04.2017'
 
 # 
 #	
@@ -3388,7 +3388,7 @@ def GetZDFVideoSources(url, title, thumb, tagline, segment_start=None, segment_e
 	formitaeten = blockextract('formitaeten', page)		# Video-URL's ermitteln
 	# Log(formitaeten)
 	title_call = title
-	i = 0 	# Titel-Zähler für mehrere Objekte mit dem selben Titel (manche Clients verwerfen solche)
+	i = 0 	# Titel-Zähler für mehrere Objekte mit dem selben Titel (manche Clients verwerfen solche Objekte)
 	for rec in formitaeten:							# Datensätze gesamt
 		# Log(rec)		# bei Bedarf
 		typ = stringextract('\"type\" : \"', '\"', rec)
@@ -3458,12 +3458,31 @@ def ZDFotherSources(url, title, tagline, thumb):
 	# Log(headers)		# bei Bedarf
 	req = urllib2.Request(profile_url)
 	req.add_header('Api-Auth', 'Bearer d2726b6c8c655e42b68b0db26131b15b22bd1a32')
-	gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1)  
-	r = urllib2.urlopen(req, context=gcontext)
-	request =  r.read()
-	request = request.decode('utf-8', 'ignore')		
-	Log(request[:20])	# "attributes" ...
-			
+
+	Log(sys.platform)
+	if sys.platform == 'linux2':
+		try:
+			cafile="/etc/ssl/ca-bundle.pem"
+			r = urllib2.urlopen(req, cafile=cafile)
+			request =  r.read()				
+			r.close()
+			Log('urllib2.urlopen linux2 erfolgreich, cafile: ' + cafile)		
+		except:
+			gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1) 
+			r = urllib2.urlopen(req, context=gcontext)
+			request =  r.read()				
+			r.close()	# Verbindung schließt auch autom.	
+			Log('urllib2.urlopen linux2 Fallback ohne cafile')		
+	else:	
+		gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1) 
+		r = urllib2.urlopen(req, context=gcontext)
+		page =  r.read()				
+		r.close()	# Verbindung schließt auch autom.	
+		Log('urllib2.urlopen Windows + andere')		
+
+	request = request.decode('utf-8', 'ignore')
+	Log(request[:20])	# {"contentType":"epis ...	
+
 	pos = request.rfind('mainVideoContent')				# 'mainVideoContent' am Ende suchen
 	request_part = request[pos:]
 	request_part = repl_char('\\', request_part) # das erspart hier die JSON-Behandlung, Bsp. http:\/\/zdf.de\/rels\/target
@@ -3862,12 +3881,12 @@ def make_filenames(title):
 	
 	fname = transl_umlaute(title)		# Umlaute
 	# Ersatz: 	Leerz., Pipe, mehrf. Unterstriche -> 1 Unterstrich, Doppelp. -> Bindestrich	
-	# Entferne: Frage-, Ausrufez., Hochkomma und #@!%^&*()
+	# Entferne: Frage-, Ausrufez., Hochkomma, Komma und #@!%^&*()
 	fname = (fname.replace(' ','_').replace('|','_').replace('___','_').replace('.','_')) 
 	fname = (fname.replace('__','_').replace(':','-'))
 	fname = (fname.replace('?','').replace('!','').replace('"','').replace('#','')
 		.replace('*','').replace('@','').replace('%','').replace('^','').replace('&','')
-		.replace('(','').replace(')',''))	
+		.replace('(','').replace(')','').replace(',',''))	
 	
 	# Die Variante .join entfällt leider, da die Titel hier bereits
 	# in Unicode ankommen -	Plex code/sandbox.py:  
