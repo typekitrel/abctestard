@@ -19,8 +19,8 @@ import EPG
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.9.5'		
-VDATE = '23.04.2017'
+VERSION =  '2.9.6'		
+VDATE = '25.04.2017'
 
 # 
 #	
@@ -754,7 +754,7 @@ def transl_wtag(tag):	# Wochentage engl./deutsch wg. Problemen mit locale-Settin
 	return wt_ret
 		
 ####################################################################################################
-@route(PREFIX + '/PodFavoritenListe')		# Format: Title | HTTP-Link
+@route(PREFIX + '/PodFavoritenListe')		
 def PodFavoritenListe(title, offset=0):
 	import Pod_content
 	

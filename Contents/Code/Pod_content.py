@@ -67,7 +67,7 @@ def PodFavoriten(title, path, offset=1):
 		if rec[8]:
 			img = rec[8]
 		if rec[8] == 'PageControl':					# Schemata mit Seitenkontrolle, Bsp. RBB
-			pagenr = url[len(url)-1:]				# Bsp.: ..mcontents=page.1
+			pagenr = url.split('=page.')[1]
 			if url.endswith('.html'):				# Bsp.: ..podcast2958_page1.html
 				pagenr = stringextract('_page', '.html', url)
 			Log(pagenr)
@@ -224,8 +224,6 @@ def get_pod_content(url, rec_per_page, baseurl, offset):
 	if baseurl == 'http://www.ardmediathek.de':
 		return Scheme_ARD(page, rec_per_page, offset, baseurl)
 		
-# todo: NDR
-#	Plex-Plugin-KIKA_und_tivi: Podcasts
 #------------------------
 def Scheme_br_online(page, rec_per_page, offset):		# Schema www.br-online.de
 	Log('Scheme_br_online')
@@ -657,6 +655,7 @@ def Scheme_ARD(page, rec_per_page, offset,baseurl):		# Schema ARD = www.ardmedia
 		for p in pages:
 			single_rec = []								# Datensatz einzeln (2. Dim.)
 			url = page_href + entry_type + str(pagenr)	 # url mit Seitennr. ergänzen
+			url = unescape(url)
 			title = 'Weiter zu Seite %s' % pagenr
 			img = 'PageControl';						# 'PageControl' steuert 
 			summ = ''; title_org = ''; datum = ''; dauer = ''; groesse = ''; 

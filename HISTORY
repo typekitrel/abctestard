@@ -2,7 +2,10 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------			gelöschte Releases: älter als  2.7.0	
 
-23.04.2017 2.9.5	FunktionZDFotherSources: urllib2.urlopen unterschiedlich wie im Update vom 17.04.2017
+25.04.2017 2.9.6	PODCAST-Favoriten: Indexfehler in Seitenkontrolle abgestellt (Rekursion
+			ab Seite 10)
+
+23.04.2017 2.9.5	Funktion ZDFotherSources: urllib2.urlopen unterschiedlich wie im Update vom 17.04.2017
 
 22.04.2017 2.9.4	PODCAST: Sammeldownload ermöglicht (alle angezeigten Podcasts), beteiligte Funktionen
 			angepasst
