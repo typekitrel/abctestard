@@ -19,8 +19,8 @@ import EPG
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.9.6'		
-VDATE = '25.04.2017'
+VERSION =  '2.9.7'		
+VDATE = '29.04.2017'
 
 # 
 #	
@@ -67,7 +67,7 @@ ICON_UPDATER_NEW 		= 'plugin-update-new.png'
 ICON_PREFS 				= 'plugin-preferences.png'
 
 
-ICON_ARD_AZ 			= 'ard-sendungen-az.png' 			
+ICON_ARD_AZ 			= 'ard-sendungen-az.png'
 ICON_ARD_VERP 			= 'ard-sendung-verpasst.png'			
 ICON_ARD_RUBRIKEN 		= 'ard-rubriken.png' 			
 ICON_ARD_Themen 		= 'ard-themen.png'	 			
@@ -196,13 +196,12 @@ def Start():
 	#	https://forums.plex.tv/discussion/211755/how-do-i-make-my-objectcontainer-display-as-a-gallery-of-thumbnails
 	Plugin.AddViewGroup("InfoList", viewMode="InfoList", mediaType="items")
 	Plugin.AddViewGroup("List", viewMode="List", mediaType="items")
-
+	
 	#ObjectContainer.art        = R(ART)
 	ObjectContainer.art        = R(ICON)  # gefällt mir als Hintergrund besser
 	ObjectContainer.title1     = NAME
-	#ObjectContainer.view_group = "InfoList"
 
-	HTTP.CacheTime = CACHE_1HOUR # Debugging: falls Logdaten ausbleiben, Browserdaten löschen
+	HTTP.CacheTime = CACHE_1HOUR # Debugging: falls Logdaten ausbleiben, Browsercache löschen
 
 #----------------------------------------------------------------
 # handler bindet an das bundle
@@ -215,7 +214,7 @@ def Main():
 	Log('Plattform: ' + sys.platform)
 	Dict.Reset()					# Speicherobjekte des Plugins löschen
 	oc = ObjectContainer(view_group="InfoList", art=ObjectContainer.art)	# Plex akzeptiert nur InfoList + List, keine
-																			# Auswirkung auf Wiedergabe im Webplayer
+																			# Auswirkung auf Wiedergabe im Webplayer																																						
 	# folgendes DirectoryObject ist Deko für das nicht sichtbare InputDirectoryObject dahinter:
 	oc.add(DirectoryObject(key=Callback(Main_ARD, name="ARD Mediathek"), title="ARD Mediathek",
 		summary='', tagline='TV', thumb=R(ICON_MAIN_ARD)))
@@ -1543,15 +1542,21 @@ def DownloadsList():
 	for entry in dirlist:							# Download + Beschreibung -> DirectoryObject
 		if entry.find('.mp4') > 0 or entry.find('.mp3') > 0:
 			localpath = entry
-			title = ''; tagline = ''; summary = ''
+			title=''; tagline=''; summary=''; quality=''; thumb=''; httpurl=''
+			fname =  entry							# Dateiname + Endung für Sammeldownloads
+			ext =    entry.split('.')[1]
+			# Log(fname);Log(ext)
 			if entry.endswith('.mp4'):
 				txtfile = entry.split('.mp4')[0] + '.txt'
 			if entry.endswith('.mp3'):
 				txtfile = entry.split('.mp3')[0] + '.txt'
 			txtpath = os.path.join(path, txtfile)
 			Log('entry: ' + entry)
-			# Log('txtpath: ' + txtpath)
-			txt = Core.storage.load(txtpath)		# Beschreibung laden
+			Log('txtpath: ' + txtpath)
+			if os.path.exists(txtpath):
+				txt = Core.storage.load(txtpath)		# Beschreibung laden - fehlt bei Sammeldownload
+			else:
+				txt = None
 			if txt != None:			
 				title = stringextract("Titel: '", "'", txt)
 				tagline = stringextract("ung1: '", "'", txt)
@@ -1564,10 +1569,14 @@ def DownloadsList():
 					tagline = quality
 				else:
 					tagline = quality + ' | ' + tagline
-			# Log(txt); Log(httpurl); Log(tagline); Log(quality)
-			if title == '' or httpurl == '':			# könnte manuell entfernt worden sein
-				continue
-			
+			else:										# ohne Beschreibung
+				title = fname
+				httpurl = fname							# Berücksichtigung in VideoTools - nicht abspielbar
+				summary = 'Beschreibung fehlt - Abspielen nicht möglich'
+				tagline = 'Sammeldownload  oder Beschreibung gelöscht'
+				thumb = R(ICON_NOTE)
+				
+			Log(httpurl); Log(tagline); Log(quality); # Log(txt); 			
 			if httpurl.endswith('mp3'):
 				oc_title = 'Bearbeiten: Podcast | ' + title
 			else:
@@ -1593,24 +1602,30 @@ def VideoTools(httpurl,path,dlpath,txtpath,title,summary,thumb,tagline):
 	
 	title=title.decode(encoding="utf-8", errors="ignore") 
 	title_org = title
-	title1 = 'Bearbeiten: ' + title
+	title1 = 'Bearbeiten: ' + title[:33] + '..'	# Begrenzung nötig für "Dateinamen aus dem Titel"
+	title1=title1.decode(encoding="utf-8", errors="ignore")
+	summary=summary.decode(encoding="utf-8", errors="ignore")
+
 	oc = ObjectContainer(view_group="InfoList", title1=title1, art=ICON)
 	oc = home(cont=oc, ID=NAME)					# Home-Button	
 	
 	if httpurl.endswith('mp4'):
 		title = title_org + ' | Ansehen' 												# 1. Ansehen
 		title=title.decode(encoding="utf-8", errors="ignore")
+		summary=summary.decode(encoding="utf-8", errors="ignore")
 		oc.add(CreateVideoClipObject(url=httpurl, title=title , summary=summary, 
 			meta=httpurl, thumb=thumb, tagline=tagline, duration='leer', resolution='leer'))
-	else:											# 'mp3' = Podcast
-		title = title_org + ' | Anhören' 												# 1. Anhören
-		title=title.decode(encoding="utf-8", errors="ignore")
-		oc.add(CreateTrackObject(url=httpurl, title=title, summary=summary,
-			 thumb=thumb, fmt='mp3'))				# funktioniert hier auch mit aac
+	else:										# 'mp3' = Podcast
+		if httpurl.startswith('http'):			# Dateiname bei fehl. Beschreibung, z.B. Sammeldownloads
+			title = title_org + ' | Anhören' 												# 1. Anhören
+			title=title.decode(encoding="utf-8", errors="ignore")
+			oc.add(CreateTrackObject(url=httpurl, title=title, summary=summary,
+				 thumb=thumb, fmt='mp3'))				# funktioniert hier auch mit aac
 		
 	title = title_org + ' | löschen ohne Rückfrage' 								# 2. Löschen
 	title=title.decode(encoding="utf-8", errors="ignore")
-	tagline = 'Videodatei: ' + path 
+	tagline = 'Datei: ' + path 
+	tagline=tagline.decode(encoding="utf-8", errors="ignore")
 	dest_path = Prefs['pref_curl_download_path']	
 	fullpath = os.path.join(dest_path, path)
 	oc.add(DirectoryObject(key=Callback(DownloadsDelete, dlpath=fullpath, single='True'),
@@ -1931,6 +1946,7 @@ def get_sendungen(container, sendungen, ID, mode): # Sendungen ausgeschnitten mi
 def img_urlScheme(text, dim, ID):
 	Log('img_urlScheme: ' + text[0:40])
 	Log(dim)
+	
 	pos = 	text.find('class=\"mediaCon\">')			# img erst danach
 	if pos >= 0:
 		text = text[pos:]
