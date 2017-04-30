@@ -19,8 +19,8 @@ import EPG
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.9.7'		
-VDATE = '29.04.2017'
+VERSION =  '2.9.8'		
+VDATE = '30.04.2017'
 
 # 
 #	
@@ -1140,7 +1140,10 @@ def SingleSendung(path, title, thumb, duration, summary, tagline, ID, offset=0):
 	Log('ID: ' + str(ID))
 	
 	oc = ObjectContainer(view_group="InfoList", title1=title, art=ICON)
-	oc = home(cont=oc, ID=ID)							# Home-Button
+	
+	client = Client.Platform
+	if client.find ('Plex Home Theater'): 
+		oc = home(cont=oc, ID=NAME)						# Home-Button macht bei PHT die Trackliste unbrauchbar 
 	# Log(path)
 	
 	if ID == 'PODCAST':

@@ -2,6 +2,8 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------			gelöschte Releases: älter als  2.7.0	
 					
+30.04.2017 2.9.8	Podcasts: Anpassung für Plex Home Theater - Verzicht auf Home-Button (wie bei Radio-Live)						
+					
 29.04.2017 2.9.7	DownloadsTools: Anpassung an fehlende Textbeschreibungen bei Sammeldownloads 
 					(Abspielen lokaler Dateien nicht möglich, Kürzung Dateinamen in Buttons)
 					Ressources/icon-bild-fehlt.png: Anpassung an Breitformat
