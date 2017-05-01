@@ -19,8 +19,8 @@ import EPG
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.9.8'		
-VDATE = '30.04.2017'
+VERSION =  '2.9.9'		
+VDATE = '01.05.2017'
 
 # 
 #	
@@ -1142,6 +1142,8 @@ def SingleSendung(path, title, thumb, duration, summary, tagline, ID, offset=0):
 	oc = ObjectContainer(view_group="InfoList", title1=title, art=ICON)
 	
 	client = Client.Platform
+	if client == None:
+		client = ''
 	if client.find ('Plex Home Theater'): 
 		oc = home(cont=oc, ID=NAME)						# Home-Button macht bei PHT die Trackliste unbrauchbar 
 	# Log(path)
@@ -1282,7 +1284,7 @@ def test_downloads(oc,download_list,title_org,summary_org,tagline_org,thumb,high
 				if url.endswith('.mp3'):
 					Format = 'Podcast ' 			
 				else:	
-					Format = 'Video '
+					Format = 'Video '			# .mp4 oder .webm  (ARD nur .mp4)
 				title = Format + 'Curl-Download: ' + title_org
 				dest_path = Prefs['pref_curl_download_path'] 
 				summary = Format + 'wird in ' + dest_path + ' gespeichert' 									
@@ -1313,13 +1315,14 @@ def MakeDetailText(title, summary,tagline,quality,thumb,url):	# Textdatei für D
 	
 ####################################################################################################
 @route(PREFIX + '/DownloadExtern')	#  Verwendung von Curl mittels Phytons subprocess-Funktionen
-# Wegen des Timeout-Problems (PMS bricht nach ca. 15 sec die Verbindung zum Plugin ab) macht es
-#	keinen Sinn, auf die Beendigung von Curl mittels Pipes + communicate zu warten. Daher erfolgt
-#	der Start von Curl unter Verzicht auf dessen Output.
+# Wegen des Timeout-Problems (ca. 15 sec) macht es keinen Sinn, auf die Beendigung von Curl 
+#	mittels Pipes + communicate zu warten. Daher erfolgt der Start von Curl unter Verzicht auf dessen Output.
 # Die experimentelle interne Download-Variante mit Bordmitteln wurde wieder entfernt, da nach ca. 15 
 #	sec der Server die Verbindung zum Client mit timeout abbricht (unter Linux wurde der Download 
 #	trotzdem weiter fortgesetzt).
 # url=Video-/Podcast-Quelle, dest_path=Downloadverz.
+# Bei Verwendung weiterer Videoformate (neben mp4, webm, mp3) Extensionsbehandlung anpassen: hier sowie
+#	DownloadsTools, DownloadsList
 #
 def DownloadExtern(url, title, dest_path, key_detailtxt):  # Download mittels Curl
 	Log('DownloadExtern: ' + title)
@@ -1344,13 +1347,16 @@ def DownloadExtern(url, title, dest_path, key_detailtxt):  # Download mittels Cu
 	if url.endswith('.mp3'):
 		suffix = '.mp3'		
 		dtyp = 'Podcast '
-	else:										
-		suffix = '.mp4'		
+	else:												# .mp4 oder .webm	
 		dtyp = 'Video '
+		if url.endswith('.mp4'):				
+			suffix = '.mp4'		
+		if url.endswith('.webm'):				
+			suffix = '.webm'		
 		
 	title = dtyp + 'Curl-Download: ' + title
 	textfile = dfname + '.txt'
-	dfname = dfname + suffix							# suffix: '.mp4' oder '.mp3'
+	dfname = dfname + suffix							# suffix: '.mp4', '.webm', oder '.mp3'
 	
 	pathtextfile = os.path.join(dest_path, textfile)	# kompl. Speicherpfad für Textfile
 	Log(pathtextfile)
@@ -1420,7 +1426,7 @@ def DownloadsTools():
 	Log(len(dirlist))
 	mpcnt=0; vidsize=0
 	for entry in dirlist:
-		if entry.find('.mp4') > 0 or entry.find('.mp3') > 0:
+		if entry.find('.mp4') > 0 or entry.find('.webm') > 0 or entry.find('.mp3') > 0:
 			mpcnt = mpcnt + 1	
 			fname = os.path.join(path, entry)					
 			vidsize = vidsize + os.path.getsize(fname) 
@@ -1527,7 +1533,7 @@ def DownloadsList():
 	Log(len(dirlist))
 	mpcnt=0; vidsize=0
 	for entry in dirlist:
-		if entry.find('.mp4') > 0 or entry.find('.mp3') > 0:
+		if entry.find('.mp4') > 0 or entry.find('.webm') > 0 or entry.find('.mp3') > 0:
 			mpcnt = mpcnt + 1	
 			fname = os.path.join(path, entry)					
 			vidsize = vidsize + os.path.getsize(fname) 
@@ -1543,17 +1549,15 @@ def DownloadsList():
 	oc = home(cont=oc, ID='ARD')								# Home-Button	
 	# Downloads listen:
 	for entry in dirlist:							# Download + Beschreibung -> DirectoryObject
-		if entry.find('.mp4') > 0 or entry.find('.mp3') > 0:
+		if entry.find('.mp4') > 0 or entry.find('.webm') > 0 or entry.find('.mp3') > 0:
 			localpath = entry
 			title=''; tagline=''; summary=''; quality=''; thumb=''; httpurl=''
-			fname =  entry							# Dateiname + Endung für Sammeldownloads
-			ext =    entry.split('.')[1]
-			# Log(fname);Log(ext)
-			if entry.endswith('.mp4'):
-				txtfile = entry.split('.mp4')[0] + '.txt'
-			if entry.endswith('.mp3'):
-				txtfile = entry.split('.mp3')[0] + '.txt'
-			txtpath = os.path.join(path, txtfile)
+			fname =  entry							# Dateiname 
+			basename = os.path.splitext(fname)[0]	# ohne Extension
+			ext =     os.path.splitext(fname)[1]	# Extension
+			Log(fname); Log(basename); Log(ext)
+			txtfile = basename + '.txt'
+			txtpath = os.path.join(path, txtfile)   # kompl. Pfad
 			Log('entry: ' + entry)
 			Log('txtpath: ' + txtpath)
 			if os.path.exists(txtpath):
@@ -1612,15 +1616,15 @@ def VideoTools(httpurl,path,dlpath,txtpath,title,summary,thumb,tagline):
 	oc = ObjectContainer(view_group="InfoList", title1=title1, art=ICON)
 	oc = home(cont=oc, ID=NAME)					# Home-Button	
 	
-	if httpurl.endswith('mp4'):
-		title = title_org + ' | Ansehen' 												# 1. Ansehen
+	if httpurl.endswith('mp4') or httpurl.endswith('webm'):
+		title = title_org + ' | Ansehen' 											# 1. Ansehen
 		title=title.decode(encoding="utf-8", errors="ignore")
 		summary=summary.decode(encoding="utf-8", errors="ignore")
 		oc.add(CreateVideoClipObject(url=httpurl, title=title , summary=summary, 
 			meta=httpurl, thumb=thumb, tagline=tagline, duration='leer', resolution='leer'))
 	else:										# 'mp3' = Podcast
 		if httpurl.startswith('http'):			# Dateiname bei fehl. Beschreibung, z.B. Sammeldownloads
-			title = title_org + ' | Anhören' 												# 1. Anhören
+			title = title_org + ' | Anhören' 										# 1. Anhören
 			title=title.decode(encoding="utf-8", errors="ignore")
 			oc.add(CreateTrackObject(url=httpurl, title=title, summary=summary,
 				 thumb=thumb, fmt='mp3'))				# funktioniert hier auch mit aac
@@ -1662,13 +1666,12 @@ def DownloadsDelete(dlpath, single):
 				os.remove(fullpath)
 			error_txt = 'Downloadverzeichnis geleert'
 		else:
-			if dlpath.endswith('mp4'):			 # url hier kompl. Pfad
-				txturl = dlpath.split('.mp4')[0] + '.txt' # Video
-			if dlpath.endswith('mp3'):
-				txturl = dlpath.split('.mp3')[0] + '.txt' # Podcast			
-			os.remove(dlpath)					# Video löschen
-			os.remove(txturl)				# Textdatei löschen
-			error_txt = 'Video gelöscht: ' + dlpath
+			txturl = os.path.splitext(dlpath)[0]  + '.txt' 
+			if os.path.isfile(dlpath) == True:							
+				os.remove(dlpath)				# Video löschen
+			if os.path.isfile(txturl) == True:							
+				os.remove(txturl)				# Textdatei löschen
+			error_txt = 'Datei gelöscht: ' + dlpath
 		Log(error_txt)			 			 	 
 		title = 'Löschen erfolgreich | zurück zu den Download-Tools'
 		title =  title.decode(encoding="utf-8", errors="ignore")
@@ -1712,21 +1715,26 @@ def DownloadsMove(dfname, textname, dlpath, destpath, single):
 			for i in os.listdir(dlpath):
 				src = os.path.join(dlpath, i)
 				dest = os.path.join(destpath, i)							
-				# Log(src); Log(dest); 
-				shutil.copy(src, destpath)	# Datei kopieren	
-				os.remove(src)				# Datei löschen
-				cnt = cnt + 1
+				Log(src); Log(dest); 
+				
+				if os.path.isfile(src) == True:							
+					shutil.copy(src, destpath)	# Datei kopieren	
+					os.remove(src)				# Datei löschen
+					cnt = cnt + 1
 			error_txt = '%s Dateien verschoben nach: %s' % (cnt, destpath)		 			 	 
 		else:
 			textsrc = os.path.join(dlpath, textname)
 			textdest = os.path.join(destpath, textname)	
 			videosrc = os.path.join(dlpath, dfname)
 			videodest = os.path.join(destpath, dfname)		
-				
-			shutil.copy(textsrc, textdest)		
-			shutil.copy(videosrc, videodest)				
-			os.remove(videosrc)				# Videodatei löschen
-			os.remove(textsrc)				# Textdatei löschen
+			Log(videosrc); Log(videodest);
+								
+			if os.path.isfile(textsrc) == True:	# Quelldatei testen						
+				shutil.copy(textsrc, textdest)		
+				os.remove(textsrc)				# Textdatei löschen
+			if os.path.isfile(videosrc) == True:							
+				shutil.copy(videosrc, videodest)				
+				os.remove(videosrc)				# Videodatei dto.
 			error_txt = 'Video + Textdatei verschoben: ' + 	dfname				 			 	 
 		Log(error_txt)			 			 	 		
 		title = 'Verschieben erfolgreich | zurück zu den Download-Tools'
@@ -3189,8 +3197,11 @@ def ZDF_get_content(oc, page, ref_path, ID=None):	# ID='Search' od. 'VERPASST' -
 		summary = cleanhtml(summary)
 		tagline = unescape(tagline)
 		tagline = cleanhtml(tagline)
-		Log(Client.Platform)									# für PHT: Austausch Titel / Tagline
-		if  Client.Platform == 'Plex Home Theater':
+		client = Client.Platform
+		if client == None:
+			client = ''
+		Log(client)									# für PHT: Austausch Titel / Tagline
+		if  client == 'Plex Home Theater':
 			title, tagline = tagline, title
 			
 		Log('neuer Satz')
@@ -3495,7 +3506,7 @@ def ZDFotherSources(url, title, tagline, thumb):
 	else:	
 		gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1) 
 		r = urllib2.urlopen(req, context=gcontext)
-		page =  r.read()				
+		request =  r.read()				
 		r.close()	# Verbindung schließt auch autom.	
 		Log('urllib2.urlopen Windows + andere')		
 
