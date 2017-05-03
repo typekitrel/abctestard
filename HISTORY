@@ -2,11 +2,17 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------				gelöschte Releases: älter als  2.7.0	
 			
+??.05.2017 3.0.0	Funktion Pod_content/Scheme_ARD: Index-Fehler für subtitle abgefangen
+					Funktion Update_ARD_Path: Test auf Erreichbarkeit BASE_URL hinzugefügt, Positionsfehler
+					bei Ermittlung des temporären Pfades beseitigt.
+					Funktion GetZDFVideoSources: Abfangen nicht mehr vorhandener Seiten, Videolänge in
+					tagline hinzugefügt			
+			
 01.05.2017 2.9.9	Funktion ZDFotherSources: falsche Variablenbezeichnung korrigiert (page -> request) -
 					führte dazu, dass unter Windows keine weiteren Videoformate geladen werden konnten.
 					Downloads: Berücksichtigung von .webm-Videos (ZDF) in den Funktionen DownloadExtern,
 					DownloadsTools, DownloadsList,und VideoTools.
-					Downloads: Test auf vorhandene Textdatei in DownloadsDelete, DownloadsMove 
+					Downloads: Test auf vorhandene Textdatei in DownloadsDelete, DownloadsMove.
 					
 30.04.2017 2.9.8	Podcasts: Anpassung für Plex Home Theater - Verzicht auf Home-Button (wie bei Radio-Live)						
 					

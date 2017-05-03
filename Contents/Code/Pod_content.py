@@ -116,6 +116,11 @@ def PodFavoriten(title, path, offset=1):
 #	Plattformen (Posix-Standard 4096). Teilweise ist die Pfadlänge manuell konfigurierbar.
 #	Die hier gewählte platform-abhängige Variante funktioniert unter Linux + Windows (Argumenten-Länge
 #	bis ca. 4 KByte getestet) 
+# Rücksprung-Problem: der Button DownloadsTools ruft zwar die Funktion DownloadsTools auf, führt aber vorher
+#	noch einmal den Curl-Aufruf aus mit kompl. Download - keine Abhilfe mit no_cache=True im ObjectContainer
+#	oder Parameter time=time.time() für dem Callback DownloadsTools.
+#	
+
 
 def DownloadMultiple(key_url_list, key_POD_rec):						# Sammeldownloads
 	Log('DownloadMultiple'); 
@@ -124,7 +129,8 @@ def DownloadMultiple(key_url_list, key_POD_rec):						# Sammeldownloads
 	url_list = Dict[key_url_list]
 	POD_rec = Dict[key_POD_rec]
 	
-	oc = ObjectContainer(view_group="InfoList", title1='Favoriten', title2='Sammel-Downloads', art = ObjectContainer.art)
+	oc = ObjectContainer(view_group="InfoList", title1='Favoriten', title2='Sammel-Downloads', 
+		art = ObjectContainer.art, no_cache=True)
 	oc = home(cont=oc, ID='PODCAST')						# Home-Button
 	
 	rec_len = len(POD_rec)
@@ -176,8 +182,9 @@ def DownloadMultiple(key_url_list, key_POD_rec):						# Sammeldownloads
 		if str(call).find('object at') > 0:  				# Bsp.: <subprocess.Popen object at 0x7fb78361a210>
 			title = 'curl: Download erfolgreich gestartet'	# trotzdem Fehlschlag möglich, z.B. ohne Schreibrecht								
 			summary = 'Anzahl der Podcast: %s' % rec_len
+			tagline = 'zurück zu den Download-Tools'.decode(encoding="utf-8", errors="ignore")
 			oc.add(DirectoryObject(key = Callback(DownloadsTools), title=title, summary=summary, 
-				thumb=R(ICON_OK)))						
+				tagline=tagline, thumb=R(ICON_OK)))		
 			return oc				
 		else:
 			raise Exception('Start von curl fehlgeschlagen')			
@@ -186,13 +193,13 @@ def DownloadMultiple(key_url_list, key_POD_rec):						# Sammeldownloads
 		summary = str(exception)
 		summary = summary.decode(encoding="utf-8", errors="ignore")
 		Log(summary)		
-		tagline='Exception: Download fehlgeschlagen'
+		tagline='Exception: Download fehlgeschlagen | '.decode(encoding="utf-8", errors="ignore") 
 		oc.add(DirectoryObject(key = Callback(DownloadsTools), title = 'Fehler', summary=summary, 
-				thumb=R(ICON_CANCEL), tagline=tagline))		
+				tagline=tagline, thumb=R(ICON_CANCEL), tagline=tagline))		
 		return oc
 		
 	return oc
-	
+
 #------------------------	
 def get_pod_content(url, rec_per_page, baseurl, offset):
 	Log('get_pod_content'); Log(rec_per_page); Log(baseurl); Log(offset);
@@ -721,8 +728,9 @@ def Scheme_ARD(page, rec_per_page, offset,baseurl):		# Schema ARD = www.ardmedia
 		
 		author = ''	  										# fehlt
 		groesse = ''	  									# fehlt
-		datum = subtitle.split('|')[0]
-		dauer = subtitle.split('|')[1]
+		if subtitle.find('|') > 0:
+			datum = subtitle.split('|')[0]
+			dauer = subtitle.split('|')[1]
 		
 		if dachzeile:
 			title = ' %s | %s ' % (dachzeile, headline)

@@ -121,4 +121,5 @@ def cleanSummary(summary):
 	summary = summary.replace('<br />',' - ')
 	summary = summary.replace('<br/>',' - ')
 	summary = summary.replace('&amp;','&')
+	summary = summary.replace('&gt;','->')
 	return summary.lstrip()

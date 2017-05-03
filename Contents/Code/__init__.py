@@ -19,8 +19,8 @@ import EPG
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '2.9.9'		
-VDATE = '01.05.2017'
+VERSION =  '3.0.0'		
+VDATE = '03.05.2017'
 
 # 
 #	
@@ -683,20 +683,22 @@ def test_fault(page, path):	# testet geladene ARD-Seite auf ARD-spezif. Error-Te
 		return ''
 #-----------------------
 def get_page(path):		# holt kontrolliert raw-Content
+	msg = ''; page = ''				
 	try:
 		page = HTTP.Request(path).content
-		err = ''
-	except:
-		page = ''
+	except Exception as exception:
+		summary = str(exception)
+		summary = summary.decode(encoding="utf-8", errors="ignore")
+		Log(summary)		
 		
 	if page == '':	
-		error_txt = 'Seite nicht erreichbar'			 			 	 
+		error_txt = 'Seite nicht erreichbar oder nicht mehr vorhanden'			 			 	 
 		msgH = 'Fehler'; msg = error_txt + ' | Seite: ' + path
 		Log(msg)
 		msg =  msg.decode(encoding="utf-8", errors="ignore")
-		err = ObjectContainer(header=msgH, message=msg)
+#		err = ObjectContainer(header=msgH, message=msg)
 
-	return page, err	
+	return page, msg	
 
 ####################################################################################################
 @route(PREFIX + '/VerpasstWoche')	# Liste der Wochentage
@@ -818,8 +820,6 @@ def PodFavoritenListe(title, offset=0):
 		summary=summary.decode(encoding="utf-8", errors="ignore")
 		oc.add(DirectoryObject(key=Callback(Pod_content.PodFavoriten, title=title, path=path, offset=0), 
 			title=title, tagline=path, summary=summary,  thumb=R(ICON_STAR)))
-#		oc.add(DirectoryObject(key=Callback(PodFavoriten, title=title, path=path, offset=0), 
-#			title=title, tagline=path, summary=summary,  thumb=R(ICON_STAR)))
 				
 	
 	# Mehr Seiten anzeigen:
@@ -885,18 +885,22 @@ def ARDMore(title, morepath, next_cbKey, ID):	# next_cbKey: Vorgabe für nächst
 
 #------------------------	
 def Update_ARD_Path(path):		# aktualisiert den Zugriffspfad fallls mötig, z.B. für "Alle Filme"
+	Log('Update_ARD_Path old: ' + path)	
+	
 	try:
-		Log('Update_ARD_Path old: ' + path)	
 		search_path = stringextract(BASE_URL, '?', path) 	# Base + documentId abschneiden
+		search_path = 'href="' + search_path				# Bsp.: href="/tv/Neueste-Videos/mehr
 		Log(search_path)
-		page = HTTP.Request(BASE_URL).content
+		page, msg = get_page(BASE_URL)						# BASE_URL enthält alle weiter führenden Pfade
+		if page == '':	
+			return 	ObjectContainer(header='Error', message=msg)						
+		
 		pos = page.find(search_path)
-		if pos >= 0:	# Pfad (einschl. http://) + Länge documentId (20) + 10 Reserve:
-			new_path = page[pos-6:pos + len(search_path) + 30]	
-			Log(new_path)	
-			new_path =  stringextract('\"', '\"',  new_path)
-			Log(new_path)	
-			new_path = BASE_URL + new_path
+		if pos >= 0:	# search_path  + Länge documentId (20) + 10 Reserve:
+			temp_path = page[pos:pos + len(search_path) + 30]
+			temp_path = stringextract('href="', '"', temp_path) # Pfadanteil einschl. documentId	
+			Log(temp_path)	
+			new_path = BASE_URL + temp_path
 			Log(new_path)	
 			if new_path == path:
 				Log('Update_ARD_Path new=old: ' + path)	
@@ -2511,10 +2515,10 @@ def RadioAnstalten(path, title,sender,thumbs):
 		client = ''
 	if client.find ('Plex Home Theater'): 
 		oc = home(cont=oc, ID=NAME)							# Home-Button macht bei PHT die Trackliste unbrauchbar 
-				
-	page, err = get_page(path=path)				# Absicherung gegen Connect-Probleme
-	if err:
-		return err	
+			
+	page, msg = get_page(path=path)				# Absicherung gegen Connect-Probleme
+	if page == '':
+		return ObjectContainer(header='Error', message=msg)
 	entries = blockextract('class=\"teaser\"', page)	
 	
 	del entries[0:2]								# "Javascript-Fehler" überspringen (2 Elemente)
@@ -3113,7 +3117,8 @@ def ZDF_get_content(oc, page, ref_path, ID=None):	# ID='Search' od. 'VERPASST' -
 				Log(airing)	
 			video_datum = stringextract('video-airing\">', '<', rec)		# Video-Datum, kann fehlen	
 			video_duration = stringextract('video-duration', '/dd', rec)	# Video-Länge,  "      "	
-			duration = stringextract('>', '<', video_duration)
+			duration = stringextract('>', '<', video_duration)			
+				
 			if video_datum:
 				vid_content = video_datum
 			if airing:		# aus teaser_label oder vid-content, so.o.
@@ -3123,6 +3128,9 @@ def ZDF_get_content(oc, page, ref_path, ID=None):	# ID='Search' od. 'VERPASST' -
 					vid_content = duration
 				else:
 					vid_content = vid_content + ' | ' + duration
+
+		if duration == '':
+			duration = stringextract('class="teaser-info ">', '</dd>', rec) # Länge bei Verpasst
 		Log(airing); Log(video_datum); Log(video_duration); Log(duration);  
 
 		# teaser_cat. div. Bezeichner + Textformate,  Bsp.: <span class="teaser-cat" itemprop="genre">
@@ -3161,7 +3169,7 @@ def ZDF_get_content(oc, page, ref_path, ID=None):	# ID='Search' od. 'VERPASST' -
 		if href_title:				
 			title = title + ' | ' + href_title		
 		if title == '':				
-			title = plusbar_title	# nachrangig, z.B. Zeitbereich: Morgens 5:30 - 12:00
+			title = plusbar_title 		# nachrangig, z.B. Zeitbereich: Morgens 5:30 - 12:00
 		
 		if description:
 			summary = description
@@ -3170,8 +3178,8 @@ def ZDF_get_content(oc, page, ref_path, ID=None):	# ID='Search' od. 'VERPASST' -
 			tagline = 'Folgeseiten'
 		else:							# Videos prüfen + Titel kennzeichnen
 			if rec.find('title-icon icon-502_play') > 0 or  rec.find('icon-301_clock icon') > 0:
-				title = 'Video' + ' | ' + title 
-				tagline = plusbar_title
+				# title = 'Video' + ' | ' + title 			# kann entfallen, spart Platz
+				tagline = plusbar_title + ' | ' + duration 	# z.b. Nachts 0:00 - 05:30 | 43 min
 				if vid_content:
 					title = title  +  ' | ' + vid_content
 					tagline = plusbar_title 
@@ -3189,8 +3197,11 @@ def ZDF_get_content(oc, page, ref_path, ID=None):	# ID='Search' od. 'VERPASST' -
 				multi = True		# weitere Folgeseiten mit unbekanntem Inhalt, ev. auch Videos
 				tagline = 'Folgeseiten'
 		
-		if title[1] == '|':			# Fehlerkorrektur
+		if title[1] == '|':				# Fehlerkorrektur
 			title = title[2:]
+		Log('tagline: ' + tagline)
+		if tagline.strip()[-1] == '|':	# Fehlerkorrektur
+			tagline = tagline.strip()[:-1]
 		title = title.strip()
 		title = unescape(title)
 		summary = unescape(summary)
@@ -3267,7 +3278,11 @@ def GetZDFVideoSources(url, title, thumb, tagline, segment_start=None, segment_e
 	oc = ObjectContainer(title2=title.decode(encoding="utf-8", errors="ignore"), view_group="InfoList")
 	urlSource = url 	# für ZDFotherSources
 
-	page = HTTP.Request(url).content 											# 1. player-Konfig. ermitteln
+	page, msg = get_page(url)
+	if page == '':
+		return ObjectContainer(header='Error', message=msg)
+		
+	#page = HTTP.Request(url).content 											# 1. player-Konfig. ermitteln
 	#headers = HTTP.Request(url).headers	# etag entfällt ab 20.11.2016  
 	#headers = str(headers)
 	# Log(headers); # Log(page)    # bei Bedarf
