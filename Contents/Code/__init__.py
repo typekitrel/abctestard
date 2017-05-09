@@ -19,8 +19,8 @@ import EPG
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '3.0.0'		
-VDATE = '03.05.2017'
+VERSION =  '3.0.1'		
+VDATE = '09.05.2017'
 
 # 
 #	
@@ -240,14 +240,32 @@ def Main():
 			summary=summary, thumb = R(ICON_DOWNL_DIR)))
 								
 	repo_url = 'https://github.com/{0}/releases/'.format(GITHUB_REPOSITORY)
-	oc.add(DirectoryObject(key=Callback(SearchUpdate, title='Plugin-Update'), 
-		title='Plugin-Update | akt. Version: ' + VERSION + ' vom ' + VDATE,
-		summary='Suche nach neuen Updates starten', tagline='Bezugsquelle: ' + repo_url, thumb=R(ICON_MAIN_UPDATER)))
+	call_update = False
+	if Prefs['pref_info_update'] == True:				# Hinweis auf neues Update beim Start des Plugins 
+		ret = updater.update_available(VERSION)
+		int_lv = ret[0]			# Version Github
+		int_lc = ret[1]			# Version aktuell
+		latest_version = ret[2]	# Version Github, Format 1.4.1
+		
+		if int_lv > int_lc:								# Update-Button "installieren" zeigen
+			call_update = True
+			title = 'neues Update vorhanden - jetzt installieren'
+			summary = 'Plugin aktuell: ' + VERSION + ', neu auf Github: ' + latest_version
+			url = 'https://github.com/{0}/releases/download/{1}/{2}.bundle.zip'.format(GITHUB_REPOSITORY, latest_version, REPO_NAME)
+			oc.add(DirectoryObject(key=Callback(updater.update, url=url , ver=latest_version), 
+				title=title, summary=summary, tagline=cleanhtml(summary), thumb=R(ICON_UPDATER_NEW)))
+	if call_update == False:							# Update-Button "Suche" zeigen	
+		title = 'Plugin-Update | akt. Version: ' + VERSION + ' vom ' + VDATE	
+		summary='Suche nach neuen Updates starten'
+		tagline='Bezugsquelle: ' + repo_url			
+		oc.add(DirectoryObject(key=Callback(SearchUpdate, title='Plugin-Update'), 
+			title=title, summary=summary, tagline=tagline, thumb=R(ICON_MAIN_UPDATER)))
 		
 	oc.add(DirectoryObject(key = Callback(Main_Options, title='Einstellungen'), title = 'Einstellungen', 
 		summary = 'Live-TV-Sender: EPG-Daten verwenden, verfuegbare Bandbreiten anzeigen', 
 		tagline = 'Die Downloadeinstellungen bitte im Webplayer vornehmen',
 		thumb = R(ICON_PREFS)))
+					
 	return oc
 	
 #----------------------------------------------------------------
@@ -551,7 +569,7 @@ def SearchUpdate(title):		#
 	if int_lv > int_lc:		# zum Testen drehen (akt. Plugin vorher sichern!)
 		oc.add(DirectoryObject(
 			key = Callback(updater.update, url=url , ver=latest_version), 
-			title = 'Update vorhanden - jetzt installieren',
+			title = 'neues Update vorhanden - jetzt installieren',
 			summary = 'Plugin aktuell: ' + VERSION + ', neu auf Github: ' + latest_version,
 			tagline = cleanhtml(summ),
 			thumb = R(ICON_UPDATER_NEW)))
@@ -2532,7 +2550,7 @@ def RadioAnstalten(path, title,sender,thumbs):
 		
 		img_src = ""						
 			
-		headline = ''; subtitel = ''		# nicht immer beide enthalten
+		headline = ''; subtitel = ''				# nicht immer beide enthalten
 		if element.find('headline') >= 0:			# h4 class="headline" enthält den Sendernamen
 			headline = stringextract('\"headline\">', '</h4>', element)
 			headline = headline .decode('utf-8')		# tagline-Attribute verlangt Unicode
@@ -2561,7 +2579,7 @@ def RadioAnstalten(path, title,sender,thumbs):
 					img = mystrip(thumblist[i])
 				except:
 					break					# dann bleibt es bei img_src (Fallback)
-				if sname == headline:
+				if sname == headline:		# lokaler Sendername in  <sender> muss Sendernahme aus headline entspr.
 					if img:
 						img_src = img
 					Log(img_src); 			# bei Bedarf

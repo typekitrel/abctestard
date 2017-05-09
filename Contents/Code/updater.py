@@ -11,8 +11,7 @@ ICON_NEXT = "icon-next.png"			# gtk themes / Adwaita go-next-symbolic.symbolic.p
 FEED_URL = 'https://github.com/{0}/releases.atom'
 
 ################################################################################
-TITLE = "Plex Plugin für die deutsche ARD Mediathek - mit Live-TV der ARD + weiteren Sendern"
-#VERSION = '0.11' # Release notation (x.y - where x is major and y is minor)
+TITLE = 'ARD Mediathek 2016'
 GITHUB_REPOSITORY = 'rols1/Plex-Plugin-ARDMediathek2016'
 PREFIX = "/video/ardmediathek2016"
 ################################################################################
@@ -39,7 +38,7 @@ def update_available(VERSION):
 	try:
 		latest_version_str, summ, tag = get_latest_version()
 		#latest_version_str = getOnlyVersionNumber(latest_version_str) # hier n.b.
-		Log(latest_version_str); Log(summ); Log(tag); 
+		Log(tag); 	# Log(latest_version_str); Log(summ);
 		
 		if tag:
 			# wir verwenden auf Github die Versionierung nicht im Plugin-Namen
@@ -48,7 +47,8 @@ def update_available(VERSION):
 			current_version = VERSION
 			int_lv = tag.replace('.','')
 			int_cv = current_version.replace('.','')
-			Log(latest_version); Log(current_version); Log(int_lv); Log(int_cv)
+			Log('Github: ' + latest_version); Log('lokal: ' + current_version); 
+			# Log(int_lv); Log(int_cv)
 			return (int_lv, int_cv, latest_version, summ, tag)
 	except:
 		pass
@@ -103,9 +103,6 @@ def update(url, ver):
 		return ObjectContainer(header='Update fehlgeschlagen', message='Version ' + ver + 'nicht gefunden!')
 
 ################################################################################
-# @route(PREFIX + '/updateold')	
-# def updateold(title, feed, ver):	# Funktion updateold nicht verwendet
-
 	
 # clean tag names based on your release naming convention
 def cleanSummary(summary):

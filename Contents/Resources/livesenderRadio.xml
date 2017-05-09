@@ -31,10 +31,10 @@
 		<title>mdr</title>
 		<link>http://www.ardmediathek.de/radio/live?genre=Alle+Genres&kanal=620</link>
 		<thumbnail>radio-mdr.png</thumbnail>
-		<sender>MDR AKTUELL|JUMP|MDR KLASSIK|MDR KULTUR|MDR Sachsen-Anhalt|MDR Schlagerwelt|SPUTNIK|MDR THÜRINGEN|
-			MDR 1 Radio Sachsen</sender>		
-		<thumblist>radio-mdr-aktuell.png|radio-mdr-jump.png|radio-mdr-klassik.png|radio-mdr-kultur.png|
-			radio-mdr1-sachsen-anhalt.png|radio-mdr-schlagerwelt.png|radio-mdr-sputnik.png|radio-mdr1-thueringen.png|radio-mdr1-sachsen.png</thumblist>
+		<sender>MDR AKTUELL|JUMP|MDR KLASSIK|MDR KULTUR|MDR Sachsen|MDR Sachsen-Anhalt|MDR Schlagerwelt|SPUTNIK|
+			MDR THÜRINGEN</sender>		
+		<thumblist>radio-mdr-aktuell.png|radio-mdr-jump.png|radio-mdr-klassik.png|radio-mdr-kultur.png|radio-mdr1-sachsen.png|
+			radio-mdr1-sachsen-anhalt.png|radio-mdr-schlagerwelt.png|radio-mdr-sputnik.png|radio-mdr1-thueringen.png</thumblist>
 	</item>
 	<item>
 		<title>NDR</title>
@@ -89,8 +89,8 @@
 		<title>Deutschlandradio</title>
 		<link>http://www.ardmediathek.de/radio/live?genre=Alle+Genres&kanal=21475696</link>
 		<thumbnail>radio-dradio.png</thumbnail>
-		<sender>Deutschlandfunk|Deutschlandradio Kultur|DRadio Wissen</sender>		
-		<thumblist>radio-deutschlandfunk.png|radio-dradio-kultur.png|radio-dradio-wissen.png</thumblist>
+		<sender>Deutschlandfunk Kultur|Deutschlandfunk|Deutschlandfunk Nova</sender>		
+		<thumblist>radio-dradio-kultur.png|radio-deutschlandfunk.png|radio-dradio-nova.png</thumblist>
 	</item>
 </items>
 </channel>
