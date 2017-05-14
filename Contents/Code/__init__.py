@@ -19,8 +19,8 @@ import EPG
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '3.0.1'		
-VDATE = '09.05.2017'
+VERSION =  '3.0.2'		
+VDATE = '15.05.2017'
 
 # 
 #	
@@ -3522,30 +3522,14 @@ def ZDFotherSources(url, title, tagline, thumb):
 	req = urllib2.Request(profile_url)
 	req.add_header('Api-Auth', 'Bearer d2726b6c8c655e42b68b0db26131b15b22bd1a32')
 
-	Log(sys.platform)
-	if sys.platform == 'linux2':
-		try:
-			cafile="/etc/ssl/ca-bundle.pem"
-			r = urllib2.urlopen(req, cafile=cafile)
-			request =  r.read()				
-			r.close()
-			Log('urllib2.urlopen linux2 erfolgreich, cafile: ' + cafile)		
-		except:
-			gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1) 
-			r = urllib2.urlopen(req, context=gcontext)
-			request =  r.read()				
-			r.close()	# Verbindung schließt auch autom.	
-			Log('urllib2.urlopen linux2 Fallback ohne cafile')		
-	else:	
-		gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1) 
-		r = urllib2.urlopen(req, context=gcontext)
-		request =  r.read()				
-		r.close()	# Verbindung schließt auch autom.	
-		Log('urllib2.urlopen Windows + andere')		
-
-	request = request.decode('utf-8', 'ignore')
-	Log(request[:20])	# {"contentType":"epis ...	
-
+	req = urllib2.Request(profile_url)
+	req.add_header('Api-Auth', 'Bearer d2726b6c8c655e42b68b0db26131b15b22bd1a32')
+	gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1)  
+	r = urllib2.urlopen(req, context=gcontext)
+	request =  r.read()
+	request = request.decode('utf-8', 'ignore')		
+	Log(request[:20])	# "attributes" ...
+	
 	pos = request.rfind('mainVideoContent')				# 'mainVideoContent' am Ende suchen
 	request_part = request[pos:]
 	request_part = repl_char('\\', request_part) # das erspart hier die JSON-Behandlung, Bsp. http:\/\/zdf.de\/rels\/target
@@ -3563,13 +3547,29 @@ def ZDFotherSources(url, title, tagline, thumb):
 		
 	Log('ptmd: ' + old_videodat_url); Log('uurl: ' + videodat); Log('videodat_url: ' + videodat_url)	
 	
-	# Authentifizierung wie bei profile_url - s.o.:
 	req = urllib2.Request(videodat_url)
 	req.add_header('Api-Auth', 'Bearer d2726b6c8c655e42b68b0db26131b15b22bd1a32')
-	gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1)  
-	r = urllib2.urlopen(req, context=gcontext)
-	page =  r.read()
-	request_part = repl_char('\\', request_part) # das erspart hier die JSON-Behandlung, Bsp. http:\/\/zdf.de\/rels\/target
+	Log(sys.platform)
+	if sys.platform == 'linux2':
+		try:
+			cafile="/etc/ssl/ca-bundle.pem"
+			r = urllib2.urlopen(req, cafile=cafile)
+			page =  r.read()				
+			r.close()
+			Log('urllib2.urlopen linux2 erfolgreich, cafile: ' + cafile)		
+		except:
+			gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1) 
+			r = urllib2.urlopen(req, context=gcontext)
+			page =  r.read()				
+			r.close()	# Verbindung schließt auch autom.	
+			Log('urllib2.urlopen linux2 Fallback ohne cafile')		
+	else:	
+		gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1) 
+		r = urllib2.urlopen(req, context=gcontext)
+		page =  r.read()				
+		r.close()	# Verbindung schließt auch autom.	
+		Log('urllib2.urlopen Windows + andere')		
+	
 	Log(page[:20])	 # "attributes" : ...
 	
 	formitaeten = blockextract('\"formitaeten\" :', page)		# Video-URL's ermitteln

@@ -1,11 +1,15 @@
 CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------				gelöschte Releases: älter als  2.7.0	
+	
+15.05.2017 3.0.2	Funktion ZDFotherSources: Workaround mit Zertifikat ca-bundle.pem von profile_url
+					auf videodat_url verlegt (gleiche Position wie in GetZDFVideoSources) - an dieser
+					Stelle notwendig für bestimmte Linux-Clients, z.b. OpenMediaVault (Debian-basiert).		
 		
-09.05.2017 3.0.1	Pluginstart: Option zum Anzeigen neuer Updates hinzugefügt
+09.05.2017 3.0.1	Pluginstart: Option zum Anzeigen neuer Updates hinzugefügt.
 					Radio-Live: Anpassung für umbenannte Sender in livesenderRadio.xml, einschl. neue
 					Sender-Logos. Betroffene Sender MDR Sachsen, MDR Sachsen-Anhalt, Deutschlandfunk,
-					Deutschlandfunk Nova
+					Deutschlandfunk Nova.
 			
 03.05.2017 3.0.0	Funktion Pod_content/Scheme_ARD: Index-Fehler für subtitle abgefangen.
 					Funktion Update_ARD_Path: Test auf Erreichbarkeit BASE_URL hinzugefügt, Positionsfehler
