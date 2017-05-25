@@ -2,6 +2,14 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------				gelöschte Releases: älter als  2.7.0	
 	
+25.05.2017 3.0.3	Integration der "NeoMagazin Royale"-Videos auf https://www.neo-magazin-royale.de/zdi/ -
+					erreichbar über Buchstabe N in AZ-Funktion + Integration in die Ladekette im ZDF-Bereich
+					(show_formitaeten) + Integration in die Downloadfunktionen.
+					Renovierung Funktionen GetZDFVideoSources + ZDFotherSources: Auslagerung der kritischen
+  					Ladekette in die gemeinsame Funktion get_formitaeten (Seitenübergabe per Dict).
+  					Radio-Live: Anpassung livesenderRadio.xml an Positionswechsel Sender WDR 5 kiraka.
+  					Radio-Live: Anpassung livesenderRadio.xml an geänderte Schreibweisen der 
+  					MDR-Sender MDR SCHLAGERWELT und MDR SACHSEN.	
 15.05.2017 3.0.2	Funktion ZDFotherSources: Workaround mit Zertifikat ca-bundle.pem von profile_url
 					auf videodat_url verlegt (gleiche Position wie in GetZDFVideoSources) - an dieser
 					Stelle notwendig für bestimmte Linux-Clients, z.b. OpenMediaVault (Debian-basiert).		
