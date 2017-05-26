@@ -2,11 +2,15 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------				gelöschte Releases: älter als  2.7.0	
 	
+26.05.2017 3.0.4	Funktion img_urlScheme (ARD-Bereich): Basispfad für Icons nur noch dort ergänzt,
+					wo er fehlt (führte vorher manchmal zu doppeltem Basispfad im Icon).  
+					Funktion SinglePage: fehlendes Icon für Podcasts ergänzt. 
+	
 25.05.2017 3.0.3	Integration der "NeoMagazin Royale"-Videos auf https://www.neo-magazin-royale.de/zdi/ -
 					erreichbar über Buchstabe N in AZ-Funktion + Integration in die Ladekette im ZDF-Bereich
 					(show_formitaeten) + Integration in die Downloadfunktionen.
 					Renovierung Funktionen GetZDFVideoSources + ZDFotherSources: Auslagerung der kritischen
-  					Ladekette in die gemeinsame Funktion get_formitaeten (Seitenübergabe per Dict).
+  					Ladekette in die gemeinsame Funktion get_formitaeten.
   					Radio-Live: Anpassung livesenderRadio.xml an Positionswechsel Sender WDR 5 kiraka.
   					Radio-Live: Anpassung livesenderRadio.xml an geänderte Schreibweisen der 
   					MDR-Sender MDR SCHLAGERWELT und MDR SACHSEN.	

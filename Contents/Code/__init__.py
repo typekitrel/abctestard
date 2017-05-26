@@ -19,8 +19,8 @@ import EPG
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '3.0.3'		
-VDATE = '25.05.2017'
+VERSION =  '3.0.4'		
+VDATE = '26.05.2017'
 
 # 
 #	
@@ -782,7 +782,8 @@ def PodFavoritenListe(title, offset=0):
 	
 	fname =  Prefs['pref_podcast_favorits']		# Default: podcast-favorits.txt im Ressourcenverz.
 	Log(fname)
-	if os.path.isfile(fname) == False:					
+	if os.path.isfile(fname) == False:
+		Log(fname + ' nicht gefunden')					
 		Inhalt = Resource.Load(FAVORITS_Pod)	
 	else:										
 		try:
@@ -1110,7 +1111,9 @@ def SinglePage(title, path, next_cbKey, mode, ID, offset=0):	# path komplett
 		Log('next_cbKey: ' + next_cbKey); Log('summary: ' + summary);
 		if next_cbKey == 'SingleSendung':		# Callback verweigert den Funktionsnamen als Variable
 			Log('path: ' + path); Log('func_path: ' + func_path); Log('subtitel: ' + subtitel); Log(sid)
-			Log(ID)
+			Log(ID)				
+			if ID == 'PODCAST':					# Icon für Podcast
+				img_src = R(ICON_NOTE)					     
 			if func_path == BASE_URL + path: 	# überspringen - in ThemenARD erscheint der Dachdatensatz nochmal
 				Log('BASE_URL + path == func_path | Satz überspringen');
 				continue
@@ -1977,7 +1980,7 @@ def get_sendungen(container, sendungen, ID, mode): # Sendungen ausgeschnitten mi
 #-------------------
 # def img_urlScheme: img-Url ermitteln für get_sendungen, ARDRubriken. text = string, dim = Dimension
 def img_urlScheme(text, dim, ID):
-	Log('img_urlScheme: ' + text[0:40])
+	Log('img_urlScheme: ' + text[0:60])
 	Log(dim)
 	
 	pos = 	text.find('class=\"mediaCon\">')			# img erst danach
@@ -1995,7 +1998,9 @@ def img_urlScheme(text, dim, ID):
 	
 		
 	if img_src and img_alt:
-		img_src = BASE_URL + img_src + str(dim)			# dim getestet: 160,265,320,640
+		if img_src.startswith('http://') == False:		# Base ergänzen
+			img_src = BASE_URL + img_src 
+		img_src = img_src + str(dim)					# dim getestet: 160,265,320,640
 		if ID == 'PODCAST':								# Format Quadrat klappt nur bei PODCAST,
 			img_src = img_src.replace('16x9', '16x16')	# Sender liefert Ersatz, falls n.v.
 		Log('img_urlScheme: ' + img_src)
