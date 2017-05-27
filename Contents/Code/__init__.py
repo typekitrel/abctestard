@@ -19,8 +19,8 @@ import EPG
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '3.0.4'		
-VDATE = '26.05.2017'
+VERSION =  '3.0.5'		
+VDATE = '27.05.2017'
 
 # 
 #	
@@ -1600,7 +1600,8 @@ def DownloadsList():
 				if tagline == '':
 					tagline = quality
 				else:
-					tagline = quality + ' | ' + tagline
+					if len(quality.strip()) > 0:
+						tagline = quality + ' | ' + tagline
 			else:										# ohne Beschreibung
 				title = fname
 				httpurl = fname							# Berücksichtigung in VideoTools - nicht abspielbar

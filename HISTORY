@@ -2,6 +2,11 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------				gelöschte Releases: älter als  2.7.0	
 	
+		3.0.4	PodFavoriten(Pod_Content): Korrektur in Scheme_ARD (Fehler bei Ermittlung mp3-Url)
+				PodFavoriten(Pod_Content): Sätze ohne Url überspringen + Sammeldownloads
+				abschalten bei Mehrfachseiten
+			kleinere Korrekturen in Beschriftungen (title,summary, tagline)
+	
 26.05.2017 3.0.4	Funktion img_urlScheme (ARD-Bereich): Basispfad für Icons nur noch dort ergänzt,
 					wo er fehlt (führte vorher manchmal zu doppeltem Basispfad im Icon).  
 					Funktion SinglePage: fehlendes Icon für Podcasts ergänzt. 

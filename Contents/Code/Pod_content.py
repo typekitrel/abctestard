@@ -56,14 +56,19 @@ def PodFavoriten(title, path, offset=1):
 		msg = msg.decode(encoding="utf-8", errors="ignore")
 		return ObjectContainer(header='Error', message=msg)
 			
-	url_list = []									# url-Liste für Sammel-Downloads (Dict['url_list'])		
+	url_list = []									# url-Liste für Sammel-Downloads (Dict['url_list'])	
+	DLMultiple = True
 	for rec in POD_rec:
 		max_len=rec[0]
 		url=rec[1]; summ=rec[3]; tagline=rec[9]; title=rec[7];
+		if url == '':								# skip Satz ohne url - kann vorkommen
+			continue
+		if  url.endswith('.mp3') == False:			# Sammel-Downloads abschalten, falls Mehrfachseiten folgen
+			DLMultiple = False
 		title = unescape(title)
 		url_list.append(url)
 		img = R(ICON_NOTE)	
-		Log(title); Log(summ[:40]); Log(url); 
+		Log(title); Log(summ[:40]); Log(url); Log(DLMultiple)
 		if rec[8]:
 			img = rec[8]
 		if rec[8] == 'PageControl':					# Schemata mit Seitenkontrolle, Bsp. RBB
@@ -91,16 +96,17 @@ def PodFavoriten(title, path, offset=1):
 		oc.add(DirectoryObject(key=Callback(PodFavoriten, title=title, path=path, offset=new_offset), 
 			title=title, tagline='Favoriten', summary=summ,  thumb=R(ICON_MEHR)))
 			
-	# Sammel-Downloads - alle angezeigten Favoriten-Podcasts downloaden?
-	#	für "normale" Podcasts erfolgt die Abfrage in SinglePage
-	title='Achtung! Alle angezeigten Podcasts ohne Rückfrage speichern?'
-	title = title.decode(encoding="utf-8", errors="ignore")
-	summ = 'Download von insgesamt %s Podcasts' % len(POD_rec)	
-	Dict['url_list'] = url_list			# als Dict - kann zu umfangreich sein als url-Parameter
-	Dict['POD_rec'] = POD_rec	
-	Dict.Save()
-	oc.add(DirectoryObject(key=Callback(DownloadMultiple, key_url_list='url_list', key_POD_rec='POD_rec'), 
-		title=title, tagline='', summary=summ,  thumb=R(ICON_DOWNL)))
+	if DLMultiple == True and len(oc) > 1:			# True z.B. bei "Weiter zu Seite 1"
+		# Sammel-Downloads - alle angezeigten Favoriten-Podcasts downloaden?
+		#	für "normale" Podcasts erfolgt die Abfrage in SinglePage
+		title='Achtung! Alle angezeigten Podcasts ohne Rückfrage speichern?'
+		title = title.decode(encoding="utf-8", errors="ignore")
+		summ = 'Download von insgesamt %s Podcasts' % len(POD_rec)	
+		Dict['url_list'] = url_list			# als Dict - kann zu umfangreich sein als url-Parameter
+		Dict['POD_rec'] = POD_rec	
+		Dict.Save()
+		oc.add(DirectoryObject(key=Callback(DownloadMultiple, key_url_list='url_list', key_POD_rec='POD_rec'), 
+			title=title, tagline='', summary=summ,  thumb=R(ICON_DOWNL)))
 				 
 	return oc
 
@@ -120,7 +126,6 @@ def PodFavoriten(title, path, offset=1):
 #	noch einmal den Curl-Aufruf aus mit kompl. Download - keine Abhilfe mit no_cache=True im ObjectContainer
 #	oder Parameter time=time.time() für dem Callback DownloadsTools.
 #	
-
 
 def DownloadMultiple(key_url_list, key_POD_rec):						# Sammeldownloads
 	Log('DownloadMultiple'); 
@@ -681,13 +686,15 @@ def Scheme_ARD(page, rec_per_page, offset,baseurl):		# Schema ARD = www.ardmedia
 			POD_rec.append(single_rec)
 		return POD_rec							# Rückkehr aus Seitenkontrolle
 
+
 												# 2. Durchlauf - Inhalte der einzelnen Seiten:
 	sendungen = blockextract('class="teaser"', page)  # Struktur für Podcasts + Videos ähnlich
 	img_src_header=''; img_alt_header=''; teasertext=''
-	if sendungen[2].find('urlScheme') >= 0:								# 2 = Episodendach
-		text = stringextract('urlScheme', '/noscript', sendungen[2])
+	Log(sendungen[0])
+	if sendungen[0].find('urlScheme') >= 0:								# 2 = Episodendach
+		text = stringextract('urlScheme', '/noscript', sendungen[0])
 		img_src_header, img_alt_header = img_urlScheme(text, 320, ID='PODCAST') 
-		teasertext = stringextract('class="teasertext">', '</p>', sendungen[2])
+		teasertext = stringextract('class="teasertext">', '</p>', sendungen[0])
 		Log(img_src_header);Log(img_alt_header);Log(teasertext);
 	
 	max_len = len(sendungen)					# Gesamtzahl gefundener Sätze dieser Seite
@@ -714,12 +721,14 @@ def Scheme_ARD(page, rec_per_page, offset,baseurl):		# Schema ARD = www.ardmedia
 		url_local = baseurl + url_local
 		Log('url_local: ' + url_local)
 		documentId =  re.findall("documentId=(\d+)", url_local)[0]
-		url = baseurl + '/play/media/%s?devicetype=pc&features=hls' % documentId
+		url = baseurl + '/play/media/%s?devicetype=pc&features=hls' % documentId 	# Quelldatei Podcast
 		url_content, err = get_page(path=url)			# Textdatei, Format ähnlich parseLinks_Mp4_Rtmp
-		Log('url_content: ' + url_content)
-		if page == '':
+		Log('url_content: ' + url_content[:60])
+		if url_content == '':
+			Log('url_content leer')
 			return err
-		url = teilstring(url_content, 'http://', '.mp3') # i.d.R. 2 identische url	
+		url = stringextract('stream":"', '"', url_content) # manchmal 2 identische url
+		Log('mp3-url: ' + url)	
 			
 		text = stringextract('urlScheme', '/noscript', s)
 		img, img_alt = img_urlScheme(text, 320, ID='PODCAST') # img_alt nicht verwendet
