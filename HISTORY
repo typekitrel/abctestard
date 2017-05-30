@@ -2,10 +2,17 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------				gelöschte Releases: älter als  2.7.0	
 	
-		3.0.4	PodFavoriten(Pod_Content): Korrektur in Scheme_ARD (Fehler bei Ermittlung mp3-Url)
-				PodFavoriten(Pod_Content): Sätze ohne Url überspringen + Sammeldownloads
-				abschalten bei Mehrfachseiten
-			kleinere Korrekturen in Beschriftungen (title,summary, tagline)
+	
+30.05.2017 3.0.6	Funktion get_formitaeten (ZDF): Laden der videodat_url umbestellt auf JSON.ObjectFromURL l
+  					Laden mittels urllib2.urlopen + ssl.SSLContext entbehrlich, Nutzung einer Zertifikatsdatei
+  					entfällt.
+  					Funktion show_formitaeten: Anpassung der Stringfunktionen an das geänderte Textformat durch
+  					JSON.ObjectFromURL in formitaeten			
+	
+27.05.2017 3.0.5	PodFavoriten(Pod_Content): Korrektur in Scheme_ARD (Fehler bei Ermittlung mp3-Url).
+					PodFavoriten(Pod_Content): Sätze ohne Url überspringen + Sammeldownloads
+					abschalten bei Mehrfachseiten.
+					kleinere Korrekturen in Beschriftungen (title,summary, tagline.)
 	
 26.05.2017 3.0.4	Funktion img_urlScheme (ARD-Bereich): Basispfad für Icons nur noch dort ergänzt,
 					wo er fehlt (führte vorher manchmal zu doppeltem Basispfad im Icon).  

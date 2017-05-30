@@ -20,7 +20,7 @@ import EPG
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
 VERSION =  '3.0.5'		
-VDATE = '27.05.2017'
+VDATE = '30.05.2017'
 
 # 
 #	
@@ -210,7 +210,7 @@ def Start():
 def Main():
 	Log('Funktion Main'); Log(PREFIX); 
 	Log('Plugin-Version: ' + VERSION); Log('Plugin-Datum: ' + VDATE)
-	Log('Client: ' + Client.Platform);
+	Log('Client: '); Log(Client.Platform);									# Client.Platform: None möglich
 	Log('Plattform: ' + sys.platform)
 	Dict.Reset()					# Speicherobjekte des Plugins löschen
 	oc = ObjectContainer(view_group="InfoList", art=ObjectContainer.art)	# Plex akzeptiert nur InfoList + List, keine
@@ -3379,6 +3379,8 @@ def ZDFotherSources(title, tagline, thumb, docId):
 def get_formitaeten(sid, ID=''):
 	Log('get_formitaeten')
 	Log('sid/docId: ' + sid)
+	Log('Client: '); Log(Client.Platform);								# Client.Platform: None möglich
+	Log('Plattform: ' + sys.platform)
 	
 	# bei Änderung profile_url neu ermitteln - ZDF: zdfplayer-Bereich, NEO: data-sophoraid
 	profile_url = 'https://api.zdf.de/content/documents/%s.json?profile=player'	% sid
@@ -3409,7 +3411,7 @@ def get_formitaeten(sid, ID=''):
 	# Log(old_videodat)	
 	old_videodat_url = 'https://api.zdf.de' + old_videodat					# 4. Videodaten ermitteln
 	# neu ab 20.1.2016: uurl-Pfad statt ptmd-Pfad ( ptmd-Pfad fehlt bei Teilvideos)
-	videodat = stringextract('\"uurl\": \"', '\"', request_part)	# Bsp.: 161118_clip_5_hsh
+	videodat = stringextract('"uurl": "', '"', request_part)	# Bsp.: 161118_clip_5_hsh
 	if videodat == '':												# fehlt manchmal, dann auch kein Video verfügbar
 		Log('videodat: nicht in request_part enthalten')
 		return ''
@@ -3419,49 +3421,12 @@ def get_formitaeten(sid, ID=''):
 	videodat_url = videodat_url + videodat
 	Log('ptmd: ' + old_videodat_url); Log('uurl: ' + videodat); Log('videodat_url: ' + videodat_url)	
 
-	# Ab 19.02.2017 kann videodat_url nicht mehr normal angefordert werden - wie in ZDFotherSources
-	#	ZDF besteht auf Authentifizierung mit apiToken und zusätzlich SSL-Handshake
-	# 		Bsp.: https://api.zdf.de/tmd/2/portal/vod/ptmd/mediathek/161021_hsh_hsh' oder
-	#			  https://api.zdf.de/tmd/2/portal/vod/ptmd/mediathek/151213_camper_chaos_inf	
-	#	SSL-Handshake hier via Python urllib2.Request verwirklicht. für mehr Sicherheit ssl.CERT_REQUIRED 
-	#		verwenden (Plex-Zertifikate: ca.crt, certificate.p12)
-	# 	17.04.2017 Test von ca.crt, certificate.p12 fehlgeschlagen - r=urllib2.urlopen(req, cafile="..Cache/ca.crt"
-	#		dagegen OK auf Plattform: linux2 - r = urllib2.urlopen(req, cafile="/etc/ssl/ca-bundle.pem")	
-	req = urllib2.Request(videodat_url)
-	if ID == 'NEO':
-		req.add_header('Api-Auth', 'Bearer d90ed9b6540ef5282ba3ca540ada57a1a81d670a')
-	else:
-		req.add_header('Api-Auth', 'Bearer d2726b6c8c655e42b68b0db26131b15b22bd1a32')
-	# r = urllib2.urlopen(req)				# klappt ohne SSL nur außerhalb von Plex (Server-Config egal)
-	
-	# Linux-Variante mit System-SSL-Certifikat nach Fehler (Plex-Forum, @captainpimpjunior, System OpenMediaVault):
-	#	[SSL: SSLV3_ALERT_BAD_RECORD_MAC] sslv3 alert bad record mac (_ssl.c:1754)
-	# 	Falls cafile fehlt, kann ca-certificates.crt verwendet werden (kopieren nach /etc/ssl/ca-bundle.pem), siehe
-	#		http://forums.plex.tv/discussion/comment/1424016/#Comment_1424016
-	Log(sys.platform)
-	page = ''
-	if sys.platform == 'linux2':
-		try:															# Laden mit Zertifikatsdatei
-			cafile="/etc/ssl/ca-bundle.pem"
-			r = urllib2.urlopen(req, cafile=cafile)
-			page =  r.read()				
-			r.close()
-			Log('urllib2.urlopen linux2 erfolgreich, cafile: ' + cafile)		
-		except:															# Fallback: Laden ohne Zertifikatsdatei
-			gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1) 
-			r = urllib2.urlopen(req, context=gcontext)
-			page =  r.read()				
-			r.close()	# Verbindung schließt auch autom.	
-			Log('urllib2.urlopen linux2 Fallback ohne cafile')		
-	else:																# Windows + Andere: wie Fallback
-		try:
-			gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1) 
-			r = urllib2.urlopen(req, context=gcontext)
-			page =  r.read()				
-			r.close()	# Verbindung schließt auch autom.	
-			Log('urllib2.urlopen Windows + andere')	
-		except:
-			pass	
+	# ab 28.05.2017: Verwendung JSON.ObjectFromURL - Laden mittels urllib2.urlopen + ssl.SSLContext entbehrlich
+	#	damit entfällt auch die Plattformunterscheidung Linux/Windows sowie die Nutzung einer Zertifikatsdatei
+	request = JSON.ObjectFromURL(videodat_url, headers=headers)				
+	request = json.dumps(request, sort_keys=True, indent=2, separators=(',', ': '))  # sortierte Ausgabe
+	request = str(request)				# json=dict erlaubt keine Stringsuche, json.dumps klappt hier nicht
+	page = request.decode('utf-8', 'ignore')
 
 	if page == '':
 		Log('videodat_url: Laden fehlgeschlagen')
@@ -3486,7 +3451,6 @@ def get_formitaeten(sid, ID=''):
 	#	Abhilfe: https -> http beim m3u8-Link in show_formitaeten - klappt bei allen angebotenen Formaten
 	#	
 	formitaeten = blockextract('formitaeten', page)		# Video-URL's ermitteln
-	# Log(formitaeten)
 
 	return formitaeten
 
@@ -3496,25 +3460,26 @@ def get_formitaeten(sid, ID=''):
 def show_formitaeten(oc, title_call, formitaeten, tagline, thumb, only_list):	
 	Log('show_formitaeten')
 	Log(only_list)
+	# Log(formitaeten)		# bei Bedarf
 
 	i = 0 	# Titel-Zähler für mehrere Objekte mit dem selben Titel (manche Clients verwerfen solche)
 	download_list = []		# 2-teilige Liste für Download: 'summary # url'	
 	for rec in formitaeten:									# Datensätze gesamt
 		# Log(rec)		# bei Bedarf
-		typ = stringextract('\"type\" : \"', '\"', rec)
+		typ = stringextract('"type": "', '"', rec)
 		typ = typ.replace('[]', '').strip()
-		facets = stringextract('\"facets\" : ', ',', rec)	# Bsp.: "facets": ["progressive"]
-		facets = facets.replace('\"', '').replace('\n', '').replace(' ', '') 
+		facets = stringextract('"facets": ', ',', rec)	# Bsp.: "facets": ["progressive"]
+		facets = facets.replace('"', '').replace('\n', '').replace(' ', '') 
 		Log(typ); Log(facets)
 		
 		# Log(typ in only_list)
 		if (typ in only_list) == True:								
-			audio = blockextract('\"audio\" :', rec)			# Datensätze je Typ
+			audio = blockextract('"audio":', rec)			# Datensätze je Typ
 			# Log(audio)	# bei Bedarf
 			for audiorec in audio:					
-				url = stringextract('\"uri\" : \"',  '\"', audiorec)			# URL
+				url = stringextract('"uri": "',  '"', audiorec)			# URL
 				url = url.replace('https', 'http')
-				quality = stringextract('\"quality\" : \"',  '\"', audiorec)
+				quality = stringextract('"quality": "',  '"', audiorec)
 				Log(url); Log(quality);
 				i = i +1
 				if url:			
@@ -3871,12 +3836,12 @@ def make_filenames(title):
 	
 	fname = transl_umlaute(title)		# Umlaute
 	# Ersatz: 	Leerz., Pipe, mehrf. Unterstriche -> 1 Unterstrich, Doppelp. -> Bindestrich	
-	# Entferne: Frage-, Ausrufez., Hochkomma, Komma und #@!%^&*()
+	# Entferne: Frage-, Ausrufez., Hochkomma, Komma und #@!%^&*()+
 	fname = (fname.replace(' ','_').replace('|','_').replace('___','_').replace('.','_')) 
 	fname = (fname.replace('__','_').replace(':','-'))
 	fname = (fname.replace('?','').replace('!','').replace('"','').replace('#','')
 		.replace('*','').replace('@','').replace('%','').replace('^','').replace('&','')
-		.replace('(','').replace(')','').replace(',',''))	
+		.replace('(','').replace(')','').replace(',','').replace('+','-'))	
 	
 	# Die Variante .join entfällt leider, da die Titel hier bereits
 	# in Unicode ankommen -	Plex code/sandbox.py:  
