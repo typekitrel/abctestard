@@ -71,9 +71,24 @@ Credits:
 - Credits to [coder-alpha] https://forums.plex.tv/discussion/166602/rel-ccloudtv-channel-iptv/p1): (Channel updater, based on Channel updater by sharkone/BitTorrent.bundle)
 - Credits to [Arauco] (https://forums.plex.tv/profile/Arauco): processing of Logos and Icons
 
-Bilder:
+Hauptmenü:
 ===================  
 ![img](https://us.v-cdn.net/6025034/uploads/editor/t4/xrwomsb0zpaq.png)
 
+Suche in ZDF Mediathek:
+===================  
+![img](https://us.v-cdn.net/6025034/uploads/editor/d5/lsawdl1xybzq.png)
+
+Videoformate ZDF Mediathek:
+===================  
+![img](https://us.v-cdn.net/6025034/uploads/editor/pm/8y069jf7ad38.png)
+
+TV Livesender Vorauswahl:
+===================  
+![img](https://us.v-cdn.net/6025034/uploads/editor/i5/vo1g066f7n9n.jpg)
+
+Radio Livesender:
+===================  
+![img](https://us.v-cdn.net/6025034/uploads/editor/m7/qibbk5zksgkj.png)
 
 
