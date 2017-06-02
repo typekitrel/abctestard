@@ -19,8 +19,8 @@ import EPG
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '3.0.5'		
-VDATE = '30.05.2017'
+VERSION =  '3.0.7'		
+VDATE = '02.06.2017'
 
 # 
 #	
@@ -282,11 +282,11 @@ def Main_ARD(name):
 		title=u'%s' % L('Search'), prompt=u'%s' % L('Search Video'), thumb=R(ICON_SEARCH)))
 		
 	title = 'Sendung Verpasst (1 Woche)'
-	oc.add(DirectoryObject(key=Callback(VerpasstWoche, name=name), title=title,
-		summary=title, tagline='TV', thumb=R(ICON_ARD_VERP)))
+	oc.add(DirectoryObject(key=Callback(VerpasstWoche, name='ARD', title='Sendung Verpasst', sender='DAS ERSTE', 
+		kanal='208'), title=title, summary=title, tagline='TV', thumb=R(ICON_ARD_VERP)))
 	title = 'Sendungen A-Z'
-	oc.add(DirectoryObject(key=Callback(SendungenAZ, name='Sendungen 0-9 | A-Z', ID='ARD'), title='Sendungen A-Z',
-		summary=title, tagline='TV', thumb=R(ICON_ARD_AZ)))
+	oc.add(DirectoryObject(key=Callback(SendungenAZ, name='Sendungen 0-9 | A-Z', ID='ARD'), 
+		title='Sendungen A-Z', summary=title, tagline='TV', thumb=R(ICON_ARD_AZ)))
 						
 		
 	title = 'Ausgewählte Filme'.decode(encoding="utf-8", errors="ignore")
@@ -334,8 +334,8 @@ def Main_ZDF(name):
 	oc.add(InputDirectoryObject(key=Callback(ZDF_Search, s_type='video', title=u'%s' % L('Search Video')),
 		title=u'%s' % L('Search'), prompt=u'%s' % L('Search Video'), thumb=R(ICON_ZDF_SEARCH)))
 		
-	oc.add(DirectoryObject(key=Callback(VerpasstWoche, name=name), title="Sendung Verpasst (1 Woche)",
-		thumb=R(ICON_ZDF_VERP)))
+	oc.add(DirectoryObject(key=Callback(VerpasstWoche, name=name, title='Sendung Verpasst', sender='ZDF', 
+		kanal=''), title="Sendung Verpasst (1 Woche)", thumb=R(ICON_ZDF_VERP)))
 	oc.add(DirectoryObject(key=Callback(ZDFSendungenAZ, name="Sendungen A-Z"), title="Sendungen A-Z",
 		thumb=R(ICON_ZDF_AZ)))
 	oc.add(DirectoryObject(key=Callback(Rubriken, name="Rubriken"), title="Rubriken", 
@@ -725,19 +725,22 @@ def get_page(path):		# holt kontrolliert raw-Content
 	#		3. SinglePage: Sendungen der ausgewählten Rubrik mit Bildern (mehrere Sendungen pro Rubrik möglich)
 	#		4. Parseplaylist: Auswertung m3u8-Datei (verschiedene Auflösungen)
 	#		5. CreateVideoClipObject: einzelnes Video-Objekt erzeugen mit Bild + Laufzeit + Beschreibung
-def VerpasstWoche(name):	# Wochenliste zeigen
-	Log('VerpasstWoche: ' + name)
-	oc = ObjectContainer(view_group="InfoList", title1=NAME, title2=name, art = ObjectContainer.art)
+def VerpasstWoche(name, title, sender, kanal):	# Wochenliste zeigen, name: ARD, ZDF Mediathek
+	Log('VerpasstWoche: ' + sender)
+	title_org = '%s | aktuell: %s'	% (title, sender)
+	title_org=title_org.decode(encoding="utf-8", errors="ignore")
+	
+	oc = ObjectContainer(view_group="InfoList", title1=NAME, title2=title_org, art = ObjectContainer.art)
 	if name == 'ZDF Mediathek':
 		oc = home(cont=oc, ID='ZDF')						# Home-Button
 	else:	
 		oc = home(cont=oc, ID='ARD')						# Home-Button	
 		
-	wlist = range(0,6)
+	wlist = range(0,7)
 	now = datetime.datetime.now()
 
 	for nr in wlist:
-		iPath = BASE_URL + ARD_VERPASST + str(nr)
+		iPath = BASE_URL + ARD_VERPASST + '%s&kanal=%s' 	% (str(nr), kanal)
 		rdate = now - datetime.timedelta(days = nr)
 		iDate = rdate.strftime("%d.%m.%Y")		# Formate s. man strftime (3)
 		zdfDate = rdate.strftime("%Y-%m-%d")		
@@ -758,6 +761,13 @@ def VerpasstWoche(name):	# Wochenliste zeigen
 		else:
 			oc.add(DirectoryObject(key=Callback(ZDF_Verpasst, title=title, zdfDate=zdfDate),	  
 				title=title, thumb=R(ICON_ZDF_VERP)))
+				
+	if name.find('ARD') == 0 :
+		title = 'Wählen Sie Ihren Sender | aktuell: %s'	% sender
+		title=title.decode(encoding="utf-8", errors="ignore")
+		oc.add(DirectoryObject(key=Callback(KanalWahl, title=title, sender=sender), title=title,
+			summary=title, thumb=R(ICON_ARD_VERP)))
+		
 	return oc
 #------------
 def transl_wtag(tag):	# Wochentage engl./deutsch wg. Problemen mit locale-Setting 
@@ -771,6 +781,33 @@ def transl_wtag(tag):	# Wochentage engl./deutsch wg. Problemen mit locale-Settin
 			wt_ret = wt_deutsch[i]
 			break
 	return wt_ret
+#------------
+@route(PREFIX + '/KanalWahl')	
+# 	Kanal-Wahl für Verpasst (nur ARD) - falls die Kanäle sich ändern, von
+#	Verpasst-Seite (BASE_URL + ARD_VERPASST) neu holen (1. Block class="entryGroup")
+def KanalWahl(title, sender):	
+	Log('KanalWahl'); 	
+	title=title.decode(encoding="utf-8", errors="ignore")
+	entries = ['Das Erste:208', 'BR:2224', 'HR:5884', 'KiKA:5886', 'MDR Fernsehen:5882', 
+				'MDR THÜRINGEN:1386988', 'MDR SACHSEN-ANHALT:1386898', 'MDR SACHSEN:1386804', 
+				'rbb Fernsehen:5874', 'rbb Fernsehen Brandenburg:21518356', 'rbb Fernsehen Berlin:21518358', 
+				'SR:5870', 'SWR Fernsehen:5310', 'SWR Rheinland-Pfalz:5872', 'SWR Baden-Württemberg:5904', 
+				'WDR:5902', 'tagesschau24:5878', 'ARD-alpha:5868', 'ONE:673348']
+			
+	oc = ObjectContainer(view_group="InfoList", title1=NAME, title2=title, art = ObjectContainer.art)
+	oc = home(cont=oc, ID='ARD')						# Home-Button	
+	
+	for entry in entries:
+		Log(entry)
+		sender, kanal = entry.split(':')
+		Log(sender); Log(kanal)
+		url = BASE_URL + ARD_VERPASST + 'kanal=' + kanal
+		title = 'Verpasst-Sender: %s' % sender
+		title=title.decode(encoding="utf-8", errors="ignore")
+		oc.add(DirectoryObject(key=Callback(VerpasstWoche, name='ARD', title='Sendung Verpasst', sender=sender, 
+			kanal=kanal), title=title, summary=title, tagline='TV', thumb=R(ICON_ARD_VERP)))		 
+	
+	return oc
 		
 ####################################################################################################
 @route(PREFIX + '/PodFavoritenListe')		
@@ -2910,7 +2947,7 @@ def Rubriken(name):
 		if title == "Sendungen A-Z":	# Rest nicht mehr relevant
 			break
 		oc.add(DirectoryObject(key=Callback(RubrikSingle, title=title, path=path), 
-			title=title, thumb=R(ICON_ARD_RUBRIKEN)))	
+			title=title, thumb=R(ICON_ZDF_RUBRIKEN)))	
 	
 	return oc
 #-------------------------
@@ -3343,7 +3380,7 @@ def GetZDFVideoSources(url, title, thumb, tagline, segment_start=None, segment_e
 		
 	title_oc='weitere Video-Formate'
 	if Prefs['pref_use_downloads']:	
-		title=title + ' und Download'
+		title_oc=title_oc + ' und Download'
 	# oc = Parseplaylist(oc, videoURL, thumb)	# hier nicht benötigt - das ZDF bietet bereits 3 Auflösungsbereiche
 	oc.add(DirectoryObject(key=Callback(ZDFotherSources, title=title, tagline=tagline, thumb=thumb, docId=docId),
 		title=title_oc, summary='', thumb=R(ICON_MEHR)))
@@ -3376,6 +3413,13 @@ def ZDFotherSources(title, tagline, thumb, docId):
 	return oc
 	
 #-------------------------
+#	Ladekette für Videoquellen ab 30.05.2017:
+#		1. Ermittlung des apiToken (in configuration.json), bisher  unverändert, Verwendung in header
+#		2. Sender-ID sid ermitteln für profile_url (durch Aufrufer)
+#		3. Playerdaten ermitteln via profile_url (Basis bisher unverändert, injiziert: sid)
+#		4. Videodaten ermitteln via videodat_url (Basis bisher unverändert, injiziert: videodat)
+#	Bei Änderungen durch das ZDF Ladekette mittels chrome neu ermitteln (network / HAR-Auswertung)
+#
 def get_formitaeten(sid, ID=''):
 	Log('get_formitaeten')
 	Log('sid/docId: ' + sid)

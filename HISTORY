@@ -3,7 +3,10 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------				gelöschte Releases: älter als  2.7.0	
 	
 	
-30.05.2017 3.0.6	Funktion get_formitaeten (ZDF): Laden der videodat_url umbestellt auf JSON.ObjectFromURL l
+02.06.2017 3.0.7	ARD-Bereich / Verpasst Woche: einzelne Senderwahl ermöglicht (wie Originalseite) + fehlenden
+					Tag ergänzt (zeigte nur 6 Tage)		
+	
+30.05.2017 3.0.6	Funktion get_formitaeten (ZDF): Laden der videodat_url umbestellt auf JSON.ObjectFromURL,
   					Laden mittels urllib2.urlopen + ssl.SSLContext entbehrlich, Nutzung einer Zertifikatsdatei
   					entfällt.
   					Funktion show_formitaeten: Anpassung der Stringfunktionen an das geänderte Textformat durch
