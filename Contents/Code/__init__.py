@@ -19,8 +19,8 @@ import EPG
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '3.0.7'		
-VDATE = '02.06.2017'
+VERSION =  '3.0.8'		
+VDATE = '04.06.2017'
 
 # 
 #	
@@ -880,9 +880,9 @@ def PodFavoritenListe(title, offset=0):
 	
 	# Mehr Seiten anzeigen:
 	Log(offset); Log(cnt); Log(max_len);
-	if int(cnt) +1 < max_len: 						# Gesamtzahl noch nicht ereicht?
+	if (int(cnt) +1) < int(max_len): 						# Gesamtzahl noch nicht ereicht?
 		new_offset = cnt + int(offset)
-		# Log(new_offset)
+		Log(new_offset)
 		summ = 'Mehr (insgesamt ' + str(max_len) + ' Favoriten)'
 		summ = summ.decode(encoding="utf-8", errors="ignore")
 		oc.add(DirectoryObject(key=Callback(PodFavoritenListe, title=title_org, offset=new_offset), 

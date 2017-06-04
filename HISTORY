@@ -1,10 +1,15 @@
 CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------	Releases: 	https://github.com/rols1/Plex-Plugin-ARDMediathek2016/releases
 --------------				gelöschte Releases: älter als  2.7.0	
+		
 	
+04.06.2017 3.0.8	PodFavoriten(Pod_Content): Korrekturen in Scheme_ARD (Seiten ohne Seitenkontrolle) und
+					Scheme_rbb (Umlaute-Behandlung, mp3-Pfad-Ermittlung).
+					PodFavoriten(Pod_Content): verlässlichere Ermittlung der Seitennummern bei Mehrfachseiten.	
+					PodFavoriten (podcast-favorits.txt): hr-iNFO Cybercrime hinzugfügt, Seiten thematisch geordnet.
 	
 02.06.2017 3.0.7	ARD-Bereich / Verpasst Woche: einzelne Senderwahl ermöglicht (wie Originalseite) + fehlenden
-					Tag ergänzt (zeigte nur 6 Tage)		
+					Tag ergänzt (zeigte nur 6 Tage).	
 	
 30.05.2017 3.0.6	Funktion get_formitaeten (ZDF): Laden der videodat_url umbestellt auf JSON.ObjectFromURL,
   					Laden mittels urllib2.urlopen + ssl.SSLContext entbehrlich, Nutzung einer Zertifikatsdatei
