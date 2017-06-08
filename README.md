@@ -35,6 +35,16 @@ Funktionen ab Version 2.2.0:
 - Barrierearm (Hörfassung)
 - Bilderserien
 
+#### Radio-Podcasts:
+- Sendungen A-Z
+- Rubriken
+- Radio-Feature
+- Radio-Tatort
+- Neueste Audios
+- Meist abgerufen
+- Refugee-Radio
+- Podcast-Favoriten (manuell erweiterbar)
+
 #### TV-Live-Streams (11.03.2017: 34 Sender): 
 - ARD- und ZDF-Sender überregional und regional, einige ausgewählte Privatsender
 

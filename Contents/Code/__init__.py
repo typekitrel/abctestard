@@ -19,8 +19,8 @@ import EPG
 
 # +++++ ARD Mediathek 2016 Plugin for Plex +++++
 
-VERSION =  '3.0.8'		
-VDATE = '04.06.2017'
+VERSION =  '3.0.9'		
+VDATE = '08.06.2017'
 
 # 
 #	
@@ -114,7 +114,7 @@ ICON_DELETE 			= "icon-delete.png"
 ICON_STAR 				= "icon-star.png"
 ICON_NOTE 				= "icon-note.png"
 
-ICON_DIR_CURL 			= "Dir-curl.png"
+ICON_DIR_CURLWGET 		= "Dir-curl-wget.png"
 ICON_DIR_FOLDER			= "Dir-folder.png"
 ICON_DIR_PRG 			= "Dir-prg.png"
 ICON_DIR_IMG 			= "Dir-img.png"
@@ -395,8 +395,9 @@ def Main_POD(name):
 ################################################################	
 	
 #----------------------------------------------------------------
-def home(cont, ID):												# Home-Button, Aufruf: oc = home(cont=oc)	
-	title = 'Zurück zum Hauptmenü ' + ID
+def home(cont, ID):												# Home-Button, Aufruf: oc = home(cont=oc)
+	Log('home')	
+	title = 'Zurück zum Hauptmenü ' + str(ID)
 	title = title.decode(encoding="utf-8", errors="ignore")
 	summary = title
 	
@@ -1207,7 +1208,7 @@ def SingleSendung(path, title, thumb, duration, summary, tagline, ID, offset=0):
 	if client == None:
 		client = ''
 	if client.find ('Plex Home Theater'): 
-		oc = home(cont=oc, ID=NAME)						# Home-Button macht bei PHT die Trackliste unbrauchbar 
+		oc = home(cont=oc, ID=ID)						# Home-Button macht bei PHT die Trackliste unbrauchbar 
 	# Log(path)
 	
 	if ID == 'PODCAST':
@@ -1320,7 +1321,7 @@ def SingleSendung(path, title, thumb, duration, summary, tagline, ID, offset=0):
 	return oc
 
 #-----------------------
-# test_downloads: prüft ob Curl-Downloads freigeschaltet sind + erstellt den Downloadbutton
+# test_downloads: prüft ob curl/wget-Downloads freigeschaltet sind + erstellt den Downloadbutton
 # high (int): Index für einzelne + höchste Video-Qualität in download_list
 def test_downloads(oc,download_list,title_org,summary_org,tagline_org,thumb,high):  # Downloadbuttons (ARD + ZDF)
 	Log('test_downloads')
@@ -1347,10 +1348,10 @@ def test_downloads(oc,download_list,title_org,summary_org,tagline_org,thumb,high
 					Format = 'Podcast ' 			
 				else:	
 					Format = 'Video '			# .mp4 oder .webm  (ARD nur .mp4)
-				title = Format + 'Curl-Download: ' + title_org
+				title = Format + 'Download: ' + title_org
 				dest_path = Prefs['pref_curl_download_path'] 
 				summary = Format + 'wird in ' + dest_path + ' gespeichert' 									
-				tagline = 'Der Download erfolgt durch Curl im Hintergrund | ' + quality
+				tagline = 'Der Download erfolgt durch im Hintergrund | ' + quality
 				summary=summary.decode(encoding="utf-8", errors="ignore")
 				tagline=tagline.decode(encoding="utf-8", errors="ignore")
 				title=title.decode(encoding="utf-8", errors="ignore")
@@ -1376,9 +1377,9 @@ def MakeDetailText(title, summary,tagline,quality,thumb,url):	# Textdatei für D
 	return detailtxt
 	
 ####################################################################################################
-@route(PREFIX + '/DownloadExtern')	#  Verwendung von Curl mittels Phytons subprocess-Funktionen
-# Wegen des Timeout-Problems (ca. 15 sec) macht es keinen Sinn, auf die Beendigung von Curl 
-#	mittels Pipes + communicate zu warten. Daher erfolgt der Start von Curl unter Verzicht auf dessen Output.
+@route(PREFIX + '/DownloadExtern')	#  Verwendung von curl/wget mittels Phytons subprocess-Funktionen
+# Wegen des Timeout-Problems (ca. 15 sec) macht es keinen Sinn, auf die Beendigung von curl/wget
+#	mittels Pipes + communicate zu warten. Daher erfolgt der Start von curl/wget unter Verzicht auf dessen Output.
 # Die experimentelle interne Download-Variante mit Bordmitteln wurde wieder entfernt, da nach ca. 15 
 #	sec der Server die Verbindung zum Client mit timeout abbricht (unter Linux wurde der Download 
 #	trotzdem weiter fortgesetzt).
@@ -1386,12 +1387,12 @@ def MakeDetailText(title, summary,tagline,quality,thumb,url):	# Textdatei für D
 # Bei Verwendung weiterer Videoformate (neben mp4, webm, mp3) Extensionsbehandlung anpassen: hier sowie
 #	DownloadsTools, DownloadsList
 #
-def DownloadExtern(url, title, dest_path, key_detailtxt):  # Download mittels Curl
+def DownloadExtern(url, title, dest_path, key_detailtxt):  # Download mittels curl/wget
 	Log('DownloadExtern: ' + title)
 	Log(url); Log(dest_path); Log(key_detailtxt)
 	title=title.decode(encoding="utf-8", errors="ignore")	
 	
-	oc = ObjectContainer(view_group="InfoList", title1='Curl-Download', art=ICON)
+	oc = ObjectContainer(view_group="InfoList", title1='curl/wget-Download', art=ICON)
 	oc = home(cont=oc, ID=NAME)					# Home-Button	
 
 	summary = 'Download-Tools: Verschieben, Löschen, Ansehen, Verzeichnisse bearbeiten'	# wie in Main()
@@ -1416,7 +1417,7 @@ def DownloadExtern(url, title, dest_path, key_detailtxt):  # Download mittels Cu
 		if url.endswith('.webm'):				
 			suffix = '.webm'		
 		
-	title = dtyp + 'Curl-Download: ' + title
+	title = dtyp + 'curl/wget-Download: ' + title
 	textfile = dfname + '.txt'
 	dfname = dfname + suffix							# suffix: '.mp4', '.webm', oder '.mp3'
 	
@@ -1429,23 +1430,31 @@ def DownloadExtern(url, title, dest_path, key_detailtxt):  # Download mittels Cu
 		Core.storage.save(pathtextfile, storetxt)			# Text speichern
 		
 		AppPath = Prefs['pref_curl_path']
-		i = os.path.exists(AppPath)					# Existenz Curl prüfen
+		i = os.path.exists(AppPath)					# Existenz curl/wget prüfen
 		Log(AppPath); Log(i)
 		if AppPath == '' or i == False:
-			msg='Pfad zu curl fehlt oder curl nicht gefunden'
+			msg='Pfad zu curl/wget fehlt oder curl/wget nicht gefunden'
 			return ObjectContainer(header='Error', message=msg)
 			
-		# i = os.access(curl_dest_path, os.W_OK)		# Zielverz. prüfen - nicht relevant für curl
+		# i = os.access(curl_dest_path, os.W_OK)		# Zielverz. prüfen - nicht relevant für curl/wget
 														# 	Anwender muss Schreibrecht sicherstellen
 		curl_fullpath = os.path.join(dest_path, dfname)	# kompl. Speicherpfad für Video/Podcast
 		Log(curl_fullpath)
 
+		# 08.06.2017 wget-Alternative wg. curl-Problem auf Debian-System (Forum: 
+		#	https://forums.plex.tv/discussion/comment/1454827/#Comment_1454827
+		#
 		# http://stackoverflow.com/questions/3516007/run-process-and-dont-wait
 		#	creationflags=DETACHED_PROCESS nur unter Windows
-		Log('%s %s %s %s' % (AppPath, url, "-o", curl_fullpath))
-		sp = subprocess.Popen([AppPath, url, "-o", curl_fullpath])	# OK, wartet nicht (ohne p.communicate())
-
-		msgH = 'curl: Download erfolgreich gestartet'
+		if AppPath.find('curl') > 0:									# curl-Call
+			Log('%s %s %s %s' % (AppPath, url, "-o", curl_fullpath))	
+			sp = subprocess.Popen([AppPath, url, "-o", curl_fullpath])	# OK, wartet nicht (ohne p.communicate())
+			# sp = subprocess.Popen([AppPath, url, "-N", "-o", curl_fullpath])	# Buffering für curl abgeschaltet
+		else:															# wget-Call
+			Log('%s %s %s %s %s' % (AppPath, "--no-use-server-timestamps", "-qO", curl_fullpath, url))	
+			sp = subprocess.Popen([AppPath, "--no-use-server-timestamps", "-qO", curl_fullpath, url])
+			
+		msgH = 'curl/wget: Download erfolgreich gestartet'
 		Log('sp = ' + str(sp))
 	
 		if str(sp).find('object at') > 0:  				# subprocess.Popen object OK
@@ -1456,7 +1465,7 @@ def DownloadExtern(url, title, dest_path, key_detailtxt):  # Download mittels Cu
 				thumb=R(ICON_OK), tagline=tagline))						
 			return oc				
 		else:
-			raise Exception('Start von curl fehlgeschlagen')
+			raise Exception('Start von curl/wget fehlgeschlagen')
 			
 	except Exception as exception:
 		msgH = 'Fehler'; 
@@ -1498,18 +1507,18 @@ def DownloadsTools():
 	oc = ObjectContainer(view_group="InfoList", title1=title1, art=ICON)
 	oc = home(cont=oc, ID=NAME)								# Home-Button	
 	
-	s = Prefs['pref_curl_path']											# Einstellungen: Pfad Curl
-	title = 'Einstellungen: Pfad zum Downloadprogramm Curl festlegen/ändern (%s)' %s	
+	s = Prefs['pref_curl_path']											# Einstellungen: Pfad curl/wget
+	title = 'Einstellungen: Pfad zum Downloadprogramm curl/wget festlegen/ändern (%s)' %s	
 	title=title.decode(encoding="utf-8", errors="ignore")
-	tagline = 'Hier wird der Pfad zum Downloadprogramm Curl eingestellt.'
+	tagline = 'Hier wird der Pfad zum Downloadprogramm curl/wget eingestellt.'
 	summary = 'Dies kann auch manuell im Webplayer erfolgen (Zahnradsymbol) '
-	oc.add(DirectoryObject(key=Callback(DirectoryNavigator,settingKey = 'pref_curl_path', fileFilter='curl',
-		newDirectory=s),title = title, tagline=tagline, summary=summary, thumb = R(ICON_DIR_CURL)))
+	oc.add(DirectoryObject(key=Callback(DirectoryNavigator,settingKey = 'pref_curl_path', fileFilter='curl|wget',
+		newDirectory=s),title = title, tagline=tagline, summary=summary, thumb = R(ICON_DIR_CURLWGET)))
 
 	s =  Prefs['pref_curl_download_path']								# Einstellungen: Pfad Downloaderz.
 	title = 'Einstellungen: Downloadverzeichnisses festlegen/ändern (%s)' %s			
 	title=title.decode(encoding="utf-8", errors="ignore")
-	tagline = 'Das Curl-Downloadverzeichnis muss für Plex beschreibbar sein.'
+	tagline = 'Das Downloadverzeichnis muss für Plex beschreibbar sein.'
 	tagline=tagline.decode(encoding="utf-8", errors="ignore")
 	# summary =    # s.o.
 	oc.add(DirectoryObject(key=Callback(DirectoryNavigator,settingKey = 'pref_curl_download_path', fileFilter='DIR',
@@ -1569,7 +1578,7 @@ def DownloadsTools():
 		title=title.decode(encoding="utf-8", errors="ignore")			
 		tagline = 'Leeren erfolgt ohne Rückfrage!'						
 		tagline=tagline.decode(encoding="utf-8", errors="ignore")
-		summary = 'alle Dateien aus dem Curl-Downloadverzeichnis entfernen'
+		summary = 'alle Dateien aus dem Downloadverzeichnis entfernen'
 		oc.add(DirectoryObject(key=Callback(DownloadsDelete, dlpath=dlpath, single='False'),
 			title=title, summary=summary, thumb=R(ICON_DELETE), tagline=tagline))
 			
@@ -2412,6 +2421,7 @@ def CreateVideoStreamObject(url, title, summary, tagline, meta, thumb, rtmp_live
 	Log('include_container: '); Log(include_container)
 	Log(Client.Platform)
 	Log('Plattform: ' + sys.platform)
+	Log(Client.Product)
 
 	if url.find('rtmp:') >= 0:	# rtmp = Protokoll für flash, Quellen: rtmpdump, shark, Chrome/Entw.-Tools
 		if rtmp_live == 'ja':
@@ -2480,6 +2490,9 @@ def CreateVideoClipObject(url, title, summary, tagline, meta, thumb, duration, r
 	Log('CreateVideoClipObject')
 	Log(url); Log(duration); Log(tagline)
 	Log(Client.Platform)
+	Log('Plattform: ' + sys.platform)
+	Log(Client.Product)
+	
 	# resolution = ''					# leer - Clients skalieren besser selbst
 	resolution=[720, 540, 480]			# wie VideoClipObject: Vorgabe für Webplayer entbehrlich, für PHT erforderlich
 
@@ -2605,6 +2618,7 @@ def RadioAnstalten(path, title,sender,thumbs):
 		sid = href.split('documentId=')[1]
 		
 		path = BASE_URL + '/play/media/' + sid + '?devicetype=pc&features=flash'	# -> Textdatei mit Streamlink
+		Log('Streamlink: ' + path)
 		path_content = HTTP.Request(path).content
 		Log(path_content[0:80])			# enthält nochmal Bildquelle + Auflistung Streams (_quality)
 										# Streamlinks mit .m3u-Ext. führen zu weiterer Textdatei - Auswert. folgt 
@@ -3979,12 +3993,14 @@ def DirectoryNavigator(settingKey, newDirectory = None, fileFilter=None):
 		if fileFilter != 'DIR':						# nicht Verzeichnissuche
 			if isDir == False:						# und kein Unterverzeichnis -> Suche nach Eintrag
 				# Log.Debug('Suche nach: ' + fileFilter + ' in ' + basePath + item)
-				if item.find(fileFilter) >= 0:			# Filter passt
-					summary = 'Klicken zum Speichern | Datei: ' + item
-					title = summary
-					value = os.path.join(basePath, item) 
-					oc.add(DirectoryObject(key = Callback(SetPrefValue, key = settingKey, value = value),
-						title = item, summary=summary, thumb = R(ICON_DIR_SAVE)))
+				filterlist = fileFilter.split('|')
+				for ffilter in filterlist:
+					if item.find(ffilter) >= 0:			# Filter passt
+						summary = 'Klicken zum Speichern | Datei: ' + item
+						title = summary
+						value = os.path.join(basePath, item) 
+						oc.add(DirectoryObject(key = Callback(SetPrefValue, key = settingKey, value = value),
+							title = item, summary=summary, thumb = R(ICON_DIR_SAVE)))
 			else:									# Button für Unterverzeichnisse
 				Log.Debug('Setze Verzeichniseintrag:  ' + basePath + item)
 				newDirectory = os.path.join(basePath, item)  # + DirSep

@@ -3,6 +3,11 @@ CHANGE HISTORY 	Plex-Plugin-ARDMediathek2016
 --------------				gelöschte Releases: älter als  2.7.0	
 		
 	
+08.06.2017 3.0.9	Downloadbereich: wget als Alternative für curl implementiert. Anlass: curl-Problem auf
+					Debian-System. Betroffen: Icon Dir-curl.png/Dir-curl-wget.png, Funktionen: 
+					DownloadExtern, DownloadsTools, DirectoryNavigator. 
+					Funktion SingleSendung: Korrektur Home-Button für ID=PODCAST.
+	
 04.06.2017 3.0.8	PodFavoriten(Pod_Content): Korrekturen in Scheme_ARD (Seiten ohne Seitenkontrolle) und
 					Scheme_rbb (Umlaute-Behandlung, mp3-Pfad-Ermittlung).
 					PodFavoriten(Pod_Content): verlässlichere Ermittlung der Seitennummern bei Mehrfachseiten.	
