@@ -147,7 +147,7 @@ ARD_Filme 		= 'http://www.ardmediathek.de/tv/Ausgew%C3%A4hlte-Filme/mehr?documen
 ARD_FilmeAll 	= 'http://www.ardmediathek.de/tv/Alle-Filme/mehr?documentId=31610076'
 ARD_Meist 		= 'http://www.ardmediathek.de/tv/Meistabgerufene-Videos/mehr?documentId=23644244'
 ARD_Neu 		= 'http://www.ardmediathek.de/tv/Neueste-Videos/mehr?documentId=21282466'
-ARD_Best 		= 'http://www.ardmediathek.de/tv/Am-besten-bewertet/mehr?documentId=21282468'
+ARD_Best 		= 'http://www.ardmediathek.de/tv/Sturm-der-Liebe/Sendung?documentId=5290&bcastId=5290'
 ARD_RadioAll 	= 'http://www.ardmediathek.de/radio/live?genre=Alle+Genres&kanal=Alle'
 
 # ARD-Podcasts
